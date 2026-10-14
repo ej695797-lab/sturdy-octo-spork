@@ -1,0 +1,5 @@
+* text=auto
+# stored with CRLF as-is, so every download (git, ZIP) has Windows line endings
+*.bat -text
+*.sh text eol=lf
+*.json text eol=lf

@@ -1,0 +1,15 @@
+[
+ {
+  "bundleKey": "bundle_commando",
+  "displayName": "Commando Bundle",
+  "startTimestamp": "2025 01/23 17:00:00",
+  "endTimestamp": "2025 02/20 07:00:00",
+  "itemKeys": [
+   "commando",
+   "explosiveGrenade_frag"
+  ],
+  "currencyAmount": 10000,
+  "centCost": 2999,
+  "minVersion": "1.0.0"
+ }
+]

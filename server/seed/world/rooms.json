@@ -1,0 +1,1342 @@
+[
+ {
+  "roomKey": "tutorial",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   96,
+   96,
+   96
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 0,
+  "isAutoCycling": 0,
+  "isCreative": 0,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 1,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 0,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 1,
+  "roomName": "Tutorial",
+  "terrainDataVersion": 1,
+  "themeKey": "snow",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "official_0",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   80,
+   80,
+   80
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 8,
+  "isAutoCycling": 0,
+  "isCreative": 0,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 1,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 0,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 1,
+  "roomName": "Playground",
+  "terrainDataVersion": 1,
+  "themeKey": "suburb",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "official_1",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   80,
+   80,
+   80
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    -5,
+    8
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    26,
+    0
+   ]
+  },
+  "floorDepth": 0,
+  "isAutoCycling": 0,
+  "isCreative": 0,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 1,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 0,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 1,
+  "roomName": "Starter House",
+  "terrainDataVersion": 1,
+  "themeKey": "suburb",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "official_2",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   80,
+   80,
+   80
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    -14,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 8,
+  "isAutoCycling": 0,
+  "isCreative": 0,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 1,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 0,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 1,
+  "roomName": "Blue House",
+  "terrainDataVersion": 1,
+  "themeKey": "suburb",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "researchFacility",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   16,
+   16,
+   16
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 0,
+  "isAutoCycling": 0,
+  "isCreative": 0,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 1,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 0,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 3,
+  "roomName": "FOR SALE",
+  "terrainDataVersion": 1,
+  "themeKey": "suburb",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "halloween_1",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   96,
+   96,
+   96
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 4,
+  "isAutoCycling": 0,
+  "isCreative": 0,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 1,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 0,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 2,
+  "roomName": "InPrisonment",
+  "terrainDataVersion": 1,
+  "themeKey": "researchFacility",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "official_5",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   32,
+   80,
+   32
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 9,
+  "isAutoCycling": 0,
+  "isCreative": 0,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 1,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 3,
+  "noPaste": 0,
+  "noSave": 0,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 2,
+  "roomName": "Classroom",
+  "terrainDataVersion": 1,
+  "themeKey": "snow",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "official_4b",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   40,
+   80,
+   40
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 0,
+  "isAutoCycling": 0,
+  "isCreative": 1,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 1,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 1,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 2,
+  "roomName": "Creative Mode Classroom",
+  "terrainDataVersion": 1,
+  "themeKey": "tutorial",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "bonus_6b",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   16,
+   16,
+   16
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 0,
+  "isAutoCycling": 0,
+  "isCreative": 0,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 1,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 0,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 2,
+  "roomName": "FOR SALE",
+  "terrainDataVersion": 1,
+  "themeKey": "suburb",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "official_9",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   16,
+   16,
+   16
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 0,
+  "isAutoCycling": 0,
+  "isCreative": 0,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 1,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 0,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 2,
+  "roomName": "FOR SALE",
+  "terrainDataVersion": 1,
+  "themeKey": "suburb",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "official_10",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   16,
+   16,
+   16
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 0,
+  "isAutoCycling": 0,
+  "isCreative": 0,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 1,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 0,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 2,
+  "roomName": "FOR SALE",
+  "terrainDataVersion": 1,
+  "themeKey": "suburb",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "official_8",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   16,
+   16,
+   16
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 0,
+  "isAutoCycling": 0,
+  "isCreative": 0,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 1,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 0,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 3,
+  "roomName": "FOR SALE",
+  "terrainDataVersion": 1,
+  "themeKey": "suburb",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "wild_0",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   80,
+   80,
+   80
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 0,
+  "isAutoCycling": 0,
+  "isCreative": 1,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 0,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 1,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 3,
+  "roomName": "Wilds 1",
+  "terrainDataVersion": 1,
+  "themeKey": "suburb",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "wild_1_beach",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   80,
+   80,
+   80
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 0,
+  "isAutoCycling": 0,
+  "isCreative": 1,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 0,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 1,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 3,
+  "roomName": "Wilds 2",
+  "terrainDataVersion": 1,
+  "themeKey": "backrooms",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "wild_2_snow",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   80,
+   80,
+   80
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 0,
+  "isAutoCycling": 0,
+  "isCreative": 1,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 0,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 1,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 3,
+  "roomName": "Wilds 3",
+  "terrainDataVersion": 1,
+  "themeKey": "snow",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "bam_winner",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   80,
+   80,
+   80
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 1,
+  "isAutoCycling": 0,
+  "isCreative": 0,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 0,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 3,
+  "noPaste": 0,
+  "noSave": 0,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 3,
+  "roomName": "Build-A-Map Winner",
+  "terrainDataVersion": 1,
+  "themeKey": "suburb",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "bam_1",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   80,
+   80,
+   80
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 0,
+  "isAutoCycling": 0,
+  "isCreative": 0,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 0,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 0,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 3,
+  "roomName": "Build-A-Map Finalist 2",
+  "terrainDataVersion": 1,
+  "themeKey": "beach",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "bam_0",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   80,
+   80,
+   80
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 0,
+  "isAutoCycling": 0,
+  "isCreative": 0,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 0,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 0,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 3,
+  "roomName": "Build-A-Map Finalist 1",
+  "terrainDataVersion": 1,
+  "themeKey": "beach",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "bam_2",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   80,
+   80,
+   80
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 0,
+  "isAutoCycling": 0,
+  "isCreative": 0,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 0,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 0,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 3,
+  "roomName": "Build-A-Map Finalist 3",
+  "terrainDataVersion": 1,
+  "themeKey": "suburb",
+  "lastEditedSessionID": 1
+ },
+ {
+  "roomKey": "bam_finalist_lobby",
+  "autoCycleTimestamp": 0,
+  "blockMatchmakingSegmentation": 1,
+  "creativeSessionID": 1,
+  "customLightingKey": "",
+  "dimensions": [
+   16,
+   16,
+   16
+  ],
+  "door_down": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_left": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_right": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "door_up": {
+   "block": 0,
+   "position": [
+    0,
+    0
+   ]
+  },
+  "floorDepth": 0,
+  "isAutoCycling": 0,
+  "isCreative": 0,
+  "isDevLocked": 0,
+  "isModeLocked": 1,
+  "isOfficial": 0,
+  "isSaveLocked": 0,
+  "itemRestrictionsGroupKeys": [],
+  "itemRestrictionsIsWhiteList": 0,
+  "lastEditedTerrainSessionID": 1,
+  "lastRoomDataEditorSessionID": 1,
+  "lastValidSaveOffset": 0,
+  "liquidColor": "",
+  "liquidLevel": 0,
+  "liquidType": 0,
+  "lobbyDirection": 1,
+  "noPaste": 0,
+  "noSave": 0,
+  "overrideSaveLockTimestamp": "1970 01/01 00:00:00",
+  "previousEditedSessionID": 1,
+  "previousEditedTerrainSessionID": 1,
+  "previousMapProperties": {},
+  "roomDataVersion": 1,
+  "roomName": "All Finalists",
+  "terrainDataVersion": 1,
+  "themeKey": "suburb",
+  "lastEditedSessionID": 1
+ }
+]

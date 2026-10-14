@@ -1,0 +1,23 @@
+# secrets and local state: never commit these
+server/.env
+server/.venv/
+server/data/
+server/logs/
+server/tunnel.log
+tools/.keys/
+*.keystore
+*.jks
+*.pass
+
+# build outputs
+*.apk
+*.idsig
+client/native/build/
+client/native/cmake_build/
+build/
+
+# python / os noise
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

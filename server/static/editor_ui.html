@@ -1,0 +1,980 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yeeps Editor</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+         background: #111; color: #ddd; font-size: 14px; }
+  .app { display: flex; min-height: 100vh; }
+  aside { width: 170px; flex-shrink: 0; background: #181818; border-right: 1px solid #333;
+          padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+  aside button { background: #222; color: #ccc; border: 1px solid #333; padding: 9px 12px;
+                 border-radius: 6px; cursor: pointer; text-align: left; width: 100%; }
+  aside button.on { background: #2a4; color: #fff; border-color: #2a4; }
+  aside a { color: #6cf; text-decoration: none; font-size: 13px; }
+  .sp { flex: 1; }
+  main { flex: 1; padding: 16px; max-width: 1000px; }
+  .row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  input[type=text] { background: #0c0c0c; border: 1px solid #333; color: #ddd;
+                     padding: 7px 10px; border-radius: 6px; min-width: 220px; }
+  textarea { width: 100%; height: 55vh; background: #0c0c0c; border: 1px solid #333; color: #ddd;
+             font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px;
+             padding: 10px; border-radius: 6px; }
+  button.go { background: #2a4; color: #fff; border: 0; padding: 8px 18px; border-radius: 6px;
+              cursor: pointer; font-size: 14px; }
+  button.del { background: #a33; color: #fff; border: 0; padding: 5px 10px; border-radius: 6px;
+               cursor: pointer; }
+  button.blk { background: #964b00; color: #fff; border: 0; padding: 8px 14px; border-radius: 6px;
+               cursor: pointer; font-size: 14px; }
+  ul.list { list-style: none; margin: 0 0 10px; padding: 0; max-height: 220px; overflow: auto;
+            border: 1px solid #333; border-radius: 6px; }
+  ul.list li { padding: 7px 10px; border-bottom: 1px solid #222; cursor: pointer; }
+  ul.list li:hover { background: #1c1c1c; }
+  ul.list li.bli { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: default; }
+  ul.list li.bli:hover { background: transparent; }
+  li.bli .binfo { min-width: 0; flex: 1 1 auto; }
+  li.bli .bname { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  li.bli .bmeta { color: #888; font-size: 11px; margin-top: 2px; word-break: break-word; }
+  li.bli .kperm { color: #e66; } li.bli .ktimed { color: #ec9; } li.bli .kshadow { color: #a9f; }
+  li.bli button { flex: 0 0 auto; }
+  #blist { max-height: 62vh; }
+  .muted { color: #888; }
+  .note { color: #888; margin: 0 0 10px; }
+  #msg { position: fixed; bottom: 16px; right: 16px; background: #222; border: 1px solid #444;
+         padding: 10px 14px; border-radius: 6px; display: none; max-width: 60vw; }
+  table { border-collapse: collapse; font-size: 12px; }
+  td, th { border: 1px solid #333; padding: 3px 7px; text-align: left; }
+  details { margin-bottom: 8px; border: 1px solid #333; border-radius: 6px; overflow: hidden; }
+  summary { padding: 7px 10px; background: #1c1c1c; cursor: pointer; font-weight: 600; }
+  details ul.list { border: 0; border-top: 1px solid #333; border-radius: 0; max-height: 300px; }
+  .has { color: #6c6; }
+  table.errs { width: 100%; }
+  table.errs td.msg { font-family: ui-monospace, Menlo, Consolas, monospace; word-break: break-word; cursor: pointer; }
+  table.errs tr:hover td { background: #1a1a1a; }
+  .up { color: #e66; } .down { color: #6c6; }
+  .pgrp { margin: 0 0 10px; }
+  .pgrp .muted { display: block; margin-bottom: 5px; font-size: 12px; }
+  .pgrp button { background: #222; color: #ddd; border: 1px solid #444; padding: 7px 11px;
+                 border-radius: 6px; cursor: pointer; margin: 0 6px 6px 0; }
+  .pgrp button:hover { border-color: #2a4; }
+  .pgrp button.off { color: #e99; }
+  #pblog { height: 40vh; overflow: auto; }
+  .bars { display: flex; align-items: flex-end; gap: 2px; height: 60px; margin: 8px 0 12px; }
+  .bars div { flex: 1; background: #2a4; min-height: 1px; }
+  pre.smp { background: #0c0c0c; border: 1px solid #333; padding: 8px; border-radius: 6px;
+            white-space: pre-wrap; word-break: break-word; font-size: 12px; margin: 4px 0 10px; }
+  select { background: #0c0c0c; border: 1px solid #333; color: #ddd; padding: 6px 8px; border-radius: 6px; }
+  input[type=number] { background: #0c0c0c; border: 1px solid #333; color: #ddd; padding: 6px 8px; border-radius: 6px; width: 90px; }
+  .pwhit { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; cursor: default !important; }
+  .pwhit .pwname { flex: 1 1 200px; min-width: 0; }
+  .pwhit button { background: #222; color: #ddd; border: 1px solid #444; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+  .pwhit button:hover { border-color: #2a4; }
+
+  /* Phones: the side menu becomes a scrolling strip across the top, everything
+     else goes full width, inputs are 16px so iOS doesn't zoom on tap. */
+  @media (max-width: 720px) {
+    body { font-size: 15px; }
+    .app { flex-direction: column; }
+    aside { width: 100%; flex-direction: row; align-items: center; overflow-x: auto; position: sticky;
+            top: 0; z-index: 10; border-right: 0; border-bottom: 1px solid #333; padding: 8px; gap: 6px;
+            -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    aside::-webkit-scrollbar { display: none; }
+    aside button { width: auto; flex: 0 0 auto; white-space: nowrap; padding: 9px 13px; }
+    aside .sp { display: none; }
+    aside #ver, aside #who { white-space: nowrap; font-size: 12px; flex: 0 0 auto; }
+    aside #vsel { font-size: 16px; padding: 4px 6px; }
+    aside a { white-space: nowrap; flex: 0 0 auto; padding: 0 6px; }
+    main { padding: 12px; max-width: 100%; min-width: 0; }
+    .row { gap: 8px; }
+    .row > input[type=text], .row > select { flex: 1 1 100%; }
+    .row label { flex: 1 1 140px; }
+    input[type=text], input[type=number], input[type=password], select, textarea { font-size: 16px; }
+    main input[type=text], main select, main input[type=number] { min-width: 0 !important; max-width: 100%; }
+    .row label input[type=text], .row label select { width: 100%; }
+    textarea { height: 45vh; }
+    button.go, button.blk, button.del { min-height: 40px; }
+    ul.list li { padding: 11px 10px; }
+    ul.list { max-height: 50vh; }
+    li.bli { flex-wrap: wrap; }
+    table { display: block; overflow-x: auto; max-width: 100%; }
+    pre.smp, #pblog { font-size: 12px; }
+    #msg { left: 12px; right: 12px; bottom: 12px; max-width: none; }
+  }
+  body.tier-editor .adminonly{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <button data-t="players" class="on">Players</button>
+    <button data-t="online">Online</button>
+    <button data-t="banned">Banned</button>
+    <button data-t="default">Default</button>
+    <button data-t="maps">Maps</button>
+    <button data-t="disks">Disks</button>
+    <button data-t="news">News</button>
+    <button data-t="announce">Announce</button>
+    <button data-t="errors">Errors</button>
+    <button data-t="settings">Settings</button>
+    <span class="sp"></span>
+    <span class="muted" id="ver">Yeeps 1.31.0-blaze</span>
+    <span class="muted" id="who"></span>
+    <a href="/editor/logout">Log out</a>
+  </aside>
+  <main id="view"></main>
+</div>
+<div id="msg"></div>
+
+<script>
+const API = "/editor/api";
+const view = document.getElementById("view");
+
+function toast(t, bad) {
+  const m = document.getElementById("msg");
+  m.textContent = t; m.style.borderColor = bad ? "#a33" : "#2a4"; m.style.display = "block";
+  clearTimeout(toast._t); toast._t = setTimeout(() => m.style.display = "none", 3500);
+}
+async function api(path, opts) {
+  const r = await fetch(API + path, opts || {});
+  if (r.status === 401) { location.href = "/editor/login"; throw new Error("auth"); }
+  const txt = await r.text();
+  let j; try { j = txt ? JSON.parse(txt) : {}; } catch { j = { raw: txt }; }
+  if (!r.ok) throw new Error(j.detail || j.error || ("HTTP " + r.status));
+  return j;
+}
+function pretty(o) { return JSON.stringify(o, null, 2); }
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+// Parse a ban length like "2h", "3d", "1w", "30m". "" = permanent (0). null = invalid.
+function parseDur(s) {
+  s = (s || "").trim().toLowerCase();
+  if (!s) return 0;
+  const m = s.match(/^(\d+(?:\.\d+)?)\s*(m|min|mins|h|hr|hrs|hour|hours|d|day|days|w|wk|week|weeks)?$/);
+  if (!m) return null;
+  const n = parseFloat(m[1]), u = (m[2] || "h")[0];
+  return u === "m" ? n / 60 : u === "d" ? n * 24 : u === "w" ? n * 168 : n;
+}
+
+// ---- room categories (folders) ----
+function roomCat(k) {
+  k = (k || "").toLowerCase();
+  if (k.startsWith("official") || k.startsWith("researchfacility")) return "Public";
+  if (k.startsWith("ch2")) return "Chapter 2";
+  if (k.startsWith("wild")) return "Wilds";
+  if (k.startsWith("bam")) return "BAM";
+  // Private worlds are keyed p_o_<accountID>(_sandbox); community worlds c_<name>.
+  if (k.startsWith("p_o_") || k.startsWith("pw")) return "Private Worlds (pw)";
+  if (k.startsWith("c_") || k.startsWith("cw")) return "Community Worlds (cw)";
+  if (k.startsWith("halloween") || k.startsWith("bonus") || k.startsWith("xmas")) return "Seasonal / Bonus";
+  return "Other";
+}
+const CAT_ORDER = ["Public", "Chapter 2", "Wilds", "BAM", "Community Worlds (cw)", "Private Worlds (pw)", "Seasonal / Bonus", "Other"];
+function folders(rows, itemHtml) {
+  const g = {};
+  rows.forEach(r => { const c = roomCat(r.roomKey); (g[c] = g[c] || []).push(r); });
+  const cats = CAT_ORDER.filter(c => g[c]).concat(Object.keys(g).filter(c => !CAT_ORDER.includes(c)));
+  return cats.map(c =>
+    `<details><summary>${c} (${g[c].length})</summary><ul class="list">${g[c].map(itemHtml).join("")}</ul></details>`
+  ).join("");
+}
+
+// ---- Players / Rooms / Default share a raw-JSON editor ----
+function renderJsonEditor(opts) {
+  // opts: {search(q), load(id)->obj, save(id,obj), label}
+  view.innerHTML = `
+    ${opts.search ? `<div class="row"><input type="text" id="q" placeholder="${opts.hint || "search " + opts.label + "..."}"><button class="go" id="sbtn">Search</button></div><ul class="list" id="list"></ul>` : ""}
+    <p class="note" id="sel"></p>
+    <textarea id="ed" placeholder="select ${opts.label} above"></textarea>
+    ${opts.devreset ? `<p class="note">Accounts are locked to the headset they play on. If a player gets "locked to another headset" (new or factory-reset headset, or new internet), select them and press <b>Reset headset lock</b>; their next login sets their headset.</p>` : ""}
+    <div class="row" style="margin-top:10px"><button class="go" id="save">Save</button>${opts.kick ? ` <button class="blk" id="kickrow">Kick</button>` : ""}${opts.devreset ? ` <button class="blk adminonly" id="devrow">Reset headset lock</button>` : ""}${opts.block ? ` <button class="blk adminonly" id="blockrow">Block</button>` : ""}${opts.del ? ` <button class="del adminonly" id="delrow">Delete</button>` : ""}</div>`;
+  const ed = document.getElementById("ed");
+  const sel = document.getElementById("sel");
+  let id = null, run = null, loaded = null;
+  function updBlock() {
+    const b = document.getElementById("blockrow");
+    if (b) b.textContent = (loaded && (loaded.adminBlocked == 1 || loaded.adminBlocked === true)) ? "Unban" : "Ban (+ IP)";
+  }
+  async function open(theId) {
+    id = theId;
+    try { loaded = await opts.load(theId); ed.value = pretty(loaded); sel.textContent = theId ? ("Editing: " + theId) : "Editing default"; updBlock(); }
+    catch (e) { toast(e.message, true); }
+  }
+  if (opts.search) {
+    run = async () => {
+      try {
+        const rows = await opts.search(document.getElementById("q").value.trim());
+        const ul = document.getElementById("list");
+        ul.innerHTML = rows.map(r => `<li data-id="${opts.id(r)}">${opts.row(r)}</li>`).join("") || "<li class='muted'>no results</li>";
+        ul.querySelectorAll("li[data-id]").forEach(li => li.onclick = () => open(li.dataset.id));
+      } catch (e) { toast(e.message, true); }
+    };
+    document.getElementById("sbtn").onclick = run;
+    document.getElementById("q").addEventListener("keydown", e => { if (e.key === "Enter") run(); });
+    run();
+  } else { open(null); }
+  document.getElementById("save").onclick = async () => {
+    let obj; try { obj = JSON.parse(ed.value); } catch (e) { return toast("Invalid JSON: " + e.message, true); }
+    try { await opts.save(id, obj); toast("Saved."); } catch (e) { toast(e.message, true); }
+  };
+  const delBtn = document.getElementById("delrow");
+  if (delBtn) delBtn.onclick = async () => {
+    if (!id) return toast("Select one first", true);
+    if (!confirm("Permanently delete " + id + "? This cannot be undone.")) return;
+    try { await opts.del(id); toast("Deleted " + id); id = null; ed.value = ""; sel.textContent = ""; if (run) run(); }
+    catch (e) { toast(e.message, true); }
+  };
+  const kickBtn = document.getElementById("kickrow");
+  if (kickBtn) kickBtn.onclick = async () => {
+    if (!id) return toast("Select a player first", true);
+    const reason = prompt("Kick " + ((loaded && loaded.displayName) || id) + "? Optional reason (shown to them):", "");
+    if (reason === null) return;
+    try { await opts.kick(id, reason.trim()); toast("Kicked - lands within about a minute"); }
+    catch (e) { toast(e.message, true); }
+  };
+  const devBtn = document.getElementById("devrow");
+  if (devBtn) devBtn.onclick = async () => {
+    if (!id) return toast("Select a player first", true);
+    if (!confirm("Reset the headset lock for " + ((loaded && loaded.displayName) || id) + "? Their next login (from any headset) becomes their headset.")) return;
+    try { await opts.devreset(id); toast("Headset lock reset - their next login sets the new headset"); }
+    catch (e) { toast(e.message, true); }
+  };
+  const blockBtn = document.getElementById("blockrow");
+  if (blockBtn) blockBtn.onclick = async () => {
+    if (!id) return toast("Select a player first", true);
+    const isBlocked = loaded && (loaded.adminBlocked == 1 || loaded.adminBlocked === true);
+    try {
+      const r = await opts.block(id, !isBlocked);
+      if (isBlocked) toast("Unbanned — can connect" + (r && r.unbannedIPs && r.unbannedIPs.length ? " (IPs: " + r.unbannedIPs.join(", ") + ")" : ""));
+      else toast("Banned " + (r && r.until ? "until " + r.until : "(permanent)") + (r && r.bannedIPs && r.bannedIPs.length ? " + " + r.bannedIPs.length + " IP(s)" : (r && r.permanent ? " (no IP on record yet)" : "")));
+      await open(id);
+    } catch (e) { toast(e.message, true); }
+  };
+}
+
+const tabs = {
+  players: () => renderJsonEditor({
+    label: "players", hint: "search name, Discord username, Discord ID or account ID...",
+    search: q => api("/players?limit=100&q=" + encodeURIComponent(q)),
+    id: r => r.accountID, row: r => `${r.displayName || "(no name)"} <span class="muted">${r.accountID}${r.discordUsername ? " · Discord: " + esc(r.discordUsername) : ""} · ${r.currency ?? "?"}c ${r.beans ?? "?"}b</span>`,
+    load: id => api("/player/" + encodeURIComponent(id)),
+    save: (id, o) => api("/player/" + encodeURIComponent(id), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(o) }),
+    del: id => api("/player/" + encodeURIComponent(id), { method: "DELETE" }),
+    kick: (id, reason) => api("/player/" + encodeURIComponent(id) + "/kick", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }) }),
+    devreset: id => api("/player/" + encodeURIComponent(id) + "/device-reset", { method: "POST" }),
+    block: (id, blocked) => {
+      if (!blocked) return api("/player/" + encodeURIComponent(id) + "/unban", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ alsoIP: true }) });
+      const raw = prompt("Ban length — e.g. 2h, 3d, 7d, 1w — or leave BLANK for permanent (permanent also IP-bans):", "");
+      if (raw === null) return Promise.reject(new Error("cancelled"));
+      const h = parseDur(raw);
+      if (h === null) return Promise.reject(new Error("Bad length — use e.g. 2h, 3d, 7d, or blank for permanent"));
+      return api("/player/" + encodeURIComponent(id) + "/ban", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ alsoIP: true, durationHours: h }) });
+    },
+  }),
+  banned: async () => {
+    view.innerHTML = `<p class="note">Players that are currently banned. Click <b>Unban</b> to lift it (also removes any linked IP ban).</p>
+      <div class="row"><button class="go" id="refb">Refresh</button> <span class="muted" id="bcount"></span></div>
+      <ul class="list" id="blist"><li>loading...</li></ul>`;
+    async function load() {
+      const list = document.getElementById("blist");
+      list.innerHTML = "<li>loading...</li>";
+      let d; try { d = await api("/banned"); } catch (e) { list.innerHTML = `<li>Error: ${esc(e.message)}</li>`; return; }
+      document.getElementById("bcount").textContent = d.count + " banned";
+      if (!d.banned || !d.banned.length) { list.innerHTML = "<li>No one is banned.</li>"; return; }
+      const kcls = { permanent: "kperm", timed: "ktimed", shadowban: "kshadow" };
+      list.innerHTML = d.banned.map(b =>
+        `<li class="bli"><div class="binfo">` +
+          `<div class="bname">${esc(b.name)}</div>` +
+          `<div class="bmeta"><span class="${kcls[b.kind] || ""}">${esc(b.kind)}</span>` +
+          `${b.expires ? " until " + esc(b.expires) : ""} · ${esc(b.accountID)}` +
+          `${b.reason ? " · " + esc(b.reason) : ""}</div>` +
+        `</div><button class="go" data-unban="${esc(b.accountID)}">Unban</button></li>`
+      ).join("");
+      list.querySelectorAll("button[data-unban]").forEach(btn => btn.onclick = async () => {
+        if (!confirm("Unban " + btn.dataset.unban + "?")) return;
+        try {
+          await api("/player/" + encodeURIComponent(btn.dataset.unban) + "/unban", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ alsoIP: true }) });
+          toast("Unbanned " + btn.dataset.unban); load();
+        } catch (e) { toast(e.message, true); }
+      });
+    }
+    document.getElementById("refb").onclick = load;
+    load();
+  },
+  default: () => { view.innerHTML = `<p class="note">This is what EVERY new player starts with (owned items, roles, currency...).</p>`;
+    const holder = document.createElement("div"); view.appendChild(holder);
+    renderJsonEditor({ label: "default", search: null,
+      load: () => api("/default"),
+      save: (_id, o) => api("/default", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(o) }) });
+  },
+  maps: async () => {
+    view.innerHTML = `<p class="note">Maps in folders. Green = has a saved map. Click a map, then open a section to edit it: <b>Settings</b> (theme/biome, size, floor, liquid, lighting, flags), <b>Blocks</b>, or <b>Danger zone</b>.</p>
+      <div class="row"><input type="text" id="pwq" placeholder="find a private world: Meta name, Discord, or player ID">
+        <button class="go" id="pwgo">Find</button></div>
+      <ul class="list" id="pwres" style="display:none"></ul>
+      <p><button class="go" id="ownfix">Give unknown-owner blocks to me</button> <span class="muted" id="ownfixmsg">blocks placed by accounts that aren't in the database (official players, bots) become yours</span></p>
+      <details style="margin:8px 0"><summary>Import a map into a room</summary>
+        <div style="padding:10px 12px">
+          <p class="note">Paste a map's block list (the JSON from YeepsMapLoader / the /map API, or a bare blocks array) or pick a .json file, choose the room, then Import. Blocks that don't exist in 1.31 are left out. The room's current map is replaced.</p>
+          <div class="row" style="align-items:center"><input type="text" id="imroom" placeholder="room key, e.g. official_1" style="min-width:220px">
+            <input type="file" accept=".json,application/json,text/plain" id="imfile"></div>
+          <textarea id="imjson" style="min-height:140px" placeholder='{"ok":true,"roomKey":"...","blocks":[{"name":"1x1_wooden","x":0,"y":0,"z":0,"fwd":0,"up":0,"color":"white","owner":""}]}'></textarea>
+          <div class="row" style="margin-top:8px"><button class="go" id="imgo">Import</button> <span class="muted" id="immsg"></span></div>
+        </div>
+      </details>
+      <div id="folders" class="muted">loading maps...</div>
+      <div id="panel"></div>`;
+    document.getElementById("imfile").onchange = async e => {
+      const f = e.target.files[0]; if (!f) return;
+      document.getElementById("imjson").value = await f.text();
+    };
+    document.getElementById("imgo").onclick = async () => {
+      const room = document.getElementById("imroom").value.trim();
+      let map; try { map = JSON.parse(document.getElementById("imjson").value); }
+      catch (e) { return toast("That isn't valid JSON: " + e.message, true); }
+      const rk = room || (map && map.roomKey) || "";
+      if (!rk) return toast("Type the room key to import into", true);
+      if (!confirm("Replace the map of " + rk + " with this one?")) return;
+      try {
+        const r = await api("/map/import", { method: "POST", headers: { "Content-Type": "application/json" },
+                                              body: JSON.stringify({ roomKey: rk, map }) });
+        document.getElementById("immsg").textContent = "Imported " + r.blockCount + " blocks into " + r.roomKey +
+          (r.dropped ? " (" + r.dropped + " left out, e.g. " + (r.droppedKeysSample || []).slice(0, 3).join(", ") + ")" : "");
+        toast("Map imported into " + r.roomKey); await refresh();
+      } catch (e) { toast(e.message, true); }
+    };
+    let rooms = [], mapped = {};
+    async function refresh() {
+      [rooms, mapped] = [await api("/rooms?limit=1000"), {}];
+      (await api("/maps")).forEach(m => mapped[m.roomKey] = m);
+      // Include every room that has a saved map even if it isn't in the rooms
+      // collection (players' private worlds are served on-the-fly, not stored).
+      const have = new Set(rooms.map(r => r.roomKey));
+      Object.keys(mapped).forEach(rk => { if (!have.has(rk)) rooms.push({ roomKey: rk, roomName: "(map only)" }); });
+      document.getElementById("folders").innerHTML = folders(rooms, r => {
+        const m = mapped[r.roomKey];
+        let tag = "";
+        if (m) tag = m.source === "saved"
+          ? ` <span class="has">(saved${m.bytes ? " " + m.bytes + "b" : ""})</span>`
+          : ` <span class="has">(${m.blockCount} blocks)</span>`;
+        return `<li data-id="${r.roomKey}">${r.roomKey}${tag}</li>`;
+      });
+      view.querySelectorAll("li[data-id]").forEach(li => li.onclick = () => openRoom(li.dataset.id));
+    }
+    // Private worlds: every player has p_<accountID> (main) and p_<accountID>_sandbox.
+    async function findPw() {
+      const q = document.getElementById("pwq").value.trim(), box = document.getElementById("pwres");
+      if (!q) { box.style.display = "none"; return; }
+      box.style.display = ""; box.innerHTML = "<li>searching...</li>";
+      let ps; try { ps = await api("/players?limit=25&q=" + encodeURIComponent(q)); }
+      catch (e) { box.innerHTML = `<li>Error: ${esc(e.message)}</li>`; return; }
+      if (!ps.length) { box.innerHTML = "<li>no player matches that</li>"; return; }
+      const tag = rk => { const m = mapped[rk]; return m ? (m.source === "saved" ? "saved" : m.blockCount + " blocks") : "empty"; };
+      box.innerHTML = ps.map(p => {
+        const main = "p_" + p.accountID, sb = main + "_sandbox";
+        return `<li class="pwhit"><span class="pwname"><b>${esc((p.displayName || "(no name)").replace(/<[^>]+>/g, ""))}</b>
+          <span class="muted">${esc(p.accountID)}${p.discordUsername ? " · Discord: " + esc(p.discordUsername) : ""}</span></span>
+          <button data-pw="${esc(main)}">Main world (${tag(main)})</button>
+          <button data-pw="${esc(sb)}">Sandbox (${tag(sb)})</button></li>`;
+      }).join("");
+      box.querySelectorAll("button[data-pw]").forEach(b => b.onclick = () => {
+        openRoom(b.dataset.pw); document.getElementById("panel").scrollIntoView({ behavior: "smooth" }); });
+    }
+    document.getElementById("pwgo").onclick = findPw;
+    document.getElementById("pwq").onkeydown = e => { if (e.key === "Enter") findPw(); };
+    const THEMES = ["suburb","beach","snow","fantasy","backrooms","researchFacility","sandbox","tutorial"];   // no desert in 1.31
+    const esc = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+    async function openRoom(rk) {
+      const m = mapped[rk];
+      // Settings (room doc) + map blocks
+      let room = {}; try { room = await api("/room/" + encodeURIComponent(rk)); } catch (e) { room = { error: e.message }; }
+      let stored = null;
+      if (m) { try { stored = await api("/map/" + encodeURIComponent(rk)); } catch (e) { stored = { error: e.message }; } }
+      const blocks = (stored && Array.isArray(stored.blocks)) ? stored.blocks : null;
+      const nblocks = m
+        ? (m.source === "saved"
+            ? (stored && stored.blockCount != null ? stored.blockCount + " blocks" : (m.bytes || 0) + "b")
+            : m.blockCount + " blocks")
+        : "0 blocks (empty)";
+      const dims = Array.isArray(room.dimensions) ? room.dimensions : [80, 80, 80];
+      const cur = room.themeKey || "";
+      let themeOpts = THEMES.map(t => `<option value="${t}"${t===cur?" selected":""}>${t}</option>`).join("");
+      if (cur && !THEMES.includes(cur)) themeOpts = `<option value="${esc(cur)}" selected>${esc(cur)} (current)</option>` + themeOpts;
+
+      document.getElementById("panel").innerHTML = `
+        <p class="note">Editing map: <b>${rk}</b> — ${esc(room.roomName || "")} · ${nblocks}</p>
+
+        <details open><summary>Settings (theme, size, liquid, flags)</summary>
+          <div style="padding:10px 12px">
+            <div class="row">
+              <label>Theme / biome<br><select id="f_theme" style="min-width:160px">${themeOpts}</select></label>
+              <label>Room name<br><input type="text" id="f_name" value="${esc(room.roomName)}"></label>
+            </div>
+            <div class="row">
+              <label>Size X<br><input type="text" id="f_dx" value="${dims[0]}" style="min-width:70px"></label>
+              <label>Size Y<br><input type="text" id="f_dy" value="${dims[1]}" style="min-width:70px"></label>
+              <label>Size Z<br><input type="text" id="f_dz" value="${dims[2]}" style="min-width:70px"></label>
+              <label>Floor depth<br><input type="text" id="f_floor" value="${room.floorDepth ?? 0}" style="min-width:90px"></label>
+            </div>
+            <div class="row">
+              <label>Liquid type<br><input type="text" id="f_liqt" value="${room.liquidType ?? 0}" style="min-width:90px"></label>
+              <label>Liquid level<br><input type="text" id="f_liql" value="${room.liquidLevel ?? 0}" style="min-width:90px"></label>
+            </div>
+            <div class="row">
+              <label><input type="checkbox" id="f_creative" ${room.isCreative ? "checked" : ""}> Creative</label>
+              <label><input type="checkbox" id="f_nosave" ${room.noSave ? "checked" : ""}> No save</label>
+              <label><input type="checkbox" id="f_modelock" ${room.isModeLocked ? "checked" : ""}> Mode locked</label>
+              <label><input type="checkbox" id="f_devlock" ${room.isDevLocked ? "checked" : ""}> Dev locked</label>
+            </div>
+            <details><summary>Advanced — every field (raw JSON)</summary>
+              <textarea id="f_raw" style="min-height:300px">${pretty(room).replace(/</g,"&lt;")}</textarea>
+              <p class="note" style="margin-top:6px">The form fields above override these for theme, name, size, floor, liquid, lighting and the flags.</p>
+            </details>
+            <div class="row" style="margin-top:10px"><button class="go" id="savesettings">Save settings</button></div>
+          </div>
+        </details>
+
+        <details><summary>Blocks${blocks ? ` (${blocks.length}${stored.blocksTruncated ? ", first 2000 shown" : ""})` : " (empty)"}</summary>
+          <div style="padding:10px 12px">
+            <p class="note">${blocks ? "Edit the block JSON, then save to rewrite the room's map." : "This map is empty — paste a block array (or add objects) and save to build it."}</p>
+            <textarea id="blocksedit" style="min-height:300px" placeholder='[{"name":"1x1_wooden","x":0,"y":0,"z":0,"fwd":0,"up":0,"color":"white","owner":""}]'>${blocks ? pretty(blocks).replace(/</g,"&lt;") : "[]"}</textarea>
+            <div class="row" style="margin-top:8px"><button class="go" id="saveblocks">Save edited blocks</button></div>
+          </div>
+        </details>
+
+        <details><summary>Revert map</summary>
+          <div style="padding:10px 12px" id="revertbox">
+            <p class="note">Restore this room's map from a recent snapshot (captured automatically as the map is saved) or roll it back to the imported official map. Use this after a raid.</p>
+            <button class="go" id="loadhist">Load revert options</button>
+            <div id="histlist" style="margin-top:10px"></div>
+          </div>
+        </details>
+
+        <details><summary>Danger zone</summary>
+          <div style="padding:10px 12px">
+            <p class="note">Reset wipes all saved map data (imported + in-game saves). Use it to fix a bricked room.</p>
+            <button class="del" id="delm">Reset map (delete all map data)</button>
+          </div>
+        </details>`;
+
+      document.getElementById("savesettings").onclick = async () => {
+        let base = {};
+        const raw = document.getElementById("f_raw");
+        if (raw && raw.value.trim()) { try { base = JSON.parse(raw.value); } catch (e) { return toast("Advanced JSON invalid: " + e.message, true); } }
+        base.themeKey = document.getElementById("f_theme").value;
+        base.roomName = document.getElementById("f_name").value;
+        base.dimensions = [+document.getElementById("f_dx").value, +document.getElementById("f_dy").value, +document.getElementById("f_dz").value];
+        base.floorDepth = +document.getElementById("f_floor").value;
+        base.liquidType = +document.getElementById("f_liqt").value;
+        base.liquidLevel = +document.getElementById("f_liql").value;
+        base.isCreative = document.getElementById("f_creative").checked ? 1 : 0;
+        base.noSave = document.getElementById("f_nosave").checked ? 1 : 0;
+        base.isModeLocked = document.getElementById("f_modelock").checked ? 1 : 0;
+        base.isDevLocked = document.getElementById("f_devlock").checked ? 1 : 0;
+        delete base.roomKey; delete base._id; delete base._generated; delete base.error;
+        try { await api("/room/" + encodeURIComponent(rk), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(base) });
+              toast("Settings saved — theme/biome synced to the map."); await refresh(); openRoom(rk); }
+        catch (e) { toast(e.message, true); }
+      };
+      const sb = document.getElementById("saveblocks");
+      if (sb) sb.onclick = async () => {
+        let arr; try { arr = JSON.parse(document.getElementById("blocksedit").value); }
+        catch (e) { return toast("Invalid blocks JSON: " + e.message, true); }
+        if (!Array.isArray(arr)) return toast("Blocks must be a JSON array", true);
+        try { const r = await api("/map/" + encodeURIComponent(rk) + "/blocks",
+                { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ blocks: arr }) });
+              toast("Saved " + r.blockCount + " blocks to " + rk); await refresh(); openRoom(rk);
+        } catch (e) { toast(e.message, true); }
+      };
+      const dm = document.getElementById("delm");
+      if (dm) dm.onclick = async () => {
+        if (!confirm("Reset " + rk + " to an EMPTY map? This deletes all map data (imported + in-game saves). Use this to fix a bricked room.")) return;
+        try { const r = await api("/map/" + encodeURIComponent(rk), { method: "DELETE" });
+              toast("Reset to empty (" + (r.deleted || 0) + " map doc(s) removed)"); await refresh(); openRoom(rk); }
+        catch (e) { toast(e.message, true); }
+      };
+      const lh = document.getElementById("loadhist");
+      if (lh) lh.onclick = async () => {
+        try {
+          const h = await api("/map/" + encodeURIComponent(rk) + "/history");
+          let html = "";
+          if (h.hasImported)
+            html += `<div class="row" style="margin-top:6px"><button class="go" data-imp="1">Revert to imported official map</button></div>`;
+          if (h.history && h.history.length)
+            html += `<ul class="list" style="margin-top:8px">` + h.history.map(s =>
+              `<li>${s.savedAt || s.ts} — ${s.bytes} bytes (${s.savedBy || "?"})${s.preRevert ? " [pre-revert]" : ""} <button class="go" data-hid="${s.id}" style="float:right">Restore</button></li>`).join("") + `</ul>`;
+          else if (!h.hasImported)
+            html += `<p class="note">No snapshots yet — they're captured as the map is saved from now on.</p>`;
+          const box = document.getElementById("histlist");
+          box.innerHTML = html;
+          box.querySelectorAll("button[data-hid]").forEach(b => b.onclick = async () => {
+            if (!confirm("Restore " + rk + " to this snapshot?")) return;
+            try { const r = await api("/map/" + encodeURIComponent(rk) + "/revert", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ historyId: b.getAttribute("data-hid") }) });
+                  toast("Reverted " + rk + " (" + (r.bytes || 0) + " bytes)"); await refresh(); openRoom(rk); }
+            catch (e) { toast(e.message, true); }
+          });
+          const impb = box.querySelector("button[data-imp]");
+          if (impb) impb.onclick = async () => {
+            if (!confirm("Revert " + rk + " to the imported official map? This drops in-game saves.")) return;
+            try { const r = await api("/map/" + encodeURIComponent(rk) + "/revert", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ toImported: true }) });
+                  toast("Reverted to official map (" + (r.savedRemoved || 0) + " saves dropped)"); await refresh(); openRoom(rk); }
+            catch (e) { toast(e.message, true); }
+          };
+        } catch (e) { toast(e.message, true); }
+      };
+    }
+    document.getElementById("ownfix").onclick = async () => {
+      const msg = document.getElementById("ownfixmsg");
+      try {
+        const r = await api("/maps/default-owners", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ apply: false }) });
+        if (!r.maps) { msg.textContent = "Nothing to change: every block's owner is a real account."; return; }
+        const list = r.changed.slice(0, 12).map(c => c.roomKey + " (" + c.blocks + ")").join(", ");
+        if (!confirm("Give " + r.blocks + " blocks in " + r.maps + " maps to " + r.defaultOwner + "?\n\n" + list + (r.changed.length > 12 ? ", ..." : "") + "\n\nEach map is snapshotted first (undo with Revert).")) return;
+        const a = await api("/maps/default-owners", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ apply: true }) });
+        msg.textContent = "Done: " + a.blocks + " blocks in " + a.maps + " maps now owned by " + a.defaultOwner + (a.failed.length ? " (" + a.failed.length + " failed)" : "");
+        toast("Gave " + a.blocks + " blocks to " + a.defaultOwner);
+      } catch (e) { toast(e.message, true); }
+    };
+    try { await refresh(); } catch (e) { document.getElementById("folders").textContent = e.message; }
+  },
+  disks: async () => {
+    view.innerHTML = `<p class="note">Your own music on the game's record disks, for everyone, with no new APK. Pick a record, pick an audio file (mp3, ogg, wav, ...), Upload. Players hear it the next time they start the game. Files are converted to mono WAV in your browser (OGG files are sent as they are); about 4 minutes fit.</p>
+      <div class="row" style="align-items:center"><select id="drec" style="min-width:240px"></select>
+        <input type="file" accept="audio/*,.ogg,.mp3,.wav,.m4a,.flac" id="dfile">
+        <button class="go" id="dgo">Upload</button> <span class="muted" id="dmsg"></span></div>
+      <h3 style="margin-top:18px">Records with your music</h3><ul class="list" id="dlist"><li class="muted">loading...</li></ul>`;
+    const sel = document.getElementById("drec");
+    let recs = [];
+    try { const d = await api("/default"); recs = ((d.value || d).ownedPatterns || []).filter(k => k.startsWith("record_")).sort(); } catch (_) {}
+    if (!recs.length) recs = ["record_suburbTheme", "record_snowTheme", "record_oceanTheme", "record_fantasyTheme"];
+    sel.innerHTML = recs.map(r => `<option value="${esc(r)}">${esc(r.slice(7))}</option>`).join("");
+    async function load() {
+      const ul = document.getElementById("dlist");
+      try {
+        const d = (await api("/disks")).disks || [];
+        ul.innerHTML = d.length ? "" : '<li class="muted">none yet</li>';
+        d.forEach(x => {
+          const li = document.createElement("li");
+          li.innerHTML = `<b>${esc(x.clip)}</b> <span class="muted">${esc(x.ext)}, ${Math.round((x.size || 0) / 1024)} KB, by ${esc(x.by || "?")}</span> <button class="del">Remove</button>`;
+          li.querySelector("button").onclick = async () => {
+            if (!confirm("Put the original music back on " + x.clip + "?")) return;
+            try { await api("/disks/" + encodeURIComponent(x.clip), { method: "DELETE" }); toast("Removed " + x.clip); load(); }
+            catch (e) { toast(e.message, true); }
+          };
+          ul.appendChild(li);
+        });
+      } catch (e) { ul.innerHTML = `<li class="muted">${esc(e.message)}</li>`; }
+    }
+    function wav16(samples, rate) {            // mono Float32 -> 16-bit PCM WAV
+      const buf = new ArrayBuffer(44 + samples.length * 2), v = new DataView(buf);
+      const w = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+      w(0, "RIFF"); v.setUint32(4, 36 + samples.length * 2, true); w(8, "WAVE"); w(12, "fmt ");
+      v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true);
+      v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data");
+      v.setUint32(40, samples.length * 2, true);
+      for (let i = 0; i < samples.length; i++) { const x = Math.max(-1, Math.min(1, samples[i])); v.setInt16(44 + i * 2, x < 0 ? x * 0x8000 : x * 0x7fff, true); }
+      return new Blob([buf], { type: "audio/wav" });
+    }
+    document.getElementById("dgo").onclick = async () => {
+      const f = document.getElementById("dfile").files[0], msg = document.getElementById("dmsg");
+      if (!f) return toast("Pick an audio file first", true);
+      let body = f, ext = "ogg";
+      try {
+        if (!/\.ogg$/i.test(f.name)) {
+          msg.textContent = "converting...";
+          const rate = 22050, ac = new AudioContext();
+          const src = await ac.decodeAudioData(await f.arrayBuffer()); ac.close();
+          const off = new OfflineAudioContext(1, Math.ceil(src.duration * rate), rate);
+          const node = off.createBufferSource(); node.buffer = src; node.connect(off.destination); node.start();
+          body = wav16((await off.startRendering()).getChannelData(0), rate); ext = "wav";
+        }
+        if (body.size > 11.5 * 1024 * 1024) { msg.textContent = ""; return toast("Too long (over ~4 minutes). Trim it, or upload an .ogg.", true); }
+        msg.textContent = "uploading...";
+        const r = await api("/disks/" + encodeURIComponent(document.getElementById("drec").value) + "?ext=" + ext,
+                            { method: "POST", body });
+        msg.textContent = ""; toast("Music set on " + r.clip + " (" + Math.round(r.bytes / 1024) + " KB)"); load();
+      } catch (e) { msg.textContent = ""; toast(e.message, true); }
+    };
+    load();
+  },
+  news: async () => {
+    view.innerHTML = `<p class="note">In-game news / announcement. This text shows to players in the game. Supports line breaks.</p>
+      <textarea id="newstext" style="min-height:200px" placeholder="loading..."></textarea>
+      <div class="row" style="margin-top:10px"><button class="go" id="savenews">Save news</button></div>`;
+    const ta = document.getElementById("newstext");
+    try { ta.value = (await api("/news")).message || ""; } catch (e) { toast(e.message, true); }
+    document.getElementById("savenews").onclick = async () => {
+      try { await api("/news", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: ta.value }) });
+            toast("News updated — players will see it in-game."); }
+      catch (e) { toast(e.message, true); }
+    };
+  },
+  online: async () => {
+    view.innerHTML = `<p class="note">Players online right now. Kick = a one-time boot (not a ban); they can relaunch and rejoin. It lands within about a minute.</p>
+      <div class="row" style="align-items:center"><input type="text" id="kreason" placeholder="kick reason (optional)" style="min-width:320px">
+        <button class="go" id="orefresh">Refresh</button></div>
+      <div class="row adminonly"><button class="blk" id="kwrong">Kick everyone on a wrong APK</button> <button class="del" id="kall">Kick everyone</button></div>
+      <div class="row adminonly" style="align-items:center;margin-top:6px">
+        <span id="rbstate" class="muted">Require newest build: ...</span>
+        <button class="del" id="rbon">Require newest build (kick old)</button>
+        <button class="go" id="rboff">Allow all builds</button></div>
+      <p class="note">Only the newest APK can play: older builds always get the "Outdated version" screen telling them to install the APK again. "Require newest build" also kicks anyone online on an older APK right away.</p>
+      <p class="note" id="ocount"></p><ul class="list" id="olist" style="max-height:62vh"></ul>`;
+    const reason = () => document.getElementById("kreason").value.trim();
+    const post = (path, body) => api(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
+    async function load() {
+      const ul = document.getElementById("olist");
+      try {
+        const r = await api("/online");
+        document.getElementById("ocount").textContent = r.count + " online";
+        ul.innerHTML = r.players.map(p => {
+          const name = esc((p.displayName || "").replace(/<[^>]+>/g, ""));
+          const bs = p.buildStatus === "ok" ? `<span class="has">${esc(p.build.split(".")[0])}</span>` : `<span class="kperm">${esc(p.buildStatus)}</span>`;
+          return `<li class="bli"><div class="binfo"><div class="bname">${name}</div><div class="bmeta">${esc(p.accountID)} - ${esc(p.roomKey || "?")} - APK ${bs}</div></div>
+                  <button class="del" data-k="${esc(p.accountID)}" data-n="${name}">Kick</button></li>`;
+        }).join("") || `<li class="muted" style="cursor:default">nobody online</li>`;
+        ul.querySelectorAll("button[data-k]").forEach(b => b.onclick = async () => {
+          if (!confirm("Kick " + b.dataset.n + "?")) return;
+          try { await post("/player/" + encodeURIComponent(b.dataset.k) + "/kick", { reason: reason() }); toast("Kicked " + b.dataset.n); }
+          catch (e) { toast(e.message, true); }
+        });
+      } catch (e) { ul.innerHTML = `<li>${esc(e.message)}</li>`; }
+    }
+    document.getElementById("orefresh").onclick = load;
+    document.getElementById("kall").onclick = async () => {
+      if (!confirm("Kick EVERYONE who is online (except you)?")) return;
+      try { const me = await api("/me"), on = await api("/online");
+            const mine = on.players.filter(p => (p.displayName || "").replace(/<[^>]+>/g, "").toLowerCase() === (me.name || "").toLowerCase()).map(p => p.accountID);
+            const r = await post("/kick_all", { reason: reason(), exclude: mine });
+            toast("Kicked " + (r.kicked != null ? r.kicked : (r.accountIDs || []).length) + " player(s)"); load(); }
+      catch (e) { toast(e.message, true); }
+    };
+    document.getElementById("kwrong").onclick = async () => {
+      if (!confirm("Kick everyone who is not on the current APK?")) return;
+      try { const r = await post("/kick_wrong_build", { reason: reason() }); toast("Kicked " + r.kicked + " player(s) on a wrong APK"); load(); }
+      catch (e) { toast(e.message, true); }
+    };
+    async function loadRB() {
+      const s = document.getElementById("rbstate");
+      try {
+        const r = await api("/require_build");
+        s.innerHTML = r.requireBuild
+          ? `Require newest build: <b class="kperm">ON</b> (only ${esc(r.requireBuild)} can play)`
+          : `Require newest build: <b class="has">off</b> (newest is ${esc(r.newest || "?")})`;
+      } catch (e) { s.textContent = e.message; }
+    }
+    document.getElementById("rbon").onclick = async () => {
+      if (!confirm("Require the newest build? Everyone on an older APK gets 'Outdated version' and is kicked until you turn this off.")) return;
+      try { const r = await post("/require_build", { on: true }); toast("Require newest build ON - kicked " + r.kicked + " player(s)"); loadRB(); load(); }
+      catch (e) { toast(e.message, true); }
+    };
+    document.getElementById("rboff").onclick = async () => {
+      try { await post("/require_build", { on: false }); toast("All builds allowed again"); loadRB(); load(); }
+      catch (e) { toast(e.message, true); }
+    };
+    load(); loadRB();
+  },
+  announce: async () => {
+    view.innerHTML = `<p class="note">Sends floating text in front of every player who is in game. Players who launch the game within the "keep sending" time also get it. Line breaks are allowed.</p>
+      <textarea id="antext" style="height:120px" maxlength="300" placeholder="announcement text (max 300 characters)"></textarea>
+      <div class="row" style="margin-top:10px;align-items:center">
+        <label>On screen (seconds) <input type="number" id="anSec" min="3" max="60" value="10"></label>
+        <label>Keep sending (minutes) <input type="number" id="anMin" min="1" max="1440" value="10"></label>
+      </div>
+      <div class="row"><button class="go" id="ansend">Send announcement</button> <button class="del" id="anclear">Stop all</button></div>
+      <h3 style="margin-top:18px">Still being sent</h3><ul class="list" id="anlist"></ul>
+      <h3 style="margin-top:24px">Floating video</h3>
+      <p class="note">Plays a video on a panel in front of every player, with sound, looping until you press Stop. Pick an mp4, webm or mov (up to 120 seconds). Your browser shrinks it first, so only a few MB get uploaded. On APK 131b9+ it starts and stops within a few seconds (older APKs: up to 30 seconds).</p>
+      <div id="vidstatus" class="muted">checking...</div>
+      <div class="row" style="align-items:center;margin-top:8px">
+        <input type="file" accept="video/*,image/gif" id="vidfile">
+        <button class="go" id="vidload">Load &amp; play</button>
+        <button class="del" id="vidstop">Stop video</button>
+      </div>
+      <div id="vidprog" class="muted" style="margin-top:6px"></div><div id="vidprev"></div>`;
+    async function load() {
+      const ul = document.getElementById("anlist");
+      try {
+        const r = await api("/announce");
+        const now = Date.now() / 1000;
+        ul.innerHTML = (r.announcements || []).slice().reverse().map(a =>
+          `<li style="cursor:default">${esc(a.text)}<div class="muted" style="font-size:11px">by ${esc(a.by || "?")} - ${a.seconds}s on screen - sending for ${Math.max(0, Math.round((a.until - now) / 60))} more min</div></li>`
+        ).join("") || `<li class="muted" style="cursor:default">none</li>`;
+      } catch (e) { ul.innerHTML = `<li>${esc(e.message)}</li>`; }
+    }
+    document.getElementById("ansend").onclick = async () => {
+      const text = document.getElementById("antext").value.trim();
+      if (!text) return toast("Write something first", true);
+      try {
+        await api("/announce", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, seconds: +document.getElementById("anSec").value || 10,
+                                 activeMinutes: +document.getElementById("anMin").value || 10 }) });
+        document.getElementById("antext").value = "";
+        toast("Announcement sent"); load();
+      } catch (e) { toast(e.message, true); }
+    };
+    document.getElementById("anclear").onclick = async () => {
+      if (!confirm("Stop sending all announcements? Text already on screen stays until it times out.")) return;
+      try { await api("/announce", { method: "DELETE" }); toast("Stopped"); load(); }
+      catch (e) { toast(e.message, true); }
+    };
+    async function loadVid() {
+      const s = document.getElementById("vidstatus");
+      try {
+        const r = await api("/video");
+        if (r.playing && r.video) {
+          const v = r.video, dur = Math.round((v.durationMs || 0) / 1000);
+          s.innerHTML = `Now playing: <b>${esc(v.name || "video")}</b> &mdash; ${v.w}x${v.h}, ${dur}s, ${v.frames} frames, ${Math.round(v.size / 1024)} KB${v.audioFmt ? ", with sound" : ", no sound"}, looping. Set by ${esc(v.by || "?")}.`;
+        } else { s.textContent = "No video playing."; }
+      } catch (e) { s.textContent = e.message; }
+    }
+    // In-browser conversion: decode + shrink + compress here, upload only the
+    // small result (the server's CPU is tiny and phone videos are huge).
+    const VW = 256, VH = 144, VFPS = 10, VMAX = 120, VSEG = 60;
+    let vidCancel = false, vidBusy = false;
+    const vstat = t => { document.getElementById("vidprog").textContent = t; };
+    async function zlibBytes(u8) {   // CompressionStream "deflate" = zlib format, what the APK's uncompress() reads
+      return new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(new CompressionStream("deflate"))).arrayBuffer());
+    }
+    async function bscr(raw, n) {    // "BSCR" u16 w,h,n  u16 delay[n]  zlib(rgb24, bottom row first)
+      const z = await zlibBytes(raw), out = new Uint8Array(10 + 2 * n + z.length), d = new DataView(out.buffer);
+      out.set([66, 83, 67, 82]); d.setUint16(4, VW, true); d.setUint16(6, VH, true); d.setUint16(8, n, true);
+      for (let i = 0; i < n; i++) d.setUint16(10 + 2 * i, Math.round(1000 / VFPS), true);
+      out.set(z, 10 + 2 * n); return out;
+    }
+    function wav16(pcm, sr) {
+      const n = pcm.length, b = new ArrayBuffer(44 + 2 * n), d = new DataView(b);
+      const s = (o, t) => { for (let i = 0; i < t.length; i++) d.setUint8(o + i, t.charCodeAt(i)); };
+      s(0, "RIFF"); d.setUint32(4, 36 + 2 * n, true); s(8, "WAVE"); s(12, "fmt "); d.setUint32(16, 16, true);
+      d.setUint16(20, 1, true); d.setUint16(22, 1, true); d.setUint32(24, sr, true); d.setUint32(28, sr * 2, true);
+      d.setUint16(32, 2, true); d.setUint16(34, 16, true); s(36, "data"); d.setUint32(40, 2 * n, true);
+      for (let i = 0; i < n; i++) { const v = Math.max(-1, Math.min(1, pcm[i])); d.setInt16(44 + 2 * i, v < 0 ? v * 32768 : v * 32767, true); }
+      return new Uint8Array(b);
+    }
+    async function browserConvert(file) {
+      const url = URL.createObjectURL(file), v = document.createElement("video");
+      v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = url;
+      v.style.cssText = "width:160px;height:90px;display:block;margin-top:6px;background:#000";
+      document.getElementById("vidprev").replaceChildren(v);     // on screen so the browser doesn't throttle it
+      try {
+        await new Promise((res, rej) => { v.onloadeddata = res; v.onerror = () => rej(new Error("browser can't read this file")); });
+        const dur = Math.min(v.duration, VMAX);
+        if (!isFinite(dur) || dur <= 0 || !v.videoWidth) throw new Error("couldn't read the video");
+        const n = Math.max(1, Math.floor(dur * VFPS));
+        const cv = document.createElement("canvas"); cv.width = VW; cv.height = VH;
+        const g = cv.getContext("2d", { willReadFrequently: true });
+        const k = Math.min(VW / v.videoWidth, VH / v.videoHeight), dw = v.videoWidth * k, dh = v.videoHeight * k;
+        const segP = []; let seg = null, inSeg = 0, segCap = 0, got = 0;
+        const grab = () => {           // current video frame -> next 1/FPS slot (letterboxed, bottom row first)
+          g.fillStyle = "#000"; g.fillRect(0, 0, VW, VH); g.drawImage(v, (VW - dw) / 2, (VH - dh) / 2, dw, dh);
+          const px = g.getImageData(0, 0, VW, VH).data;
+          if (!seg) { segCap = Math.min(VSEG, n - got); seg = new Uint8Array(VW * VH * 3 * segCap); inSeg = 0; }
+          let o = inSeg * VW * VH * 3;
+          for (let y = VH - 1; y >= 0; y--) for (let p = y * VW * 4, e = p + VW * 4; p < e; p += 4) { seg[o++] = px[p]; seg[o++] = px[p + 1]; seg[o++] = px[p + 2]; }
+          got++; inSeg++;
+          if (inSeg === segCap) { segP.push(bscr(seg, inSeg)); seg = null; }
+          if (got % 10 === 0 || got === n) vstat("Converting frames " + got + "/" + n);
+        };
+        if ("requestVideoFrameCallback" in v) {
+          await new Promise((res, rej) => {    // play at 4x, grab each 1/FPS slot as it passes
+            const cb = (_, meta) => {
+              if (vidCancel) { v.pause(); return rej(new Error("cancelled")); }
+              while (got < n && meta.mediaTime + 1e-3 >= got / VFPS) grab();
+              if (got >= n) { v.pause(); return res(); }
+              v.requestVideoFrameCallback(cb);
+            };
+            v.onended = () => { while (got < n) grab(); res(); };
+            v.playbackRate = 4; v.requestVideoFrameCallback(cb); v.play().catch(rej);
+          });
+        } else {
+          for (let i = 0; i < n; i++) {         // fallback: seek frame by frame
+            if (vidCancel) throw new Error("cancelled");
+            await new Promise(r => { const t = setTimeout(r, 1500); v.onseeked = () => { clearTimeout(t); r(); }; v.currentTime = i / VFPS + 0.001; });
+            grab();
+          }
+        }
+        while (got < n) grab();
+        const segs = await Promise.all(segP);
+        let wav = null;
+        try {
+          vstat("Converting sound...");
+          const ac = new (window.AudioContext || window.webkitAudioContext)();
+          const buf = await ac.decodeAudioData(await file.arrayBuffer()); ac.close();
+          const sr = 22050, off = new OfflineAudioContext(1, Math.ceil(Math.min(buf.duration, dur) * sr), sr);
+          const src = off.createBufferSource(); src.buffer = buf; src.connect(off.destination); src.start(0);
+          wav = wav16((await off.startRendering()).getChannelData(0), sr);
+        } catch (e) { wav = null; }          // no sound track
+        return { n, segs, wav };
+      } finally { v.pause(); URL.revokeObjectURL(url); document.getElementById("vidprev").replaceChildren(); }
+    }
+    function packVideo(name, segs, n, wav, gen) {   // "BVID" u32 headerLen  header  segs...  wav
+      const enc = new TextEncoder(), hdr = enc.encode(JSON.stringify({ name, w: VW, h: VH, fps: VFPS, frames: n,
+        segFrames: VSEG, segs: segs.map(s => s.length), audioFmt: wav ? "wav" : "", audioLen: wav ? wav.length : 0, loop: true, gen }));
+      const lenB = new Uint8Array(4); new DataView(lenB.buffer).setUint32(0, hdr.length, true);
+      return new Blob([enc.encode("BVID"), lenB, hdr, ...segs].concat(wav ? [wav] : []));
+    }
+    document.getElementById("vidload").onclick = async () => {
+      const b = document.getElementById("vidload"), f = document.getElementById("vidfile").files[0];
+      if (!f) return toast("Pick a video file first", true);
+      if (vidBusy) return;
+      vidBusy = true; vidCancel = false; b.disabled = true; b.textContent = "Working...";
+      try {
+        const gen = (await api("/video")).gen;
+        let r;
+        try {
+          const c = await browserConvert(f);
+          const kb = Math.round((c.segs.reduce((a, s) => a + s.length, 0) + (c.wav ? c.wav.length : 0)) / 1024);
+          vstat("Uploading " + kb + " KB...");
+          r = await api("/video_packed", { method: "POST", headers: { "Content-Type": "application/octet-stream" },
+                                          body: packVideo(f.name.slice(0, 80), c.segs, c.n, c.wav, gen) });
+        } catch (e) {
+          if (vidCancel || /cancelled|stopped while converting/.test(e.message)) throw e;
+          vstat("Browser couldn't convert it - uploading the file for the server to convert (slower)...");
+          r = await api("/video?loop=1&gen=" + gen + "&name=" + encodeURIComponent(f.name.slice(0, 80)),
+            { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: f });
+        }
+        toast("Video playing (" + r.video.frames + " frames)");
+      } catch (e) { toast(/cancelled/.test(e.message) ? "Video load cancelled" : e.message, true); }
+      vstat(""); vidBusy = false; b.disabled = false; b.textContent = "Load & play"; loadVid();
+    };
+    document.getElementById("vidstop").onclick = async () => {
+      vidCancel = true;                 // also cancels a conversion still running in this page
+      try { await api("/video", { method: "DELETE" }); toast("Video stopped - headsets clear it within a few seconds"); loadVid(); }
+      catch (e) { toast(e.message, true); }
+    };
+    load(); loadVid();
+  },
+  settings: async () => {
+    view.innerHTML = `<p class="note">Server switches. Changes apply within about 30 seconds (the game's feed) or on next launch.</p>
+      <details open><summary>Everyone is a friend</summary><div style="padding:10px">
+        <p class="note">APK 131b6+: everyone online counts as a friend, so friends-only private worlds can be joined.</p>
+        <label><input type="checkbox" id="setfe"> on</label> <button class="go" id="savefe">Save</button></div></details>
+      <details open><summary>Maintenance mode</summary><div style="padding:10px">
+        <p class="note">Anything typed here is shown to every player as a fatal error and stops them playing. Leave it empty and save to turn it off.</p>
+        <textarea id="setmaint" style="height:80px" maxlength="300" placeholder="e.g. Server maintenance, back in 10 minutes"></textarea>
+        <div class="row" style="margin-top:8px"><button class="del" id="savemaint">Save maintenance message</button> <button class="go" id="clearmaint">Turn off maintenance</button></div></div></details>`;
+    const post = b => api("/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) });
+    try { const r = await api("/settings"); document.getElementById("setfe").checked = r.friends_everyone; document.getElementById("setmaint").value = r.maintenance; }
+    catch (e) { toast(e.message, true); }
+    document.getElementById("savefe").onclick = async () => { try { await post({ friends_everyone: document.getElementById("setfe").checked }); toast("Saved"); } catch (e) { toast(e.message, true); } };
+    document.getElementById("savemaint").onclick = async () => {
+      const m = document.getElementById("setmaint").value.trim();
+      if (m && !confirm("Turn ON maintenance? Every player will be blocked from playing.")) return;
+      try { await post({ maintenance: m }); toast(m ? "Maintenance ON" : "Maintenance OFF"); } catch (e) { toast(e.message, true); } };
+    document.getElementById("clearmaint").onclick = async () => { try { await post({ maintenance: "" }); document.getElementById("setmaint").value = ""; toast("Maintenance OFF"); } catch (e) { toast(e.message, true); } };
+  },
+  screens: async () => {
+    view.innerHTML = `<p class="note">Pictures shown on the screen blocks. Upload a PNG, JPG, GIF (animated is fine) or WebP. Every placed copy of that block, in every room, shows it within about 30 seconds. Pictures are fitted to the block with black bars if needed; long GIFs are cut down to about 50 frames at the same speed. Needs APK 131b3 or newer. The 3x3 Screen is currently disabled (it crashed big rooms).</p><div id="scr"></div>`;
+    async function load() {
+      const box = document.getElementById("scr");
+      try {
+        const r = await api("/screens");
+        box.innerHTML = r.screens.map(sc => {
+          const im = sc.image;
+          return `<details open><summary>${esc(sc.label)}</summary><div style="padding:10px">
+            ${im ? `<img src="${API}/screens/${sc.slot}/preview.png?t=${im.ts}" style="max-width:288px;border:1px solid #333;border-radius:6px;display:block;margin-bottom:6px">
+                    <div class="muted" style="margin-bottom:8px">${im.frames} frame(s), ${(im.durationMs / 1000).toFixed(1)} s loop, ${Math.round(im.size / 1024)} KB, set by ${esc(im.by || "?")}</div>`
+                 : `<p class="muted">No picture yet (the block shows plain).</p>`}
+            <div class="row" style="align-items:center"><input type="file" accept="image/png,image/jpeg,image/gif,image/webp" id="f_${sc.slot}">
+              <button class="go" data-up="${sc.slot}">Upload</button>
+              ${im ? `<button class="del" data-rm="${sc.slot}">Remove picture</button>` : ""}</div>
+          </div></details>`;
+        }).join("");
+        box.querySelectorAll("button[data-up]").forEach(b => b.onclick = async () => {
+          const slot = b.dataset.up, f = document.getElementById("f_" + slot).files[0];
+          if (!f) return toast("Pick an image file first", true);
+          b.disabled = true; b.textContent = "Uploading...";
+          try { const r = await api("/screens/" + slot, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: f });
+                toast("Picture set (" + r.screen.frames + " frame(s))"); load(); }
+          catch (e) { toast(e.message, true); b.disabled = false; b.textContent = "Upload"; }
+        });
+        box.querySelectorAll("button[data-rm]").forEach(b => b.onclick = async () => {
+          if (!confirm("Remove this picture? The blocks go back to plain.")) return;
+          try { await api("/screens/" + b.dataset.rm, { method: "DELETE" }); toast("Removed"); load(); }
+          catch (e) { toast(e.message, true); }
+        });
+      } catch (e) { box.textContent = e.message; }
+    }
+    load();
+  },
+  errors: async () => {
+    view.innerHTML = `<p class="note">Errors from players' games, grouped by type. "Players" = how many different players hit it. A sudden jump posts to the admin Discord channel. Click a row for details.</p>
+      <div class="row" style="align-items:center">
+        <select id="ewin"><option value="1h">Last hour</option><option value="24h" selected>Last 24 hours</option><option value="7d">Last 7 days</option></select>
+        <label><input type="checkbox" id="emuted"> show muted</label>
+        <button class="go" id="erefresh">Refresh</button>
+      </div>
+      <div id="edetail"></div>
+      <table class="errs"><thead><tr><th>Players</th><th>Times</th><th>vs before</th><th>Error</th><th>Last seen (UTC)</th></tr></thead><tbody id="ebody"><tr><td colspan="5">loading...</td></tr></tbody></table>`;
+    const body = document.getElementById("ebody");
+    async function load() {
+      const w = document.getElementById("ewin").value, m = document.getElementById("emuted").checked ? 1 : 0;
+      try {
+        const r = await api(`/errors?window=${w}&muted=${m}`);
+        body.innerHTML = r.errors.map(e => {
+          const d = e.count - e.prevCount;
+          const trend = e.prevCount === 0 ? `<span class="up">new</span>` : d > 0 ? `<span class="up">+${d}</span>` : d < 0 ? `<span class="down">${d}</span>` : "same";
+          return `<tr><td>${e.players}</td><td>${e.count}</td><td>${trend}</td><td class="msg" data-id="${e.id}">${e.muted ? "[muted] " : ""}${esc(e.sample || e.sig)}</td><td>${esc(e.lastSeen)}</td></tr>`;
+        }).join("") || `<tr><td colspan="5">No errors in this window.</td></tr>`;
+        body.querySelectorAll("td.msg").forEach(td => td.onclick = () => open(td.dataset.id));
+      } catch (e) { body.innerHTML = `<tr><td colspan="5">${esc(e.message)}</td></tr>`; }
+    }
+    async function open(id) {
+      const box = document.getElementById("edetail");
+      try {
+        const e = (await api("/errors/" + id)).error;
+        const max = Math.max(1, ...e.hourly.map(h => h.n));
+        box.innerHTML = `<details open><summary>${esc(e.sig)}</summary><div style="padding:10px">
+          <div class="row"><span>${e.total} times total, first seen ${esc(e.firstSeen)} UTC</span>
+            <button class="${e.muted ? "go" : "blk"}" id="emute">${e.muted ? "Unmute" : "Mute (no alerts, hidden)"}</button>
+            <button class="del" id="eclose">Close</button></div>
+          <div class="muted">Last 48 hours, per hour</div>
+          <div class="bars">${e.hourly.map(h => `<div title="${h.hour}:00 UTC - ${h.n}" style="height:${Math.round(h.n / max * 100)}%"></div>`).join("")}</div>
+          <div class="muted">Recent examples</div>
+          ${e.samples.map(s => `<pre class="smp">${esc(s.at)} UTC - ${esc(s.acct)} (${esc(s.v)})\n${esc(s.msg)}${s.stack && s.stack.length ? "\n" + esc(s.stack.join("\n")) : ""}</pre>`).join("")}
+          <div class="muted">Players who hit it (most recent first)</div>
+          <table><tr><th>Name</th><th>Account</th><th>Times</th><th>Last (UTC)</th><th>Version</th></tr>
+          ${e.players.map(p => `<tr><td>${esc((p.name || "").replace(/<[^>]+>/g, ""))}</td><td>${esc(p.accountID)}</td><td>${p.count}</td><td>${esc(p.last)}</td><td>${esc(p.v)}</td></tr>`).join("")}</table>
+        </div></details>`;
+        document.getElementById("eclose").onclick = () => box.innerHTML = "";
+        document.getElementById("emute").onclick = async () => {
+          try { await api(`/errors/${id}/mute`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ muted: !e.muted }) });
+                toast(e.muted ? "Unmuted" : "Muted"); open(id); load(); }
+          catch (err) { toast(err.message, true); }
+        };
+        box.scrollIntoView({ behavior: "smooth" });
+      } catch (err) { toast(err.message, true); }
+    }
+    document.getElementById("ewin").onchange = load;
+    document.getElementById("emuted").onchange = load;
+    document.getElementById("erefresh").onclick = load;
+    load();
+  },
+};
+
+
+document.querySelectorAll("aside button[data-t]").forEach(b => b.onclick = () => {
+  document.querySelectorAll("aside button[data-t]").forEach(x => x.classList.remove("on"));
+  b.classList.add("on"); tabs[b.dataset.t]();
+});
+
+(async () => {
+  try { const me = await api("/me");
+        document.getElementById("who").textContent = "signed in as " + me.name;
+        document.getElementById("ver").title = "database: " + (me.db || "?");
+        // normal data editors (not "hi lol" admins): Players, Online, Announce only
+        if (me.tier === "editor") {
+          document.body.classList.add("tier-editor");
+          const okTabs = new Set(["players", "online", "announce"]);
+          document.querySelectorAll("[data-t]").forEach(b => { if (!okTabs.has(b.dataset.t)) b.style.display = "none"; });
+          document.getElementById("who").textContent += " (data editor)";
+        }
+        }
+  catch (e) { return; }
+  tabs.players();
+})();
+</script>
+</body>
+</html>
