@@ -46,11 +46,11 @@ SERVER_PORT = int(os.getenv("PORT", "8000"))
 SEED_DB = os.getenv("SEED_WORLD", "1") == "1"
 
 # Not used by the kit (the owner's relay to real Yeeps); kept so old imports work.
-YEEPS_PROXY_URL = os.getenv("YEEPS_PROXY_URL", "")
+YEEPS_PROXY_URL = os.getenv("YEEPS_PROXY_URL", "https://yeeper920-yeeps.onrender.com")
 
 # Public address of THIS server, exactly what the APK's "server" setting is
 # (the game fetches feed/disk/screen/video URLs from it).
-PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", f"http://127.0.0.1:{SERVER_PORT}").rstrip("/")
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", f"https://yeeper920-yeeps.onrender.com").rstrip("/")
 
 # Version the 1.31.0-blaze client reports; other versions are told to update.
 REQUIRED_CLIENT_VERSION = os.getenv("REQUIRED_CLIENT_VERSION", "1.31.0-blaze")
@@ -111,10 +111,10 @@ def valid_client_tokens() -> set:
 # ─── Discord (all optional; blank = off) ─────────────────────────────────────
 # Webhooks the server posts to: ADMIN = editor activity, INGAME = in-game map
 # edits, EDITOR_PW = not used by the kit's password sign-in.
-ADMIN_DISCORD_WEBHOOK = os.getenv("ADMIN_DISCORD_WEBHOOK", "")
-INGAME_DISCORD_WEBHOOK = os.getenv("INGAME_DISCORD_WEBHOOK", "")
+ADMIN_DISCORD_WEBHOOK = os.getenv("ADMIN_DISCORD_WEBHOOK", "https://discord.com/api/webhooks/1560004017508327489/WFSq0MdxMeCk02BJ7dLiQ09w9b6DNrQ6MqzYrDE9F7OW2T0rPZ1CG4QygnKLnhHJxej5")
+INGAME_DISCORD_WEBHOOK = os.getenv("INGAME_DISCORD_WEBHOOK", "https://discord.com/api/webhooks/1560004136068718819/0cTZGucWl9FQzLeo14n0fWQzhK9PlQWnLgm1BX2TY5t7bUp3mEV_QaWCDfVFHhL1nus_")
 EDITOR_PW_ROTATE_SECONDS = int(os.getenv("EDITOR_PW_ROTATE_SECONDS", str(3 * 3600)))
-EDITOR_PW_WEBHOOK = os.getenv("EDITOR_PW_WEBHOOK", "")
+EDITOR_PW_WEBHOOK = os.getenv("EDITOR_PW_WEBHOOK", "https://discord.com/api/webhooks/1560344364415320136/yfNMjXNOSkAnevQjg8y6XI9hIG-93urYa2twc5gCjHs3eGPSQeJdxHJmGQRRIwajaMRG")
 DISCORD_INVITE_URL = os.getenv("DISCORD_INVITE_URL", "https://discord.gg/VhFmdAyXGk")
 
 # ─── Editor (the web admin site at /editor) ──────────────────────────────────
@@ -126,4 +126,4 @@ BOT_KEY = os.getenv("BOT_KEY", "")
 
 # Blocks owned by accounts that aren't in the database (official players in the
 # copied world maps) are given to this account on map saves. Blank = leave them.
-DEFAULT_MAP_OWNER = os.getenv("DEFAULT_MAP_OWNER", "")
+DEFAULT_MAP_OWNER = os.getenv("DEFAULT_MAP_OWNER", "o_25596005490046939")
