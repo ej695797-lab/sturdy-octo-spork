@@ -2711,7 +2711,7 @@ async def handle_login(body: dict) -> dict:
             await accounts.update_one({"accountID": account_id},
                                       {"$set": {"pendingKick": 0, "kickReason": ""}})
         elif account.get("hasPendingWarning"):
-            _wr = account.get("warnReason") or "You have been warned -blaze"
+            _wr = account.get("warnReason") or "You have been warned -920Man"
             # Serve a SHORT banExpireTimestamp so the client shows a brief TIMED
             # kick ("suspended until ...") instead of "You are permanently
             # banned." (isPermabanned=1 with NO expiry = the permaban screen).
