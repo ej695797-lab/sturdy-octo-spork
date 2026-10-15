@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 
 from services.db import accounts, player_statuses
 
-DEFAULT_KICK_REASON = "You have been kicked (just rejoin). Dont ping Blaze."
+DEFAULT_KICK_REASON = "You have been kicked (just rejoin). Dont ping 920Man."
 
 
 def kick_message(reason: str = "") -> str:
