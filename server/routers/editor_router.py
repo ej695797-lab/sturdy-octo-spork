@@ -695,9 +695,9 @@ async def whoami(request: Request):
     name = _authed_name(request)
     if not name:
         raise HTTPException(status_code=401, detail="unauthorized")
-    from config import DB_NAME
+    from config import BOT_KEY, DB_NAME
     return JSONResponse(content={"name": name, "version": GAME_VERSION, "db": DB_NAME,
-                                 "photon": False, "tier": await _session_tier(request)})
+                                 "photon": bool(BOT_KEY), "tier": await _session_tier(request)})
 
 
 # ─── Default account editor ───────────────────────────────────────────────────
@@ -1933,7 +1933,7 @@ button:disabled{opacity:.6;cursor:default}
 .err{margin-top:14px;color:#f85149;font-size:13px;min-height:18px}
 </style></head><body>
 <form class="card" id="f">
-  <h1>Yeeps 1.31.0-blaze Editor</h1>
+  <h1>Yeeps 1.31.0-yeeper920 Editor</h1>
   <p class="sub">Sign in with the EDITOR_PASSWORD from the server's .env file.</p>
   <label>Your name (shown in the logs)</label>
   <input id="name" autocomplete="username" placeholder="host" required>
@@ -1956,6 +1956,75 @@ f.addEventListener('submit',async e=>{
   go.disabled=false;go.textContent='Sign in';
 });
 </script></body></html>"""
+
+
+# ─── Photon bot (owner only) ─────────────────────────────────────────
+# The YeeperBot joins a Yeeps room as a normal Photon actor, so its room and the
+# room's live message feed can be watched from the editor. All of the work lives
+# in services/bot_manager.py; pyphotonrealtime is optional, so these routes just
+# report why the bot is unavailable when the package is missing.
+
+@router.get("/api/bot")
+async def bot_status(request: Request):
+    if not _authed_name(request):
+        raise HTTPException(status_code=401, detail="unauthorized")
+    from services.bot_manager import manager
+    return JSONResponse(content={"ok": True, **manager.status(),
+                                 "events": manager.events()[-80:]})
+
+
+@router.post("/api/bot/start")
+async def bot_start(request: Request):
+    if not _authed_name(request):
+        raise HTTPException(status_code=401, detail="unauthorized")
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    from services.bot_manager import manager
+    name = str((body or {}).get("name") or "")[:24]
+    room = str((body or {}).get("room") or "")[:64]
+    return JSONResponse(content={"ok": True, **manager.start(name=name, room=room)})
+
+
+@router.post("/api/bot/stop")
+async def bot_stop(request: Request):
+    if not _authed_name(request):
+        raise HTTPException(status_code=401, detail="unauthorized")
+    from services.bot_manager import manager
+    return JSONResponse(content={"ok": True, **manager.stop()})
+
+
+@router.post("/api/bot/room")
+async def bot_room(request: Request):
+    if not _authed_name(request):
+        raise HTTPException(status_code=401, detail="unauthorized")
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    from services.bot_manager import manager
+    return JSONResponse(content={"ok": True,
+                                 **manager.set_room(str((body or {}).get("room") or "")[:64])})
+
+
+@router.post("/api/bot/raise")
+async def bot_raise(request: Request):
+    """Send one in-world message (event 200, envelope {0,2,5,4}) - for testing
+    a message type against the live game."""
+    if not _authed_name(request):
+        raise HTTPException(status_code=401, detail="unauthorized")
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    from services.bot_manager import manager
+    try:
+        msg_type = int((body or {}).get("type"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="type (int) is required")
+    return JSONResponse(content={"ok": True,
+                                 **manager.raise_game(msg_type, (body or {}).get("payload") or [])})
 
 
 @router.get("/login", response_class=HTMLResponse)

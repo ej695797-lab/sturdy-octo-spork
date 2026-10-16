@@ -40,7 +40,7 @@ async def active_announcements() -> list:
     return [a for a in (doc.get("value") or []) if float(a.get("until", 0)) > now]
 
 
-async def add_announcement(text: str, seconds: int = 10, active_minutes: int = 10,
+async def add_announcement(text: str, seconds: int = 10, active_minutes: int = 60,
                            by: str = "") -> dict:
     """Queue a message for every player. `seconds` = how long it stays on screen;
     `active_minutes` = how long players who launch later will still receive it."""

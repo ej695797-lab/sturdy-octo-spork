@@ -112,6 +112,7 @@
   <aside>
     <button data-t="players" class="on">Players</button>
     <button data-t="online">Online</button>
+    <button data-t="bot">Bot</button>
     <button data-t="banned">Banned</button>
     <button data-t="default">Default</button>
     <button data-t="maps">Maps</button>
@@ -952,10 +953,75 @@ const tabs = {
     document.getElementById("erefresh").onclick = load;
     load();
   },
+  bot: async () => {
+    view.innerHTML = `
+      <p class="note">YeeperBot is a Photon bot that joins one of your rooms as a player (an extra actor in the room), so you can see it in game and read the room's live message feed here. Start it, then type a room key or pick an online player to join theirs.</p>
+      <div class="row">
+        <input id="bname" placeholder="bot name" value="YeeperBot" style="max-width:160px">
+        <input id="broom" placeholder="room key, e.g. official_1 or p_o_..." style="min-width:240px">
+        <button class="go" id="bstart">Start</button>
+        <button class="blk" id="bstop">Stop</button>
+        <button class="go" id="bref">Refresh</button>
+      </div>
+      <div class="row"><span class="muted">Join a player:</span> <span id="bplayers" class="muted">loading...</span></div>
+      <p class="note" id="bstate">…</p>
+      <div class="muted">Players in the bot's room</div>
+      <ul class="list" id="brooms"><li class="muted">—</li></ul>
+      <div class="muted">Live events (newest last)</div>
+      <pre id="bevents" style="max-height:320px"></pre>
+      <div class="muted">Log</div>
+      <pre id="blog" style="max-height:160px"></pre>`;
+    const $ = id => document.getElementById(id);
+    async function refresh() {
+      let s; try { s = await api("/bot"); } catch (e) { $("bstate").textContent = "Error: " + e.message; return; }
+      const st = s.running ? (s.state || "?") : (s.enabled ? "stopped" : "unavailable");
+      $("bstate").innerHTML = `<b>${esc(st)}</b>` + (s.room ? ` · room <b>${esc(s.room)}</b>` : "") +
+        (s.running && s.name ? ` · as ${esc(s.name)}` : "") + (s.uptime ? ` · up ${s.uptime}s` : "") +
+        (s.error ? ` · <span style="color:#f85149">${esc(s.error)}</span>` : "") +
+        (!s.available ? ` · <span style="color:#f85149">${esc(s.reason || "")}</span>` : "");
+      const ps = s.players || [];
+      $("brooms").innerHTML = ps.length ? ps.map(p =>
+        `<li class="bli"><div class="binfo"><div class="bname">#${p.actor} ${esc(p.nick || "")}${p.local ? " (bot)" : ""}</div>` +
+        `<div class="bmeta">${esc(p.userId || "")}</div></div></li>`).join("")
+        : `<li class="muted">The bot isn't in a room.</li>`;
+      $("bevents").textContent = (s.events || []).map(e =>
+        e.kind ? `${e.t}  ${e.kind} ${esc(JSON.stringify(e.who == null ? "" : e.who))}`
+               : `${e.t}  code=${e.code} type=${e.type == null ? "?" : e.type}  ${JSON.stringify(e.data)}`).join("\n");
+      $("blog").textContent = (s.log || []).join("\n");
+      const ev = $("bevents"); ev.scrollTop = ev.scrollHeight;
+    }
+    $("bref").onclick = refresh;
+    $("bstart").onclick = async () => {
+      try {
+        await api("/bot/start", { method: "POST", headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ name: $("bname").value.trim(), room: $("broom").value.trim() }) });
+        toast("Bot starting");
+      } catch (e) { toast(e.message, true); }
+      setTimeout(refresh, 900);
+    };
+    $("bstop").onclick = async () => {
+      try { await api("/bot/stop", { method: "POST" }); toast("Bot stopped"); }
+      catch (e) { toast(e.message, true); }
+      refresh();
+    };
+    try {
+      const o = await api("/online");
+      const list = o.players || [];
+      $("bplayers").innerHTML = list.length
+        ? list.map(p => `<button class="go" data-r="${esc(p.roomKey)}" style="margin:2px">${esc(p.displayName)} → ${esc(p.roomKey || "?")}</button>`).join(" ")
+        : "nobody online";
+      document.querySelectorAll("#bplayers button[data-r]").forEach(b =>
+        b.onclick = () => { $("broom").value = b.dataset.r; toast("Room set — press Start"); });
+    } catch (_) { $("bplayers").textContent = "—"; }
+    await refresh();
+    clearInterval(window._botTimer);
+    window._botTimer = setInterval(refresh, 3000);
+  },
 };
 
 
 document.querySelectorAll("aside button[data-t]").forEach(b => b.onclick = () => {
+  clearInterval(window._botTimer);
   document.querySelectorAll("aside button[data-t]").forEach(x => x.classList.remove("on"));
   b.classList.add("on"); tabs[b.dataset.t]();
 });

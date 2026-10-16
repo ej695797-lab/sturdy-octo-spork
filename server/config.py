@@ -52,8 +52,19 @@ YEEPS_PROXY_URL = os.getenv("YEEPS_PROXY_URL", "https://yeeper920-yeeps.onrender
 # (the game fetches feed/disk/screen/video URLs from it).
 PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", f"https://yeeper920-yeeps.onrender.com").rstrip("/")
 
-# Version the 1.31.0-blaze client reports; other versions are told to update.
-REQUIRED_CLIENT_VERSION = os.getenv("REQUIRED_CLIENT_VERSION", "1.31.0-blaze")
+# Version the 1.31.0-yeeper920 client reports; other versions are told to update.
+REQUIRED_CLIENT_VERSION = os.getenv("REQUIRED_CLIENT_VERSION", "1.31.0-yeeper920")
+# Versions also accepted by the login/refresh gate, so players on the previous
+# "1.31.0-blaze" APK are not locked out while they update. Comma-separated
+# override with ACCEPTED_CLIENT_VERSIONS.
+ACCEPTED_CLIENT_VERSIONS = {v.strip() for v in os.getenv(
+    "ACCEPTED_CLIENT_VERSIONS", f"{REQUIRED_CLIENT_VERSION},1.31.0-blaze").split(",") if v.strip()}
+
+
+def client_version_ok(ver: str) -> bool:
+    """True when a client-reported version is accepted (or absent)."""
+    return (not ver) or (ver in ACCEPTED_CLIENT_VERSIONS)
+
 try:
     IS_V2 = int(REQUIRED_CLIENT_VERSION.split(".")[0]) >= 2
 except ValueError:
@@ -61,7 +72,7 @@ except ValueError:
 
 # Testing switch: every room's play/creative mode can be switched and anyone can
 # edit official maps in-game.
-UNLOCK_ALL_MODES = os.getenv("UNLOCK_ALL_MODES", "0") == "1"
+UNLOCK_ALL_MODES = os.getenv("UNLOCK_ALL_MODES", "1") == "1"
 
 # ─── Client checks ───────────────────────────────────────────────────────────
 # 1.19-era attestation hashes (the 1.31 client sends none, so these stay empty).

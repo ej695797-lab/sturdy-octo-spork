@@ -2209,7 +2209,7 @@ BANNED_NAME_KEYS: set = set()
 # version enforcement is at the presence layer (see dynamo_ops: the shared
 # G2_PlayerStatuses version is forced to this, so older clients fail the
 # multiplayer join check). The checks below are a best-effort extra.
-from config import REQUIRED_CLIENT_VERSION
+from config import REQUIRED_CLIENT_VERSION, client_version_ok
 
 
 # Discord link / server membership checks (the owner's server used them; the kit
@@ -2516,7 +2516,7 @@ async def handle_login(body: dict) -> dict:
     # it, after which this gate becomes airtight.
     _client_ver = str(body.get("trueVersion") or body.get("applicationVersion") or "").strip()
     _last_ver = str(account.get("lastClientVersion") or "").strip()
-    _outdated_client = bool(_client_ver) and (_client_ver != REQUIRED_CLIENT_VERSION)
+    _outdated_client = not client_version_ok(_client_ver)
 
     # Build identity/integrity gate (services/build_gate.py): the 1.31+ APK sends
     # its build tag in the login path. Record it on the account (so staff can see

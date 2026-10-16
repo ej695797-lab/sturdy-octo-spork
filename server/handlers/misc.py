@@ -121,7 +121,7 @@ async def handle_refresh_account_online(body: dict) -> dict:
       outdated     -> trueVersion != REQUIRED_CLIENT_VERSION
     Consumes any pending shouldForceRefresh.
     """
-    from config import REQUIRED_CLIENT_VERSION
+    from config import client_version_ok
     from services.build_gate import enforced as _build_enforced
     resp = {"success": 1, "isPermabanned": 0, "banReason": "", "remainingBanHours": 0}
     account_id = body.get("accountID", "")
@@ -155,7 +155,7 @@ async def handle_refresh_account_online(body: dict) -> dict:
             # Permanent only when there is no expiry; timed bans show hours.
             resp.update(isPermabanned=1 if hours == 99999 else 0, remainingBanHours=hours,
                         banReason=doc.get("banReason") or doc.get("blockReason") or "You are banned.")
-    elif (ver and ver != REQUIRED_CLIENT_VERSION) or (
+    elif (not client_version_ok(ver)) or (
             current_status(doc) == "outdated" and _build_enforced()):
         resp.update(isPermabanned=0, remainingBanHours=1,
                     banReason=outdated_message())

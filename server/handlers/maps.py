@@ -460,12 +460,16 @@ async def handle_fetch_map_data(body: dict) -> dict:
         }
 
     save_data = doc.get("saveData", "") or ""
-    # Don't serve a 2.x SPAM blob to a 1.19 client (INVALID_FORMAT / brick).
-    if save_data.startswith("U1BBTQ"):
-        return {"saveData": ""}
+    # Echo the blob back as-is. The 1.31 client saves in the SPAM format
+    # ("U1BBTQ...", mapDataVersion 3) and reads both it and the older
+    # BinaryFormatter data, so serving a SPAM blob is correct here. (This used
+    # to be dropped "for a 1.19 client", but no 1.19 client runs against this
+    # kit -- and it made every 1.31 save come back as an empty map on reload,
+    # exactly like the bug already fixed in dynamo_ops._is_119_map.)
+    mdv = doc.get("mapDataVersion", 3 if save_data.startswith("U1BBTQ") else 2)
 
     return {
-        "mapDataVersion": doc.get("mapDataVersion", 2),
+        "mapDataVersion": mdv,
         "saveData": save_data,
         "saveInternalStates": doc.get("saveInternalStates", ""),
     }

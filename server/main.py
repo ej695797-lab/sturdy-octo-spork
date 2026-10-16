@@ -237,7 +237,7 @@ async def startup_event():
     else:
         print("[seed] Skipped (SEED_WORLD=0)")
     print("=" * 60)
-    print("  Yeeps 1.31.0-blaze self-host server is READY")
+    print("  Yeeps 1.31.0-yeeper920 self-host server is READY")
     print(f"  Game API + editor: {_cfg.PUBLIC_BASE_URL}   (editor: /editor)")
     print("=" * 60)
 
