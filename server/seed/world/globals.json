@@ -1539,7 +1539,12 @@
    "zipperYeepCoin",
    "zipperYeepSkull",
    "zippers",
-   "1x5x2_stuffedTextBlaze"
+   "1x5x2_stuffedTextBlaze",
+   "1x1_stuffed920Man",
+   "1x1_stuffedsdn",
+   "1x1_niche",
+   "1x1_giggle",
+   "1x1_920man"
   ]
  },
  {
@@ -1667,6 +1672,11 @@
     "1x1_straight_pipeFat",
     "1x1_straight_wire",
     "1x1_stuffed",
+    "1x1_stuffed920Man",
+    "1x1_stuffedsdn",
+    "1x1_niche",
+    "1x1_giggle",
+    "1x1_920man",
     "1x1_stuffedLandmine",
     "1x1_stuffedTrophie_starCreator",
     "1x1_stuffedTrophie_superStar",

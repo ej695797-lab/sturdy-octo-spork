@@ -16,7 +16,11 @@ ROLE_LOCKED_PATTERNS = {"1x5x2_stuffedTextBlaze": "blaze"}
 SERVER_ONLY_ROLES: set = set()
 # Custom blocks every account owns (creative build menu). Kept out of the
 # techweb list so survival players can't craft them.
-ALWAYS_OWNED_PATTERNS: list = []
+ALWAYS_OWNED_PATTERNS: list = ["1x1_stuffed920Man",
+                               "1x1_stuffedsdn",
+                               "1x1_niche",
+                               "1x1_giggle",
+                               "1x1_920man"]
 # Never served to anyone, even if stored on an account.
 DISABLED_PATTERNS = {"3x3x1_blazeScreen",
                      # desert decorations with no mesh in 1.31 ("Could not find map
