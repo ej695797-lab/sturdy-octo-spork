@@ -959,8 +959,10 @@ const tabs = {
       <div class="row">
         <input id="bname" placeholder="bot name" value="YeeperBot" style="max-width:160px">
         <input id="broom" placeholder="room key, e.g. official_1 or p_o_..." style="min-width:240px">
+        <label style="white-space:nowrap"><input type="checkbox" id="bspawn" checked> Spawn as player</label>
         <button class="go" id="bstart">Start</button>
         <button class="blk" id="bstop">Stop</button>
+        <button class="go" id="bspawnnow">Spawn now</button>
         <button class="go" id="bref">Refresh</button>
       </div>
       <div class="row"><span class="muted">Join a player:</span> <span id="bplayers" class="muted">loading...</span></div>
@@ -975,15 +977,21 @@ const tabs = {
     async function refresh() {
       let s; try { s = await api("/bot"); } catch (e) { $("bstate").textContent = "Error: " + e.message; return; }
       const st = s.running ? (s.state || "?") : (s.enabled ? "stopped" : "unavailable");
-      $("bstate").innerHTML = `<b>${esc(st)}</b>` + (s.room ? ` · room <b>${esc(s.room)}</b>` : "") +
+      const roomName = s.room && typeof s.room === "object" ? s.room.name : s.room;
+      const roomInfo = s.room && typeof s.room === "object" && s.room.playerCount != null
+        ? ` · room <b>${esc(roomName)}</b> (${s.room.playerCount} in room)` : ` · room <b>${esc(roomName)}</b>`;
+      $("bstate").innerHTML = `<b>${esc(st)}</b>` + (roomName ? roomInfo : "") +
         (s.running && s.name ? ` · as ${esc(s.name)}` : "") + (s.uptime ? ` · up ${s.uptime}s` : "") +
+        (s.spawned ? ` · <span style="color:#3fb950">avatar spawned (view ${s.viewId})</span>`
+                   : (s.spawn && s.inRoom ? ` · <span style="color:#d29922">spawn pending…</span>` : "")) +
         (s.error ? ` · <span style="color:#f85149">${esc(s.error)}</span>` : "") +
         (!s.available ? ` · <span style="color:#f85149">${esc(s.reason || "")}</span>` : "");
       const ps = s.players || [];
       $("brooms").innerHTML = ps.length ? ps.map(p =>
         `<li class="bli"><div class="binfo"><div class="bname">#${p.actor} ${esc(p.nick || "")}${p.local ? " (bot)" : ""}</div>` +
         `<div class="bmeta">${esc(p.userId || "")}</div></div></li>`).join("")
-        : `<li class="muted">The bot isn't in a room.</li>`;
+        : (s.inRoom ? `<li class="muted">No other players in the room (only the bot).</li>`
+                    : `<li class="muted">The bot isn't in a room.</li>`);
       $("bevents").textContent = (s.events || []).map(e =>
         e.kind ? `${e.t}  ${e.kind} ${esc(JSON.stringify(e.who == null ? "" : e.who))}`
                : `${e.t}  code=${e.code} type=${e.type == null ? "?" : e.type}  ${JSON.stringify(e.data)}`).join("\n");
@@ -994,10 +1002,15 @@ const tabs = {
     $("bstart").onclick = async () => {
       try {
         await api("/bot/start", { method: "POST", headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ name: $("bname").value.trim(), room: $("broom").value.trim() }) });
+                                  body: JSON.stringify({ name: $("bname").value.trim(), room: $("broom").value.trim(), spawn: $("bspawn").checked }) });
         toast("Bot starting");
       } catch (e) { toast(e.message, true); }
       setTimeout(refresh, 900);
+    };
+    $("bspawnnow").onclick = async () => {
+      try { const r = await api("/bot/spawn", { method: "POST" }); toast(r.ok ? "Spawn sent (view " + r.viewId + ")" : ("Spawn failed: " + (r.error || "not in room"))); }
+      catch (e) { toast(e.message, true); }
+      refresh();
     };
     $("bstop").onclick = async () => {
       try { await api("/bot/stop", { method: "POST" }); toast("Bot stopped"); }

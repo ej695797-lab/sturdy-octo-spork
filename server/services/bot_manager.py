@@ -49,7 +49,7 @@ class BotManager:
         return bool(self._thread and self._thread.is_alive())
 
     # ── commands ─────────────────────────────────────────────────────
-    def start(self, *, name: str = "", room: str = "") -> dict:
+    def start(self, *, name: str = "", room: str = "", spawn: bool = True) -> dict:
         ok, why = self.available()
         if not ok:
             self.error = why
@@ -59,6 +59,7 @@ class BotManager:
                 self._bot.set_room(room)
             if name:
                 self._bot.name = name[:24]
+            self._bot.spawn = bool(spawn)
             return self.status()
 
         from threading import Event, Thread
@@ -73,6 +74,7 @@ class BotManager:
             app_version=APP_VERSION,
             bot_key=BOT_KEY,
             room=room or "",
+            spawn=bool(spawn),
         )
         if not self._bot.connect():
             self.error = self._bot.error or "connect failed"
@@ -80,7 +82,8 @@ class BotManager:
         self._stop = Event()
         self._thread = Thread(target=self._loop, name="yeeperbot", daemon=True)
         self._thread.start()
-        self._note(f"started as {self._bot.name}" + (f", joining {room}" if room else ""))
+        self._note(f"started as {self._bot.name}" + (f", joining {room}" if room else "")
+                   + (" (spawn on)" if spawn else " (spawn off)"))
         return self.status()
 
     def _loop(self) -> None:
@@ -88,6 +91,8 @@ class BotManager:
             try:
                 self._bot.service()
                 self._bot._maybe_join()
+                self._bot._maybe_spawn()
+                self._bot._note_remotes()
             except Exception as e:  # noqa: BLE001
                 self.error = f"service: {e}"
                 self._note(f"service error: {e}")
@@ -118,6 +123,14 @@ class BotManager:
         if self._bot is None:
             return {"ok": False, "error": "bot not running"}
         return {"ok": self._bot.raise_game(msg_type, payload), "type": msg_type}
+
+    def spawn_player(self) -> dict:
+        """Manually announce the bot's avatar (Photon Instantiate 202)."""
+        if self._bot is None:
+            return {"ok": False, "error": "bot not running"}
+        ok = self._bot.spawn_player()
+        return {"ok": ok, "viewId": self._bot.view_id, "inRoom": self._bot._client.in_room
+                if self._bot._client else False, "error": self._bot.error}
 
     def status(self) -> dict:
         ok, why = self.available()

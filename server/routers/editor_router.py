@@ -1984,7 +1984,8 @@ async def bot_start(request: Request):
     from services.bot_manager import manager
     name = str((body or {}).get("name") or "")[:24]
     room = str((body or {}).get("room") or "")[:64]
-    return JSONResponse(content={"ok": True, **manager.start(name=name, room=room)})
+    spawn = bool((body or {}).get("spawn", True))
+    return JSONResponse(content={"ok": True, **manager.start(name=name, room=room, spawn=spawn)})
 
 
 @router.post("/api/bot/stop")
@@ -2025,6 +2026,17 @@ async def bot_raise(request: Request):
         raise HTTPException(status_code=400, detail="type (int) is required")
     return JSONResponse(content={"ok": True,
                                  **manager.raise_game(msg_type, (body or {}).get("payload") or [])})
+
+
+@router.post("/api/bot/spawn")
+async def bot_spawn(request: Request):
+    """Announce the bot as a visible player in its room (Photon Instantiate
+    202 of Photon/NetworkMessenger). The game only draws an avatar for a player
+    it has received this event for, so without it the bot is invisible."""
+    if not _authed_name(request):
+        raise HTTPException(status_code=401, detail="unauthorized")
+    from services.bot_manager import manager
+    return JSONResponse(content={"ok": True, **manager.spawn_player()})
 
 
 @router.get("/login", response_class=HTMLResponse)
