@@ -65,6 +65,7 @@ class YeeperBot:
         bot_id: int = 1,
         room: str = "",
         spawn: bool = False,
+        region: str = "",
     ) -> None:
         self.name = name
         self.app_id = app_id
@@ -73,6 +74,11 @@ class YeeperBot:
         self.bot_id = int(bot_id)
         self.room = room
         self.spawn = bool(spawn)
+        # Photon rooms live inside an (appId, appVersion, region) tuple. An
+        # appVersion that differs from the client's lands the bot in another
+        # matchmaking pool that never shares a room with players; the same goes
+        # for the region when "best region" would pick a different one.
+        self.region = region
 
         self.state = "idle"          # idle | connecting | connected | in_room | error
         self.error = ""
@@ -177,6 +183,8 @@ class YeeperBot:
             app_version=self.app_version,
             protocol=ConnectionProtocol.Tcp,
         )
+        if self.region:
+            self._settings.fixed_region = self.region
 
     # ── lifecycle ────────────────────────────────────────────────────
     def connect(self) -> bool:

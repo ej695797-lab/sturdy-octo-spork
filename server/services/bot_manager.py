@@ -12,11 +12,16 @@ import time
 
 from config import BOT_KEY
 
-# The Photon app id the client uses, and the app version it connects with. The
-# game sends applicationVersion "1.19.0" (see main.py:348) - a bot on a
-# different app version lands in another room pool and never meets players.
+# The Photon app id the client uses, the app version it connects with, and the
+# cloud region it lands in. Photon keeps rooms inside an (appId, appVersion,
+# region) tuple: a bot on a different app version (or a "best region" that
+# resolves elsewhere) sits in another matchmaking pool and never shares a room
+# with players.
+# Verified live from the running client (Explorer /api/lua/exec):
+#   PhotonNetwork.AppVersion = "1.31.0_2.45", PhotonNetwork.CloudRegion = "us"
 APP_ID = os.getenv("PHOTON_APP_ID", "a279e749-3e24-464c-9336-f3a412bdfdbc")
-APP_VERSION = os.getenv("PHOTON_APP_VERSION", "1.19.0")
+APP_VERSION = os.getenv("PHOTON_APP_VERSION", "1.31.0_2.45")
+APP_REGION = os.getenv("PHOTON_REGION", "us")
 
 _MAX_LOG = 400
 
@@ -75,6 +80,7 @@ class BotManager:
             bot_key=BOT_KEY,
             room=room or "",
             spawn=bool(spawn),
+            region=APP_REGION,
         )
         if not self._bot.connect():
             self.error = self._bot.error or "connect failed"
