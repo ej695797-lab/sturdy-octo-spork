@@ -14,7 +14,7 @@ from services.db import maps, rooms
 # still change them from the web editor — that's a separate code path. Override
 # with env PROTECTED_ROOMS (comma list) and/or PROTECTED_ROOM_PREFIX.
 _PROTECTED_ROOMS = set(filter(None, (os.getenv("PROTECTED_ROOMS") or
-    "official_0,official_1,official_2,tutorial").replace(" ", "").split(",")))
+    "tutorial").replace(" ", "").split(",")))
 _PROTECTED_PREFIX = os.getenv("PROTECTED_ROOM_PREFIX", "official_")
 _protect_notify_ts = {}
 
