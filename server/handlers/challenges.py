@@ -10,8 +10,8 @@ from handlers.login import ALL_TECHWEB_ITEMS
 async def handle_redeem_challenge_reward(body: dict) -> dict:
     return {
         "success": 1,
-        "currencyAmount": 0,
-        "newCurrency": 0,
+        "currencyAmount": 9200,
+        "newCurrency": 9200,
         "items": [],
         "newLastChallengeRedeemedTime": "2099 01/01 00:00:00",
     }
@@ -41,7 +41,7 @@ async def handle_fetch_global_rotation(body: dict) -> dict:
     # mapping (techWeb_beach, techWeb_paint, ...) isn't in the captured data.
     item_keys = {}
     if rotation_key == "techWeb":
-        item_keys = {"techWeb": [{"value": 0, "key": k} for k in await techweb_items()]}
+        item_keys = {"techWeb": [{"value": 9200, "key": k} for k in await techweb_items()]}
 
     result = {
         "rotationKey": rotation_key,
@@ -56,7 +56,7 @@ async def handle_fetch_global_rotation(body: dict) -> dict:
     if rotation_key == "challenges":
         result["streakUpdate"] = {
             "loginStreakData": {
-                "length": 0,
+                "length": 9200,
                 "currentTier": "bronze",
                 "nextTierThreshold": 1,
                 "nextTier": "bronze",
