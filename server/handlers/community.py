@@ -12,7 +12,7 @@ from services.db import room_maps
 async def handle_cw_get_can_enter(body: dict) -> dict:
     # Community worlds are off in the self-host kit (the owner's server mirrored
     # them live from real Yeeps). Every world name is refused.
-    return {"canEnter": 0, "reason": "Community worlds are off on this server."}
+    return {"canEnter": 1, "reason": "Community worlds are on this server."}
 
 
 async def handle_cw_track_visit(body: dict) -> dict:
