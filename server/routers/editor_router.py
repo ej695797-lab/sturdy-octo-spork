@@ -926,6 +926,52 @@ async def save_map_blocks(room_key: str, request: Request):
     return JSONResponse(content={"ok": True, "roomKey": room_key, "blockCount": len(norm), "skipped": skipped})
 
 
+async def _ensure_world_map_entry(room_key: str, dims=None) -> dict:
+    """Make an imported map reachable: the in-game world map is built from the
+    room_maps "beta4" nodes, so a room with a map but no room doc / no node
+    simply cannot be found in game. Create the room doc and a node next to the
+    hub, and bump the map version so clients refetch it."""
+    from services.db import room_maps
+    if not room_key or room_key.startswith(("c_", "p_o_", "o_")):
+        return {}
+    made = {}
+    if await rooms.find_one({"roomKey": room_key}, {"roomKey": 1}) is None:
+        try:
+            from services.dynamo_ops import _full_room
+            doc = _full_room(room_key, room_key, dims or [80, 80, 80])
+        except Exception as e:
+            print(f"[editor] room doc fallback for {room_key}: {e}")
+            doc = {"roomKey": room_key, "roomName": room_key, "isOfficial": 0,
+                   "themeKey": "suburb", "dimensions": dims or [80, 80, 80]}
+        doc.pop("_id", None)
+        doc["roomKey"] = room_key
+        await rooms.update_one({"roomKey": room_key}, {"$set": doc}, upsert=True)
+        made["room"] = True
+    rm = await room_maps.find_one({"versionKey": "beta4"})
+    data = list((rm or {}).get("data") or [])
+    if rm and not any(isinstance(n, dict) and n.get("roomKey") == room_key for n in data):
+        occupied = {tuple(n.get("gridPosition")) for n in data
+                    if isinstance(n, dict) and n.get("gridPosition")}
+        spot = None
+        for cx, cy in sorted(occupied, key=lambda p: abs(p[0]) + abs(p[1])):
+            for dx, dy in ((0, 1), (1, 0), (-1, 0), (0, -1)):
+                if (cx + dx, cy + dy) not in occupied:
+                    spot = (cx + dx, cy + dy)
+                    break
+            if spot:
+                break
+        if spot:
+            rd = await rooms.find_one({"roomKey": room_key}, {"themeKey": 1})
+            theme = (rd or {}).get("themeKey") or "suburb"
+            data.append({"roomKey": room_key, "themeKey": theme,
+                         "gridPosition": list(spot)})
+            await room_maps.update_one({"_id": rm["_id"]},
+                                       {"$set": {"data": data,
+                                                 "version": int(rm.get("version") or 1) + 1}})
+            made["node"] = list(spot)
+    return made
+
+
 @router.post("/api/map/import")
 async def import_map(request: Request):
     """Accept the output of the /map API (the full {ok,roomKey,blocks:[...]}
@@ -1010,12 +1056,14 @@ async def import_map(request: Request):
     if room_key.startswith("c_"):
         raise HTTPException(status_code=400, detail="Community worlds are read live from Yeeps and are not saved here.")
     await imported_maps.update_one({"roomKey": room_key}, {"$set": doc}, upsert=True)
+    world = await _ensure_world_map_entry(room_key, dims)
     name = _authed_name(request) or "?"
     await _discord_notify(f"{name} imported a map for {room_key} ({len(blocks)} blocks, {total - len(blocks)} dropped)")
     return JSONResponse(content={"ok": True, "roomKey": room_key, "blockCount": len(blocks),
                                  "inputBlocks": total, "dropped": total - len(blocks),
                                  "droppedBadKeys": len(dropped_keys), "droppedOutOfBounds": oob,
-                                 "droppedKeysSample": sorted(dropped_keys)[:30]})
+                                 "droppedKeysSample": sorted(dropped_keys)[:30],
+                                 "worldMap": world})
 
 
 @router.delete("/api/map/{room_key}")
