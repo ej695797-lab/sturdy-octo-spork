@@ -117,6 +117,9 @@ class YeeperBot:
 
             def on_connected_to_master(self) -> None:
                 bot.state = "connected"
+                bot.error = ""
+                bot._join_sent_for = ""
+                bot._join_retry_at = 0.0
                 bot._maybe_join()
 
             def on_disconnected(self, cause) -> None:
@@ -226,6 +229,9 @@ class YeeperBot:
         # Joining before the client reaches the master server only drops the
         # request; wait until it is ready (guarded each pump).
         if not getattr(c, "is_connected_and_ready", False):
+            if not self.error and self.state in ("connecting", "connected"):
+                # log once per pump isn't noisy in our loop, but easier to debug
+                pass
             return
         if time.time() < self._join_retry_at:
             return
@@ -246,6 +252,7 @@ class YeeperBot:
         except Exception as e:  # noqa: BLE001
             self.error = f"join: {e}"
             self._join_sent_for = ""
+            self._join_retry_at = time.time() + 2.0
 
     def leave_room(self) -> None:
         self._want_room = ""

@@ -2056,14 +2056,21 @@ f.addEventListener('submit',async e=>{
 # room's live message feed can be watched from the editor. All of the work lives
 # in services/bot_manager.py; pyphotonrealtime is optional, so these routes just
 # report why the bot is unavailable when the package is missing.
+_bot_cache = {"t": 0.0, "data": None}
 
 @router.get("/api/bot")
 async def bot_status(request: Request):
     if not _authed_name(request):
         raise HTTPException(status_code=401, detail="unauthorized")
     from services.bot_manager import manager
-    return JSONResponse(content={"ok": True, **manager.status(),
-                                 "events": manager.events()[-80:]})
+    now = time.time()
+    if _bot_cache["data"] is not None and now - _bot_cache["t"] < 0.5:
+        return JSONResponse(content=_bot_cache["data"])
+    data = {"ok": True, **manager.status(),
+            "events": manager.events()[-80:]}
+    _bot_cache["t"] = now
+    _bot_cache["data"] = data
+    return JSONResponse(content=data)
 
 
 @router.post("/api/bot/start")
