@@ -2475,11 +2475,12 @@ async def handle_login(body: dict) -> dict:
     # Role-locked blocks (services/role_locks.py): e.g. the BLAZE block is only
     # owned/placeable with the server-only "blaze" role.
     from services import role_locks
-    await role_locks.load_blaze_holders()
-    if role_locks.BLAZE_ROLE in (account.get("roleKeys") or []) and not role_locks.is_blaze_holder(account_id):
-        account["roleKeys"] = [r for r in account.get("roleKeys") or [] if r != role_locks.BLAZE_ROLE]
-        await accounts.update_one({"accountID": account_id}, {"$pull": {"roleKeys": role_locks.BLAZE_ROLE}})
-        print(f"[roles] removed blaze from {account_id} (not on the owner's blaze list)")
+    for _role in role_locks._HOLDER_ROLES:
+        await role_locks.load_holders(_role)
+        if _role in (account.get("roleKeys") or []) and not role_locks.is_holder(_role, account_id):
+            account["roleKeys"] = [r for r in account.get("roleKeys") or [] if r != _role]
+            await accounts.update_one({"accountID": account_id}, {"$pull": {"roleKeys": _role}})
+            print(f"[roles] removed {_role} from {account_id} (not on the owner's {_role} list)")
     data["ownedPatterns"], data["roleKeys"] = role_locks.apply(
         data.get("ownedPatterns"), account.get("roleKeys"), account_id)
 

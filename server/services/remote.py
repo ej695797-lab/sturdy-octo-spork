@@ -98,8 +98,8 @@ screen_images = db["screen_images"]
 # slot -> (label, texture width, texture height). Sizes follow the picture area
 # of each block (frame border excluded), so images aren't stretched.
 SCREEN_SLOTS = {
-    "screen": ("Screen (3x3, everyone, creative)", 256, 256),
-    "blaze": ("BLAZE Screen (3x2, blaze role)", 288, 184),
+    "screen": ("Screen (3x3, not in this build)", 256, 256),
+    "blaze": ("Screen (3x2, larp role)", 288, 184),
 }
 SCREEN_RAW_BUDGET = 8 * 1024 * 1024     # decoded RGB bytes for all frames
 SCREEN_MAX_FRAMES = 60

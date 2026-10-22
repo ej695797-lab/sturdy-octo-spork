@@ -141,6 +141,34 @@ async def client_video_segment(vid: str, idx: int):
                     headers={"Cache-Control": "public, max-age=86400"})
 
 
+@router.get("/client/video/{vid}/v.bin")
+async def client_video_chunk(vid: str, request: Request):
+    """Compatibility: the state/feed lines give ".../v.bin?s=seg", and the APK
+    appends "<n>.b64". The Node relay served these straight from disk; without
+    it the same bytes are served here."""
+    import re
+    from services import video
+    m = re.match(r"^seg(\d+)\.b64$", request.query_params.get("s", ""))
+    if not m:
+        return Response(status_code=404)
+    d = await video.get_segment(vid, int(m.group(1)))
+    if not d:
+        return Response(status_code=404)
+    return Response(content=d, media_type="text/plain",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
+@router.get("/client/video/{vid}/a.bin")
+async def client_video_audio_bin(vid: str):
+    """Compatibility: the audio URL in the state/feed lines is ".../a.bin?v=<ts>"."""
+    from services import video
+    d = await video.get_audio(vid)
+    if not d:
+        return Response(status_code=404)
+    return Response(content=d, media_type="text/plain",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
 @router.get("/client/video/{vid}/audio.b64")
 async def client_video_audio(vid: str):
     """Base64 of the video's OGG soundtrack (stb_vorbis-decoded on the client)."""

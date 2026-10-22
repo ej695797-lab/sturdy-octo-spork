@@ -1591,6 +1591,51 @@ async def video_stop(request: Request):
     return JSONResponse(content={"ok": True, "wasPlaying": was})
 
 
+@router.get("/api/download")
+async def download_status():
+    from services import download
+    return JSONResponse(content={"ok": True, **(await download.status())})
+
+
+@router.post("/api/download")
+async def download_upload(request: Request):
+    """Body: the APK bytes. Query: ?name=Yeeps.apk. Served publicly at /download."""
+    from services import download
+    who = _authed_name(request) or "?"
+    name = (request.query_params.get("name") or "yeeps.apk")[:120]
+    try:
+        meta = await download.store_stream(request.stream(), name, who)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    await _discord_notify(f"**{who}** uploaded the download file '{meta['filename']}' "
+                          f"({meta['size'] // (1024 * 1024)} MB)")
+    return JSONResponse(content={"ok": True, **(await download.status())})
+
+
+@router.post("/api/download/url")
+async def download_set_url(request: Request):
+    """Body: {"url": "https://..."} to redirect /download elsewhere, "" for the file."""
+    from services import download
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    url = str(body.get("url") or "").strip()
+    if url and not url.startswith(("http://", "https://")):
+        raise HTTPException(status_code=400, detail="link must start with http:// or https://")
+    meta = await download.set_url(url)
+    await _discord_notify(f"**{_authed_name(request) or '?'}** set the download link to "
+                          f"{meta.get('url') or '(the uploaded file)'}")
+    return JSONResponse(content={"ok": True, **(await download.status())})
+
+
+@router.delete("/api/download")
+async def download_clear(request: Request):
+    from services import download
+    was = await download.clear()
+    return JSONResponse(content={"ok": True, "had": was})
+
+
 @router.get("/api/settings")
 async def get_settings():
     from services.db import globals_col

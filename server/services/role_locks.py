@@ -9,18 +9,25 @@ Grant: add the role to the account's roleKeys (editor / Mongo), e.g. "blaze".
 """
 import os
 
-ROLE_LOCKED_PATTERNS = {"1x5x2_stuffedTextBlaze": "blaze"}
-# Roles hidden from the client. "blaze" is NOT hidden any more: the BLAZE blocks
-# carry MapObject.requiredRoleKey = "blaze" (APK 131b4+), and the game checks
-# that against the roleKeys it sees, so it must see the role.
+# Only accounts with the given role may own (and therefore place) the pattern.
+# "larp" gates every custom block: only larp-role holders get them at all.
+ROLE_LOCKED_PATTERNS = {"1x5x2_stuffedTextBlaze": "blaze",
+                        "1x1_stuffed920Man": "larp",
+                        "1x1_stuffedsdn": "larp",
+                        "1x1_niche": "larp",
+                        "1x1_giggle": "larp",
+                        "1x1_920man": "larp",
+                        "2x2_dancingskeleton": "larp",
+                        "3x2x1_blazeScreenRole": "larp"}
+# Roles hidden from the client. Neither "blaze" nor "larp" is hidden: the BLAZE
+# blocks carry MapObject.requiredRoleKey = "blaze" (APK 131b4+), the custom
+# blocks carry requiredRoleKey = "larp", and the game checks that against the
+# roleKeys it sees, so it must see the role.
 SERVER_ONLY_ROLES: set = set()
 # Custom blocks every account owns (creative build menu). Kept out of the
-# techweb list so survival players can't craft them.
-ALWAYS_OWNED_PATTERNS: list = ["1x1_stuffed920Man",
-                               "1x1_stuffedsdn",
-                               "1x1_niche",
-                               "1x1_giggle",
-                               "1x1_920man"]
+# techweb list so survival players can't craft them. (Custom blocks are now
+# larp-gated, so this is empty.)
+ALWAYS_OWNED_PATTERNS: list = []
 # Never served to anyone, even if stored on an account.
 DISABLED_PATTERNS = {"3x3x1_blazeScreen",
                      # desert decorations with no mesh in 1.31 ("Could not find map
@@ -34,48 +41,68 @@ DISABLED_PATTERNS = {"3x3x1_blazeScreen",
                      "2x2x2_desertRock", "8x8x4_desertRock"}
 
 
-# Who may hold the "blaze" role (it unlocks the BLAZE blocks and saving shared
-# maps in game). Stored in globals {"key": "blaze_holders", "ids": [...]}; giving
-# or taking the role in the editor keeps it in step. Anyone else with "blaze" on
-# their account has it stripped (login + every account read). Env BLAZE_HOLDERS
-# seeds it (comma-separated account IDs).
+# Roles a server-side holder list controls. Each such role (it unlocks patterns
+# and, for "blaze", saving shared maps in game) is only honoured for accounts on
+# its list; anyone else carrying it has it stripped (login + every account read).
+# Stored in globals {"key": "<role>_holders", "ids": [...]}; giving or taking the
+# role in the editor keeps it in step. Env <ROLE>_HOLDERS seeds it (comma
+# separated account IDs).
 BLAZE_ROLE = "blaze"
-_DEFAULT_BLAZE_HOLDERS = set(filter(None, (os.getenv("BLAZE_HOLDERS") or "").replace(" ", "").split(",")))
-_blaze = {"ids": set(_DEFAULT_BLAZE_HOLDERS), "ts": 0.0}
+LARP_ROLE = "larp"
+_HOLDER_ROLES = (BLAZE_ROLE, LARP_ROLE)
+_holders = {}
+for _role in _HOLDER_ROLES:
+    _seed = set(filter(None, (os.getenv(f"{_role.upper()}_HOLDERS") or "").replace(" ", "").split(",")))
+    _holders[_role] = {"ids": _seed, "ts": 0.0}
+
+
+async def load_holders(role: str) -> set:
+    import time
+    st = _holders[role]
+    if time.monotonic() - st["ts"] > 30:
+        try:
+            from services.db import globals_col
+            doc = await globals_col.find_one({"key": f"{role}_holders"}, {"_id": 0, "ids": 1})
+            if doc and isinstance(doc.get("ids"), list):
+                st["ids"] = set(doc["ids"])
+        except Exception:
+            pass
+        st["ts"] = time.monotonic()
+    return st["ids"]
+
+
+async def set_holder(role: str, account_id: str, on: bool) -> None:
+    from services.db import globals_col
+    ids = set(await load_holders(role))
+    (ids.add if on else ids.discard)(account_id)
+    await globals_col.update_one({"key": f"{role}_holders"},
+                                 {"$set": {"key": f"{role}_holders", "ids": sorted(ids)}}, upsert=True)
+    _holders[role]["ids"], _holders[role]["ts"] = ids, 0.0
+
+
+def is_holder(role: str, account_id) -> bool:
+    return account_id in _holders[role]["ids"]
 
 
 async def load_blaze_holders() -> set:
-    import time
-    if time.monotonic() - _blaze["ts"] > 30:
-        try:
-            from services.db import globals_col
-            doc = await globals_col.find_one({"key": "blaze_holders"}, {"_id": 0, "ids": 1})
-            if doc and isinstance(doc.get("ids"), list):
-                _blaze["ids"] = set(doc["ids"])
-        except Exception:
-            pass
-        _blaze["ts"] = time.monotonic()
-    return _blaze["ids"]
+    return await load_holders(BLAZE_ROLE)
 
 
 async def set_blaze_holder(account_id: str, on: bool) -> None:
-    from services.db import globals_col
-    ids = set(await load_blaze_holders())
-    (ids.add if on else ids.discard)(account_id)
-    await globals_col.update_one({"key": "blaze_holders"}, {"$set": {"key": "blaze_holders", "ids": sorted(ids)}},
-                                 upsert=True)
-    _blaze["ids"], _blaze["ts"] = ids, 0.0
+    await set_holder(BLAZE_ROLE, account_id, on)
 
 
 def is_blaze_holder(account_id) -> bool:
-    return account_id in _blaze["ids"]
+    return is_holder(BLAZE_ROLE, account_id)
 
 
 def apply(owned, roles, account_id=None) -> tuple[list, list]:
     """(ownedPatterns, roleKeys) as the client should see them."""
     roles = list(roles or [])
-    if account_id is not None and BLAZE_ROLE in roles and not is_blaze_holder(account_id):
-        roles = [r for r in roles if r != BLAZE_ROLE]
+    if account_id is not None:
+        for _role in _HOLDER_ROLES:
+            if _role in roles and not is_holder(_role, account_id):
+                roles = [r for r in roles if r != _role]
     owned = list(owned or [])
     have = set(roles)
     owned = [p for p in owned if p not in DISABLED_PATTERNS]

@@ -15,7 +15,7 @@ from pathlib import Path
 
 from starlette.concurrency import iterate_in_threadpool
 from fastapi import FastAPI, Request
-from fastapi.responses import Response, JSONResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response, JSONResponse
 
 from routers.lambda_router import router as lambda_router
 from routers.dynamo_router import router as dynamo_router
@@ -254,6 +254,22 @@ app.include_router(editor_router, prefix="/editor")
 # Public feed the 1.31 APK polls: announcements + remote disk audio
 from routers.client_router import router as client_router
 app.include_router(client_router)
+
+
+# Public download link players use to get the APK: the file uploaded in the
+# editor's Settings tab, or a redirect to an external link (either can be unset).
+@app.get("/download")
+async def download_file():
+    from services import download
+    meta = await download.get_meta()
+    url = (meta.get("url") or "").strip()
+    if url:
+        return RedirectResponse(url, status_code=302)
+    p = download.path_for(meta)
+    if p:
+        return FileResponse(p, media_type="application/vnd.android.package-archive",
+                            filename=meta.get("filename") or "yeeps.apk")
+    return Response("No download is set up yet.", status_code=404, media_type="text/plain")
 
 
 # ─── Debug: dump recent redirected traffic ──────────────────────────

@@ -119,6 +119,7 @@
     <button data-t="disks">Disks</button>
     <button data-t="news">News</button>
     <button data-t="announce">Announce</button>
+    <button data-t="screens">Screens</button>
     <button data-t="errors">Errors</button>
     <button data-t="settings">Settings</button>
     <span class="sp"></span>
@@ -855,7 +856,23 @@ const tabs = {
       <details open><summary>Maintenance mode</summary><div style="padding:10px">
         <p class="note">Anything typed here is shown to every player as a fatal error and stops them playing. Leave it empty and save to turn it off.</p>
         <textarea id="setmaint" style="height:80px" maxlength="300" placeholder="e.g. Server maintenance, back in 10 minutes"></textarea>
-        <div class="row" style="margin-top:8px"><button class="del" id="savemaint">Save maintenance message</button> <button class="go" id="clearmaint">Turn off maintenance</button></div></div></details>`;
+        <div class="row" style="margin-top:8px"><button class="del" id="savemaint">Save maintenance message</button> <button class="go" id="clearmaint">Turn off maintenance</button></div></div></details>
+      <details><summary>Download link</summary><div style="padding:10px">
+        <p class="note">What <b>/download</b> gives players: upload the APK here, or point the link at a file hosted somewhere else. The upload is stored on this server, so it is lost when the service restarts or redeploys; an external link always works.</p>
+        <p id="dlstat" class="muted">Loading...</p>
+        <div class="row" style="align-items:center;margin:8px 0">
+          <input type="file" id="dlfile" accept=".apk,application/vnd.android.package-archive">
+          <button class="go" id="dlup">Upload APK</button>
+          <button class="del" id="dlclear">Remove</button>
+          <a id="dlopen" href="/download" target="_blank" class="muted">Open /download</a>
+        </div>
+        <progress id="dlprog" value="0" max="100" style="width:100%;display:none"></progress>
+        <div class="row" style="align-items:center;margin-top:8px">
+          <input id="dlurl" placeholder="https://github.com/.../Yeeps.apk" style="flex:1;min-width:260px">
+          <button class="go" id="dlsave">Use this link</button>
+        </div>
+        <p class="note">With a link set, /download redirects there instead of using the uploaded file. Clear the box and save to go back to the uploaded file.</p>
+      </div></details>`;
     const post = b => api("/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) });
     try { const r = await api("/settings"); document.getElementById("setfe").checked = r.friends_everyone; document.getElementById("setmaint").value = r.maintenance; }
     catch (e) { toast(e.message, true); }
@@ -865,9 +882,38 @@ const tabs = {
       if (m && !confirm("Turn ON maintenance? Every player will be blocked from playing.")) return;
       try { await post({ maintenance: m }); toast(m ? "Maintenance ON" : "Maintenance OFF"); } catch (e) { toast(e.message, true); } };
     document.getElementById("clearmaint").onclick = async () => { try { await post({ maintenance: "" }); document.getElementById("setmaint").value = ""; toast("Maintenance OFF"); } catch (e) { toast(e.message, true); } };
+    const dlfmt = s => s > 1048576 ? (s / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(s / 1024)) + " KB";
+    const dlshow = s => {
+      if (!s || !s.filename) { document.getElementById("dlstat").textContent = "Nothing set up: /download returns 404."; }
+      else { document.getElementById("dlstat").textContent = "File: " + s.filename + " (" + dlfmt(s.size) + ")" + (s.present ? "" : " - missing from disk, upload again") + (s.url ? " - /download redirects to " + s.url : ""); }
+      document.getElementById("dlurl").value = (s && s.url) || "";
+    };
+    try { dlshow(await api("/download")); } catch (e) { document.getElementById("dlstat").textContent = e.message; }
+    document.getElementById("dlup").onclick = () => {
+      const f = document.getElementById("dlfile").files[0];
+      if (!f) return toast("Pick the APK first", true);
+      const bar = document.getElementById("dlprog"), btn = document.getElementById("dlup");
+      bar.style.display = "block"; bar.value = 0; btn.disabled = true; btn.textContent = "Uploading...";
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", API + "/download?name=" + encodeURIComponent(f.name));
+      xhr.upload.onprogress = e => { if (e.lengthComputable) { bar.value = Math.round(e.loaded * 100 / e.total); btn.textContent = "Uploading " + Math.round(e.loaded * 100 / e.total) + "%"; } };
+      xhr.onload = () => { btn.disabled = false; btn.textContent = "Upload APK"; bar.style.display = "none";
+        let j = {}; try { j = JSON.parse(xhr.responseText); } catch (_) {}
+        if (xhr.status >= 200 && xhr.status < 300) { dlshow(j); toast("APK is live at /download"); }
+        else toast(j.detail || ("Upload failed (" + xhr.status + ")"), true); };
+      xhr.onerror = () => { btn.disabled = false; btn.textContent = "Upload APK"; bar.style.display = "none"; toast("Upload failed", true); };
+      xhr.send(f);
+    };
+    document.getElementById("dlsave").onclick = async () => {
+      try { const s = await post({ url: document.getElementById("dlurl").value.trim() }); dlshow(s); toast(s.url ? "Redirecting /download to that link" : "Using the uploaded file"); }
+      catch (e) { toast(e.message, true); } };
+    document.getElementById("dlclear").onclick = async () => {
+      if (!confirm("Remove the download file and link?")) return;
+      try { await api("/download", { method: "DELETE" }); dlshow({ filename: "", size: 0, ts: 0, by: "", url: "", present: false }); toast("Removed"); }
+      catch (e) { toast(e.message, true); } };
   },
   screens: async () => {
-    view.innerHTML = `<p class="note">Pictures shown on the screen blocks. Upload a PNG, JPG, GIF (animated is fine) or WebP. Every placed copy of that block, in every room, shows it within about 30 seconds. Pictures are fitted to the block with black bars if needed; long GIFs are cut down to about 50 frames at the same speed. Needs APK 131b3 or newer. The 3x3 Screen is currently disabled (it crashed big rooms).</p><div id="scr"></div>`;
+    view.innerHTML = `<p class="note">Pictures shown on the screen blocks. Upload a PNG, JPG, GIF (animated is fine) or WebP. Every placed copy of that block, in every room, shows it within about 30 seconds. Pictures are fitted to the block with black bars if needed; long GIFs are cut down to about 50 frames at the same speed. Needs APK 131b3 or newer. The 3x3 Screen isn't in this build; the 3x2 Screen block (larp role) is.</p><div id="scr"></div>`;
     async function load() {
       const box = document.getElementById("scr");
       try {
