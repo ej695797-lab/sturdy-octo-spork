@@ -22,6 +22,15 @@ from config import BOT_KEY
 APP_ID = os.getenv("PHOTON_APP_ID", "a279e749-3e24-464c-9336-f3a412bdfdbc")
 APP_VERSION = os.getenv("PHOTON_APP_VERSION", "1.31.0_2.45")
 APP_REGION = os.getenv("PHOTON_REGION", "us")
+# Transport for the bot's Photon connection. Raw TCP (4530/4533) and UDP
+# (5055/5058) are blocked on some hosts (Render's free tier blocks non-HTTP
+# outbound), which leaves the bot stuck in "connecting" and it never joins.
+# WebSocketSecure (19090/19093) is TLS over HTTP ports and gets through where
+# the others don't, so it is the safe default. Override with PHOTON_PROTOCOL:
+# udp | tcp | ws | wss.
+APP_PROTOCOL = (os.getenv("PHOTON_PROTOCOL", "wss") or "wss").strip().lower()
+_PROTOCOLS = {"udp": "Udp", "tcp": "Tcp", "ws": "WebSocket", "websocket": "WebSocket",
+              "wss": "WebSocketSecure", "websocketsecure": "WebSocketSecure"}
 
 _MAX_LOG = 400
 
@@ -81,6 +90,7 @@ class BotManager:
             room=room or "",
             spawn=bool(spawn),
             region=APP_REGION,
+            protocol=_PROTOCOLS.get(APP_PROTOCOL, "WebSocketSecure"),
         )
         if not self._bot.connect():
             self.error = self._bot.error or "connect failed"

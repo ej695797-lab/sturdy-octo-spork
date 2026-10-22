@@ -66,6 +66,7 @@ class YeeperBot:
         room: str = "",
         spawn: bool = False,
         region: str = "",
+        protocol: str = "Tcp",
     ) -> None:
         self.name = name
         self.app_id = app_id
@@ -79,6 +80,9 @@ class YeeperBot:
         # matchmaking pool that never shares a room with players; the same goes
         # for the region when "best region" would pick a different one.
         self.region = region
+        # Transport: Tcp/Udp use raw ports (4530/5055) that some hosts block, so
+        # the bot can use WebSocketSecure (TLS over 19090/19093) instead.
+        self.protocol = protocol
 
         self.state = "idle"          # idle | connecting | connected | in_room | error
         self.error = ""
@@ -109,6 +113,7 @@ class YeeperBot:
         from pyphotonrealtime.realtime.options import EnterRoomParams
 
         bot = self
+        _proto = getattr(ConnectionProtocol, self.protocol, ConnectionProtocol.Tcp)
 
         class _Cb(ConnectionCallbacks, MatchmakingCallbacks, InRoomCallbacks,
                   OnEventCallback):
@@ -120,20 +125,24 @@ class YeeperBot:
                 bot.error = ""
                 bot._join_sent_for = ""
                 bot._join_retry_at = 0.0
+                print(f"[bot] connected to master, want={bot._want_room}")
                 bot._maybe_join()
 
             def on_disconnected(self, cause) -> None:
                 bot.state = "idle"
                 bot._join_sent_for = ""
                 bot.error = f"disconnected: {cause}"
+                print(f"[bot] disconnected: {cause}")
 
             def on_custom_authentication_failed(self, msg: str) -> None:
                 bot.state = "error"
                 bot.error = f"auth failed: {msg}"
+                print(f"[bot] auth failed: {msg}")
 
             def on_created_room(self) -> None:
                 bot.state = "in_room"
                 bot._spawn_retry_at = 0.0
+                print("[bot] created room")
 
             def on_joined_room(self) -> None:
                 bot.state = "in_room"
@@ -141,11 +150,13 @@ class YeeperBot:
                 bot.view_id = 0
                 bot.remotes.clear()
                 bot._spawn_retry_at = 0.0
+                print(f"[bot] joined room {getattr(getattr(bot._client,'current_room',None),'name','?')}")
 
             def on_join_room_failed(self, code: int, msg: str) -> None:
                 bot.error = f"join failed {code}: {msg}"
                 bot._join_sent_for = ""
-                bot._join_retry_at = time.time() + 5
+                bot._join_retry_at = time.time() + 2
+                print(f"[bot] join failed {code}: {msg}")
 
             def on_create_room_failed(self, code: int, msg: str) -> None:
                 bot.error = f"create room failed {code}: {msg}"
@@ -184,7 +195,7 @@ class YeeperBot:
         self._settings = AppSettings(
             app_id_realtime=self.app_id,
             app_version=self.app_version,
-            protocol=ConnectionProtocol.Tcp,
+            protocol=_proto,
         )
         if self.region:
             self._settings.fixed_region = self.region
@@ -195,10 +206,12 @@ class YeeperBot:
             self._build()
         self.state = "connecting"
         self.error = ""
+        print(f"[bot] connecting as {self.name} app={self.app_id} ver={self.app_version} region={self.region} room={self.room} spawn={self.spawn}")
         ok = self._client.connect_using_settings(self._settings)
         if not ok:
             self.state = "error"
             self.error = "connect_using_settings returned False"
+            print(f"[bot] connect failed: {self.error}")
         return bool(ok)
 
     def service(self) -> None:
