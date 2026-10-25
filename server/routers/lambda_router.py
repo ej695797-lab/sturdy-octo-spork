@@ -139,7 +139,7 @@ HANDLER_TABLE = [
 ]
 
 
-async def _generic_fallback(body: dict) -> dict:
+async def _generic_fallback_orig(body: dict) -> dict:
     """
     Generic fallback for unknown Lambda functions.
     If body has propertiesToGet → return defaults for each property.
@@ -150,6 +150,12 @@ async def _generic_fallback(body: dict) -> dict:
         data = {p: default_for_property(p) for p in props}
         return {"data": data}
     return {"data": {"success": 1}}
+
+
+async def _generic_fallback(body: dict) -> dict:   # EXTRAS-PATCH-v1: remember what has no handler
+    from handlers.extras import log_unknown
+    await log_unknown(body)
+    return await _generic_fallback_orig(body)
 
 
 @router.post("/2015-03-31/functions/{function_name}/invocations")
