@@ -2139,6 +2139,56 @@ async def bot_spawn(request: Request):
     return JSONResponse(content={"ok": True, **manager.spawn_player()})
 
 
+
+# ─── EXTRAS-PATCH-v1: community worlds + what the server has no handler for ──
+@router.get("/api/worlds")
+async def worlds_get():
+    from handlers import extras as x
+    return JSONResponse(content={"ok": True, "enabled": x.community_on(), "worlds": await x.list_worlds()})
+
+
+@router.post("/api/worlds")
+async def worlds_create(request: Request):
+    from handlers import extras as x
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    ok, msg, doc = await x.create_world(body.get("name"), str(body.get("adminAccountID") or "").strip(),
+                                        body.get("description", ""), bool(body.get("featured")))
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+    return JSONResponse(content={"ok": True, "world": doc})
+
+
+@router.post("/api/worlds/{name}/feature")
+async def worlds_feature(name: str, request: Request):
+    from handlers import extras as x
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    if not await x.set_featured(name, bool(body.get("featured"))):
+        raise HTTPException(status_code=404, detail="No such world")
+    return JSONResponse(content={"ok": True})
+
+
+@router.delete("/api/worlds/{name}")
+async def worlds_delete(name: str):
+    from handlers import extras as x
+    if not await x.delete_world(name):
+        raise HTTPException(status_code=404, detail="No such world")
+    return JSONResponse(content={"ok": True})
+
+
+@router.get("/api/extras/calls")
+async def extras_calls():
+    from handlers import extras as x
+    unknown = [r async for r in x.extra_unknown.find({}, {"_id": 0}).sort("lastAt", -1).limit(100)]
+    recent = [r async for r in x.extra_calls.find({}, {"_id": 0}).sort("_id", -1).limit(30)]
+    return JSONResponse(content={"ok": True, "unknown": unknown, "recent": recent})
+# ─── end EXTRAS-PATCH-v1 ─────────────────────────────────────────────────────
+
 @router.get("/login", response_class=HTMLResponse)
 async def editor_login_page(request: Request):
     if await _usable_session(request):
