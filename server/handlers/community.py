@@ -24,7 +24,7 @@ async def handle_cw_try_purchase_fuel(body: dict) -> dict:
     return {
         "success": 1,
         "newCurrency": 1,
-        "fuelExpireTimestamp": "2099 01/01 00:00:00",
+        "fuelExpireTimestamp": "3019 01/09 16:15:20",
         "cost": 1,
     }
 
