@@ -174,3 +174,8 @@ async def handle_try_redeem_currency_stash(body: dict) -> dict:
         "newCurrency": 0,
         "currencyAmount": 0,
     }
+
+# ─── EXTRAS-PATCH-v1 ────────────────────────────────────────────────────────
+async def _world_list(body: dict, which: str) -> dict:
+    from handlers import extras as _x
+    return await _x.world_list(body, which)
