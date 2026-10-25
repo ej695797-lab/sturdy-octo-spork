@@ -216,7 +216,7 @@ async def handle_save_room_map_properties(body: dict) -> dict:
     account_id = body.get("accountID", "")
     if not room_key:
         return {"success": 0}
-    if room_key.startswith("c_"):          # community worlds are read live from Yeeps, never stored here
+    if room_key.startswith("c_") and not _cw_on():          # community worlds off (EXTRAS_COMMUNITY=0)
         print(f"[cw] property save ignored (live from Yeeps): {room_key} by {account_id}")
         return {"success": 1}
     # Raid protection: official rooms are editor-only for regular players; map
@@ -261,7 +261,7 @@ async def handle_save_room_map(body: dict) -> dict:
 
     if not room_key:
         return {"success": 0}
-    if room_key.startswith("c_"):          # community worlds are read live from Yeeps, never stored here
+    if room_key.startswith("c_") and not _cw_on():          # community worlds off (EXTRAS_COMMUNITY=0)
         print(f"[cw] map save ignored (live from Yeeps): {room_key} by {account_id}")
         return {"success": 1}
 
@@ -473,3 +473,18 @@ async def handle_fetch_map_data(body: dict) -> dict:
         "saveData": save_data,
         "saveInternalStates": doc.get("saveInternalStates", ""),
     }
+
+# ─── EXTRAS-PATCH-v1 ────────────────────────────────────────────────────────
+def _cw_on() -> bool:
+    from handlers import extras as _x
+    return _x.community_on()
+
+
+_orig_may_save_shared = _may_save_shared
+
+
+async def _may_save_shared(account_id: str, room_key: str, body: dict) -> bool:
+    from handlers import extras as _x
+    if room_key.startswith("c_") and _x.community_on() and await _x.may_edit_world(account_id, room_key):
+        return True
+    return await _orig_may_save_shared(account_id, room_key, body)
