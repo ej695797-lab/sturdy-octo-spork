@@ -37,11 +37,11 @@ async def handle_fetch_global_rotation(body: dict) -> dict:
     #   {<subcategory>: [{"value": int, "key": str, "maxCount": int?}]}
     # Returning {} leaves every item uncategorised, so nothing shows up in
     # the build menu even though the account owns it. Everything goes under
-    # the base challenges category for now; the real per-item subcategory
-    # mapping (challenges_beach, challenges_paint, ...) isn't in the captured data.
+    # the base techWeb category for now; the real per-item subcategory
+    # mapping (techWeb_beach, techWeb_paint, ...) isn't in the captured data.
     item_keys = {}
-    if rotation_key == "challenges":
-        item_keys = {"challenges": [{"value": 9200, "key": k} for k in await techweb_items()]}
+    if rotation_key == "techWeb":
+        item_keys = {"techWeb": [{"value": 9200, "key": k} for k in await techweb_items()]}
 
     result = {
         "rotationKey": rotation_key,
