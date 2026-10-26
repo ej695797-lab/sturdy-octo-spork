@@ -152,6 +152,29 @@ async def _generic_fallback_orig(body: dict) -> dict:
     return {"data": {"success": 1}}
 
 
+# EXTRAS-PATCH-v2: calls the game makes that had no handler
+from handlers import extras as _xx
+
+
+async def _h_track_room_visited(body: dict) -> dict:
+    return await _xx.track_room_visited(body)
+
+
+async def _h_log_analytic_event(body: dict) -> dict:
+    return await _xx.log_analytic_event(body)
+
+
+async def _h_holiday_rotation(body: dict) -> dict:
+    return await _xx.holiday_rotation(body)
+
+
+HANDLER_TABLE.extend([
+    ("trackroomvisited", _h_track_room_visited),
+    ("loganalyticevent", _h_log_analytic_event),
+    ("fetchholidayrotation", _h_holiday_rotation),
+])
+
+
 async def _generic_fallback(body: dict) -> dict:   # EXTRAS-PATCH-v1: remember what has no handler
     from handlers.extras import log_unknown
     await log_unknown(body)
