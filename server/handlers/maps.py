@@ -8,7 +8,7 @@ import time as _time
 
 from datetime import datetime, timezone
 
-from services.db import maps, rooms
+from services.db import accounts, maps, rooms
 
 # Official rooms that must NOT be editable in-game (raid protection). Admins can
 # still change them from the web editor — that's a separate code path. Override
