@@ -118,6 +118,7 @@
     <button data-t="maps">Maps</button>
     <button data-t="disks">Disks</button>
     <button data-t="worlds">Worlds</button>
+    <button data-t="rotations">Rotations</button>
     <button data-t="news">News</button>
     <button data-t="announce">Announce</button>
     <button data-t="screens">Screens</button>
@@ -542,35 +543,71 @@ const tabs = {
     };
     try { await refresh(); } catch (e) { document.getElementById("folders").textContent = e.message; }
   },
-  worlds: async () => { /* EXTRAS-PATCH-v1 */
-    view.innerHTML = `<p class="note">Community worlds live on this server only. Players enter one by name from the in-game community portal. Create one here (or let players buy one in game), pick its admin, and feature it for the lists.</p>
+  worlds: async () => { /* EXTRAS-PATCH-v2 */
+    view.innerHTML = `<p class="note">Community worlds live on this server only. Players enter one by name from the in-game community portal, but only after it is <b>bought</b> (and while it has fuel). Worlds you create here are <b>reserved</b> for the admin to buy in game, unless you tick free.</p>
       <div class="row" style="align-items:center"><label>World name</label><input type="text" id="wname" placeholder="MYWORLD" maxlength="24">
         <label>Admin account ID</label><input type="text" id="wadmin" placeholder="o_123..." style="min-width:240px">
+        <label><input type="checkbox" id="wfree"> free (skip buying)</label>
         <button class="go" id="wmake">Create</button></div>
       <p class="muted" id="wmsg"></p><div id="wtable"></div>
       <h3 style="margin-top:22px">Calls the server has no handler for</h3>
       <p class="note">What the game asked for that nothing answers. This is the list of handlers still worth adding.</p><div id="wcalls"></div>`;
     const $ = id => document.getElementById(id);
+    const post = (p, b) => api(p, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) });
+    const jsDate = s => new Date(String(s).replace(/^(\d{4}) (\d\d)\/(\d\d) (.*)$/, "$1-$2-$3T$4Z"));
+    const fuelText = w => { const d = jsDate(w.fuelExpireTimestamp || ""); if (isNaN(d) || d.getUTCFullYear() > 2090) return "no limit";
+      return d < new Date() ? "OUT OF FUEL" : "until " + d.toISOString().slice(0, 10); };
     const load = async () => {
       const r = await api("/worlds");
-      $("wmsg").textContent = r.enabled ? "" : "Community worlds are OFF (EXTRAS_COMMUNITY=0).";
-      $("wtable").innerHTML = r.worlds.length ? `<table><tr><th>World</th><th>Admin</th><th>Visits</th><th>Featured</th><th></th></tr>` +
+      $("wmsg").textContent = r.enabled ? `Prices: world ${r.prices.world}, fuel ${r.prices.fuel} per ${r.prices.fuelDays || "-"} days.` : "Community worlds are OFF (EXTRAS_COMMUNITY=0).";
+      $("wtable").innerHTML = r.worlds.length ? `<table><tr><th>World</th><th>Admin</th><th>Status</th><th>Visits</th><th>Featured</th><th>Staff</th><th></th></tr>` +
         r.worlds.map(w => `<tr><td>${esc(w.worldName)}</td><td>${esc(w.adminName || "")} <span class="muted">${esc(w.adminAccountID)}</span></td>
+          <td>${w.purchased ? "Bought" : "<b>Reserved</b> (not bought)"}<br><span class="muted">fuel: ${fuelText(w)}</span></td>
           <td>${w.visitCount || 0}</td><td><input type="checkbox" data-f="${esc(w.worldKey)}" ${w.featured ? "checked" : ""}></td>
-          <td><button class="del" data-d="${esc(w.worldKey)}">Delete</button></td></tr>`).join("") + `</table>` : `<p class="muted">No worlds yet.</p>`;
-      document.querySelectorAll("[data-f]").forEach(c => c.onchange = async () => { try { await api("/worlds/" + c.dataset.f + "/feature", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ featured: c.checked }) }); } catch (e) { toast(e.message, true); } });
-      document.querySelectorAll("[data-d]").forEach(b => b.onclick = async () => { if (!confirm("Delete " + b.dataset.d + "? Its blocks stay in the database.")) return; try { await api("/worlds/" + b.dataset.d, { method: "DELETE" }); load(); } catch (e) { toast(e.message, true); } });
+          <td>${Object.keys(w.staffPermissions || {}).map(s => `<span class="muted">${esc(s)}</span> <a href="#" data-sr="${esc(w.worldKey)}|${esc(s)}">x</a>`).join("<br>") || '<span class="muted">none</span>'}
+            <br><a href="#" data-sa="${esc(w.worldKey)}">+ add staff</a></td>
+          <td><button data-u="${esc(w.worldKey)}|${w.purchased ? 0 : 1}">${w.purchased ? "Lock" : "Unlock"}</button>
+              <button data-fu="${esc(w.worldKey)}">+30d fuel</button>
+              <button class="del" data-d="${esc(w.worldKey)}">Delete</button></td></tr>`).join("") + `</table>` : `<p class="muted">No worlds yet.</p>`;
+      const go = async (fn) => { try { await fn(); load(); } catch (e) { toast(e.message, true); } };
+      document.querySelectorAll("[data-f]").forEach(c => c.onchange = () => go(() => post("/worlds/" + c.dataset.f + "/feature", { featured: c.checked })));
+      document.querySelectorAll("[data-u]").forEach(b => b.onclick = () => { const [k, v] = b.dataset.u.split("|"); go(() => post("/worlds/" + k + "/edit", { purchased: v === "1" })); });
+      document.querySelectorAll("[data-fu]").forEach(b => b.onclick = () => go(() => post("/worlds/" + b.dataset.fu + "/edit", { fuelDays: 30 })));
+      document.querySelectorAll("[data-sa]").forEach(a => a.onclick = e => { e.preventDefault(); const id = prompt("Account ID of the new staff member (o_...)"); if (id) go(() => post("/worlds/" + a.dataset.sa + "/edit", { staffAdd: id.trim() })); });
+      document.querySelectorAll("[data-sr]").forEach(a => a.onclick = e => { e.preventDefault(); const [k, s] = a.dataset.sr.split("|"); go(() => post("/worlds/" + k + "/edit", { staffRemove: s })); });
+      document.querySelectorAll("[data-d]").forEach(b => b.onclick = () => { if (confirm("Delete " + b.dataset.d + "? Its blocks stay in the database.")) go(() => api("/worlds/" + b.dataset.d, { method: "DELETE" })); });
       const c = await api("/extras/calls");
       $("wcalls").innerHTML = c.unknown.length ? `<table><tr><th>Name</th><th>Times</th><th>Last seen (UTC)</th><th>Last request</th></tr>` +
         c.unknown.map(u => `<tr><td>${esc(u.fn)}</td><td>${u.count}</td><td>${esc(u.lastAt || "")}</td><td class="muted">${esc(JSON.stringify(u.lastBody || {}).slice(0, 160))}</td></tr>`).join("") + `</table>` : `<p class="muted">Nothing yet.</p>`;
     };
     $("wmake").onclick = async () => {
       try {
-        await api("/worlds", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: $("wname").value, adminAccountID: $("wadmin").value }) });
+        await post("/worlds", { name: $("wname").value, adminAccountID: $("wadmin").value, free: $("wfree").checked });
         toast("World created"); $("wname").value = ""; load();
       } catch (e) { toast(e.message, true); }
     };
     try { await load(); } catch (e) { $("wmsg").textContent = e.message; }
+  },
+  rotations: async () => { /* EXTRAS-PATCH-v2 */
+    view.innerHTML = `<p class="note">The shop and rotation lists the game asks for (the keys it has asked for so far are in the list). The game gets what you save here for that key. The format is a JSON object, for example <code>{"expireTime": "2027 01/01 00:00:00", "itemKeys": {}}</code>. Empty it and save to go back to the default.</p>
+      <div class="row" style="align-items:center"><label>Rotation key</label><select id="rkey" style="min-width:260px"></select>
+        <input type="text" id="rnew" placeholder="or type a new key"><button id="radd">Use</button></div>
+      <textarea id="rjson" rows="14" style="width:100%;font-family:monospace"></textarea>
+      <div class="row"><button class="go" id="rsave">Save</button><button class="del" id="rclear">Clear override</button></div><p class="muted" id="rmsg"></p>`;
+    const $ = id => document.getElementById(id);
+    let data = { seen: [], overrides: {} };
+    const show = () => { const k = $("rkey").value; $("rjson").value = k ? JSON.stringify(data.overrides[k] || { startTime: "1970 01/01 00:00:00", expireTime: "", itemKeys: {} }, null, 2) : ""; };
+    const load = async () => {
+      data = await api("/rotations"); const keep = $("rkey").value;
+      $("rkey").innerHTML = data.seen.map(k => `<option value="${esc(k)}">${esc(k)}${data.overrides[k] ? " (override set)" : ""}</option>`).join("") || `<option value="">nothing asked for yet</option>`;
+      if (keep && data.seen.includes(keep)) $("rkey").value = keep; show();
+    };
+    $("rkey").onchange = show;
+    $("radd").onclick = () => { const k = $("rnew").value.trim(); if (!k) return; if (![...$("rkey").options].some(o => o.value === k)) $("rkey").add(new Option(k, k)); $("rkey").value = k; show(); };
+    const save = async (value) => { try { await api("/rotations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: $("rkey").value, value }) }); toast("Saved"); load(); } catch (e) { toast(e.message, true); } };
+    $("rsave").onclick = () => { try { save(JSON.parse($("rjson").value || "{}")); } catch (e) { toast("That isn't valid JSON: " + e.message, true); } };
+    $("rclear").onclick = () => save(null);
+    try { await load(); } catch (e) { $("rmsg").textContent = e.message; }
   },
   disks: async () => {
     view.innerHTML = `<p class="note">Your own music on the game's record disks, for everyone, with no new APK. Pick a record, pick an audio file (mp3, ogg, wav, ...), Upload. Players hear it the next time they start the game. Files are converted to mono WAV in your browser (OGG files are sent as they are); about 4 minutes fit.</p>
