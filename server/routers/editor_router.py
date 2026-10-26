@@ -2140,11 +2140,12 @@ async def bot_spawn(request: Request):
 
 
 
-# ─── EXTRAS-PATCH-v1: community worlds + what the server has no handler for ──
+# ─── EXTRAS-PATCH-v2: community worlds, rotations, what the server has no handler for ──
 @router.get("/api/worlds")
 async def worlds_get():
     from handlers import extras as x
-    return JSONResponse(content={"ok": True, "enabled": x.community_on(), "worlds": await x.list_worlds()})
+    return JSONResponse(content={"ok": True, "enabled": x.community_on(), "worlds": await x.list_worlds(),
+                                 "prices": {"world": x.world_price(), "fuel": x.fuel_price(), "fuelDays": x.fuel_days()}})
 
 
 @router.post("/api/worlds")
@@ -2155,7 +2156,8 @@ async def worlds_create(request: Request):
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON")
     ok, msg, doc = await x.create_world(body.get("name"), str(body.get("adminAccountID") or "").strip(),
-                                        body.get("description", ""), bool(body.get("featured")))
+                                        body.get("description", ""), bool(body.get("featured")),
+                                        purchased=bool(body.get("free")))
     if not ok:
         raise HTTPException(status_code=400, detail=msg)
     return JSONResponse(content={"ok": True, "world": doc})
@@ -2173,6 +2175,19 @@ async def worlds_feature(name: str, request: Request):
     return JSONResponse(content={"ok": True})
 
 
+@router.post("/api/worlds/{name}/edit")
+async def worlds_edit(name: str, request: Request):
+    from handlers import extras as x
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    ok, msg = await x.edit_world(name, body if isinstance(body, dict) else {})
+    if not ok:
+        raise HTTPException(status_code=404, detail=msg)
+    return JSONResponse(content={"ok": True})
+
+
 @router.delete("/api/worlds/{name}")
 async def worlds_delete(name: str):
     from handlers import extras as x
@@ -2187,7 +2202,36 @@ async def extras_calls():
     unknown = [r async for r in x.extra_unknown.find({}, {"_id": 0}).sort("lastAt", -1).limit(100)]
     recent = [r async for r in x.extra_calls.find({}, {"_id": 0}).sort("_id", -1).limit(30)]
     return JSONResponse(content={"ok": True, "unknown": unknown, "recent": recent})
-# ─── end EXTRAS-PATCH-v1 ─────────────────────────────────────────────────────
+
+
+@router.get("/api/rotations")
+async def rotations_get():
+    from handlers import extras as x
+    seen = set()
+    async for r in x.extra_unknown.find({"fn": {"$regex": "^rotation:"}}, {"_id": 0, "fn": 1}):
+        k = r["fn"][len("rotation:"):]
+        if k and k != "-":
+            seen.add(k)
+    ov = await x.rotation_overrides()
+    return JSONResponse(content={"ok": True, "seen": sorted(seen | set(ov)), "overrides": ov})
+
+
+@router.post("/api/rotations")
+async def rotations_set(request: Request):
+    from handlers import extras as x
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    key = str(body.get("key") or "").strip()[:80]
+    if not key:
+        raise HTTPException(status_code=400, detail="Give the rotation key")
+    val = body.get("value")
+    if val is not None and not isinstance(val, dict):
+        raise HTTPException(status_code=400, detail="The override must be a JSON object")
+    await x.set_rotation_override(key, val)
+    return JSONResponse(content={"ok": True})
+# ─── end EXTRAS-PATCH-v2 ─────────────────────────────────────────────────────
 
 @router.get("/login", response_class=HTMLResponse)
 async def editor_login_page(request: Request):
