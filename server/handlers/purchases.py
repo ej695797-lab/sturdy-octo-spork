@@ -256,3 +256,31 @@ async def _private_room_op(fl: str, account_id: str, body: dict) -> None:
         name = str(body.get("roomName") or f"Room {len(nodes) - 1}")[:40]
         await rooms.insert_one(_full_room(rk, name, [80, 80, 80], theme=theme))
     print(f"[pw] {account_id} added {theme} room {rk} at {pos}")
+
+# ─── EXTRAS-PATCH-v1 ────────────────────────────────────────────────────────
+from handlers import extras as _x
+
+_orig_is_blocked = _is_blocked
+_orig_handle_purchase = handle_purchase
+
+
+def _is_blocked(fl: str) -> bool:
+    if _x.room_purchases_on() and ("trypurchaseprivateroom" in fl or "expandprivateworld" in fl):
+        return False
+    if _x.community_on() and _x.room_purchases_on() and "communityworld" in fl:
+        return False
+    return _orig_is_blocked(fl)
+
+
+async def handle_purchase(body: dict) -> dict:
+    fn = _fn_name(body)
+    fl = fn.lower()
+    if _x.community_on() and "communityworld" in fl:
+        if "trypurchasecommunityworld" in fl and not any(k in fl for k in ("theme", "name", "lobby", "fuel", "delete")):
+            r = await _x.purchase_world(body)
+            if r is not None:
+                await _log(fn, body, r)
+                return r
+        elif "delete" in fl:
+            await _x.delete_world_for(body)
+    return await _orig_handle_purchase(body)

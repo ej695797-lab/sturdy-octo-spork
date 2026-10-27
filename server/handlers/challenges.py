@@ -57,12 +57,25 @@ async def handle_fetch_global_rotation(body: dict) -> dict:
         result["streakUpdate"] = {
             "loginStreakData": {
                 "length": 9200,
-                "currentTier": "bronze",
+                "currentTier": "platinum",
                 "nextTierThreshold": 1,
-                "nextTier": "bronze",
+                "nextTier": "diamond",
             },
             "itemKeysToRemove": [],
             "itemKeysToAdd": [],
         }
 
     return result
+
+# ─── EXTRAS-PATCH-v1 ────────────────────────────────────────────────────────
+from handlers import extras as _x
+
+_orig_rotation = handle_fetch_global_rotation
+
+
+async def handle_redeem_challenge_reward(body: dict) -> dict:
+    return await _x.redeem_challenge(body)
+
+
+async def handle_fetch_global_rotation(body: dict) -> dict:
+    return await _x.rotation(body, _orig_rotation)

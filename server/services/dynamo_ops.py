@@ -33,6 +33,27 @@ from services.mapsync_serializer import serialize_blocks
 from config import REQUIRED_CLIENT_VERSION
 
 
+def _cw_on() -> bool:                       # EXTRAS-PATCH-v1
+    from handlers.extras import community_on
+    return community_on()
+
+
+async def _cw_exists(room_key: str) -> bool:
+    from handlers.extras import world_for_room
+    return bool(await world_for_room(room_key))
+
+
+async def _cw_room_name(room_key: str, default: str) -> str:
+    from handlers.extras import world_room_name
+    return await world_room_name(room_key, default)
+
+
+async def _cw_decorate(version_key: str, doc: dict) -> dict:     # EXTRAS-PATCH-v2
+    from handlers.extras import decorate_roommap
+    return await decorate_roommap(version_key, doc)
+
+
+
 # Community worlds (c_<name>) are not part of the self-host kit: the owner's
 # server mirrored them live from real Yeeps. A c_ key finds nothing here.
 
@@ -120,7 +141,7 @@ async def _map_doc(map_key) -> dict:
     room_key = map_key.split("$", 1)[0]
 
     # Community worlds are off in the kit: a c_ key is an empty map.
-    if room_key.startswith("c_"):
+    if room_key.startswith("c_") and not _cw_on():
         from services.mapsync_serializer import serialize_blocks_spam
         return {
             "mapKey": map_key,
@@ -294,10 +315,11 @@ async def _get_fallback_doc(table_name: str, query: dict, attrs=None) -> dict:
     # 1. G2_RoomMap fallback (World map / grid)
     if table_name == "G2_RoomMap":
         v_key = query.get("versionKey")
-        if isinstance(v_key, str) and v_key.startswith("c_"):
+        if isinstance(v_key, str) and v_key.startswith("c_") and (not _cw_on() or not await _cw_exists(v_key)):
             return None                          # no community worlds in the kit
         if isinstance(v_key, str) and (v_key.startswith("o_")
-                                       or v_key.startswith("p_o_")):
+                                       or v_key.startswith("p_o_")
+                                       or v_key.startswith("c_")):
             return await _pw_room_map(v_key)
         # Generic fallback for room map
         collection = get_collection("G2_RoomMap")
@@ -311,7 +333,7 @@ async def _get_fallback_doc(table_name: str, query: dict, attrs=None) -> dict:
             is_sandbox = (room_key.startswith("o_")
                           or room_key.startswith("p_o_")
                           or room_key.startswith("c_"))
-            if room_key.startswith("c_"):
+            if room_key.startswith("c_") and (not _cw_on() or not await _cw_exists(room_key)):
                 return None                      # no community worlds in the kit
             if is_sandbox:
                 # Private worlds (p_o_<acct>) stay editable/saveable.
@@ -321,7 +343,7 @@ async def _get_fallback_doc(table_name: str, query: dict, attrs=None) -> dict:
                     return _full_room(room_key, "Sandbox", [32, 80, 32])
                 # The big main room uses a real biome, not the flat sandbox theme.
                 # lobbyDirection 3 is the standard orientation for the pw main room.
-                return _full_room(room_key, "Private World", [80, 80, 80], theme="suburb", lobby=3)
+                return _full_room(room_key, await _cw_room_name(room_key, "Private World"), [80, 80, 80], theme="suburb", lobby=3)
             # Official / public room fallback.
             return {
                 "roomKey": room_key,
@@ -473,6 +495,8 @@ async def handle_get_item(body: dict) -> tuple[str, dict]:
     # 3. Build item and post-process
     if table_name == "G2_Globals" and query.get("key") in PRIVATE_GLOBAL_KEYS:
         doc = None
+    if table_name == "G2_RoomMap" and isinstance(doc, dict) and str(query.get("versionKey", "")).startswith("c_"):
+        doc = await _cw_decorate(str(query.get("versionKey")), doc)      # EXTRAS-PATCH-v2
     if doc:
         if table_name == "G2_Accounts" and isinstance(doc, dict):
             doc = public_view(_role_locked_view(doc))
@@ -569,6 +593,8 @@ async def handle_batch_get_item(body: dict) -> tuple[str, dict]:
 
             if table_name == "G2_Globals" and query.get("key") in PRIVATE_GLOBAL_KEYS:
                 doc = None
+            if table_name == "G2_RoomMap" and isinstance(doc, dict) and str(query.get("versionKey", "")).startswith("c_"):
+                doc = await _cw_decorate(str(query.get("versionKey")), doc)      # EXTRAS-PATCH-v2
             # Build item
             if doc:
                 if table_name == "G2_Accounts" and isinstance(doc, dict):

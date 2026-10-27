@@ -216,7 +216,7 @@ async def handle_save_room_map_properties(body: dict) -> dict:
     account_id = body.get("accountID", "")
     if not room_key:
         return {"success": 0}
-    if room_key.startswith("c_"):          # community worlds are read live from Yeeps, never stored here
+    if room_key.startswith("c_") and not _cw_on():          # community worlds off (EXTRAS_COMMUNITY=0)
         print(f"[cw] property save ignored (live from Yeeps): {room_key} by {account_id}")
         return {"success": 1}
     # Raid protection: official rooms are editor-only for regular players; map
@@ -261,7 +261,7 @@ async def handle_save_room_map(body: dict) -> dict:
 
     if not room_key:
         return {"success": 0}
-    if room_key.startswith("c_"):          # community worlds are read live from Yeeps, never stored here
+    if room_key.startswith("c_") and not _cw_on():          # community worlds off (EXTRAS_COMMUNITY=0)
         print(f"[cw] map save ignored (live from Yeeps): {room_key} by {account_id}")
         return {"success": 1}
 
@@ -311,10 +311,16 @@ async def handle_save_room_map(body: dict) -> dict:
         # the save comes from their own bound headset (a script naming the
         # account in the body still can't empty it). map_history below keeps
         # the previous version.
-        if old_len > 4000 and (new_len < 200 or (same_format and new_len < old_len * 0.15)) \
+        _unlock = False
+        try:
+            from config import UNLOCK_ALL_MODES
+            _unlock = bool(UNLOCK_ALL_MODES)
+        except Exception:
+            pass
+        if not _unlock and old_len > 4000 and (new_len < 200 or (same_format and new_len < old_len * 0.15)) \
                 and _is_own_pw(account_id, room_key) and await _from_bound_headset(account_id, body):
             print(f"[maps] owner cleared own pw {room_key}: {old_len} -> {new_len} bytes (bound headset)")
-        elif old_len > 4000 and (new_len < 200 or (same_format and new_len < old_len * 0.15)):
+        elif not _unlock and old_len > 4000 and (new_len < 200 or (same_format and new_len < old_len * 0.15)):
             print(f"[maps] BLOCKED shrink-save for {room_key} by {account_id}: "
                   f"{old_len} -> {new_len} bytes (anti-wipe)")
             return {"success": 1}   # ack so the client doesn't error, but don't persist
@@ -473,3 +479,18 @@ async def handle_fetch_map_data(body: dict) -> dict:
         "saveData": save_data,
         "saveInternalStates": doc.get("saveInternalStates", ""),
     }
+
+# ─── EXTRAS-PATCH-v1 ────────────────────────────────────────────────────────
+def _cw_on() -> bool:
+    from handlers import extras as _x
+    return _x.community_on()
+
+
+_orig_may_save_shared = _may_save_shared
+
+
+async def _may_save_shared(account_id: str, room_key: str, body: dict) -> bool:
+    from handlers import extras as _x
+    if room_key.startswith("c_") and _x.community_on() and await _x.may_edit_world(account_id, room_key):
+        return True
+    return await _orig_may_save_shared(account_id, room_key, body)

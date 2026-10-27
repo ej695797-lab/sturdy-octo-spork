@@ -2367,6 +2367,11 @@ async def handle_login(body: dict) -> dict:
         account["loginStreakFreezeHistory"] = []
     if not account.get("spawnRoomKey"):
         account["spawnRoomKey"] = "official_1"
+    try:                                   # EXTRAS-PATCH-v1: login streak
+        from handlers.extras import apply_login_streak
+        await apply_login_streak(account)
+    except Exception as _e:
+        print(f"[extras] login streak failed for {account.get('accountID')}: {_e}")
 
     # Buttcoins/beans are unlimited on this server: refill anyone who ran low
     # (accounts copied from real Yeeps started at 0 and couldn't buy anything).

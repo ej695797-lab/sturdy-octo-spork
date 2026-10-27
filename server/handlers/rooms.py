@@ -130,6 +130,9 @@ async def handle_room_data(body: dict) -> dict:
     from config import UNLOCK_ALL_MODES
     if UNLOCK_ALL_MODES:
         base["isModeLocked"] = 0
+        base["isCreative"] = 1
+        base["isSaveLocked"] = 0
+        base["noSave"] = 0
 
     # Ensure requested properties are always present even if DB/defaults miss one.
     for p in props:

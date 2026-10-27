@@ -23,12 +23,31 @@ async def handle_cw_track_visit(body: dict) -> dict:
 async def handle_cw_try_purchase_fuel(body: dict) -> dict:
     return {
         "success": 1,
-        "newCurrency": 0,
+        "newCurrency": 1,
         "fuelExpireTimestamp": "2099 01/01 00:00:00",
-        "cost": 0,
+        "cost": 1,
     }
 
 
 async def handle_cw_edit_permissions(body: dict) -> dict:
     # Permissions are not stored: community worlds are read live from Yeeps (owner 2026-10-11).
     return {"success": 1}
+
+# ─── EXTRAS-PATCH-v1 ────────────────────────────────────────────────────────
+from handlers import extras as _x
+
+
+async def handle_cw_get_can_enter(body: dict) -> dict:
+    return await _x.cw_get_can_enter(body)
+
+
+async def handle_cw_track_visit(body: dict) -> dict:
+    return await _x.cw_track_visit(body)
+
+
+async def handle_cw_try_purchase_fuel(body: dict) -> dict:
+    return await _x.cw_try_purchase_fuel(body)
+
+
+async def handle_cw_edit_permissions(body: dict) -> dict:
+    return await _x.cw_edit_permissions(body)

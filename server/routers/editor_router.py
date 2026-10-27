@@ -1053,9 +1053,35 @@ async def import_map(request: Request):
         "saveData": save_data,
         "importedAt": datetime.now(timezone.utc).strftime("%Y %m/%d %H:%M:%S"),
     }
-    if room_key.startswith("c_"):
-        raise HTTPException(status_code=400, detail="Community worlds are read live from Yeeps and are not saved here.")
+    try:
+        from handlers.extras import community_on as _cw_on
+    except Exception:
+        def _cw_on():
+            return True
+    if room_key.startswith("c_") and not _cw_on():
+        raise HTTPException(status_code=400, detail="Community worlds are off on this server.")
     await imported_maps.update_one({"roomKey": room_key}, {"$set": doc}, upsert=True)
+    # Make the imported map playable in-game: populate maps/$current too (the
+    # client loads blocks from there). Preserve any existing internal states.
+    try:
+        from services.db import maps as maps_col
+        existing = await maps_col.find_one({"mapKey": f"{room_key}$current"}, {"_id": 0, "saveInternalStates": 1})
+        isd = (existing or {}).get("saveInternalStates") or ""
+        await maps_col.update_one({"mapKey": f"{room_key}$current"}, {"$set": {
+            "mapKey": f"{room_key}$current", "roomKey": room_key,
+            "saveData": save_data, "editorBlocks": blocks,
+            "mapDataVersion": 3, "savedBy": "editor",
+            "applicationVersion": "1.31.0",
+            "savedAt": datetime.now(timezone.utc).strftime("%Y %m/%d %H:%M:%S"),
+            "saveInternalStates": isd,
+        }}, upsert=True)
+        from services.db import rooms as rooms_col
+        import time as _t
+        await rooms_col.update_one({"roomKey": room_key},
+                                  {"$set": {"lastEditedSessionID": int(_t.time()), "roomDataVersion": 3}},
+                                  upsert=True)
+    except Exception as e:
+        print(f"[editor] imported map -> live map failed for {room_key}: {e}")
     world = await _ensure_world_map_entry(room_key, dims)
     name = _authed_name(request) or "?"
     await _discord_notify(f"{name} imported a map for {room_key} ({len(blocks)} blocks, {total - len(blocks)} dropped)")
@@ -2138,6 +2164,100 @@ async def bot_spawn(request: Request):
     from services.bot_manager import manager
     return JSONResponse(content={"ok": True, **manager.spawn_player()})
 
+
+
+# ─── EXTRAS-PATCH-v2: community worlds, rotations, what the server has no handler for ──
+@router.get("/api/worlds")
+async def worlds_get():
+    from handlers import extras as x
+    return JSONResponse(content={"ok": True, "enabled": x.community_on(), "worlds": await x.list_worlds(),
+                                 "prices": {"world": x.world_price(), "fuel": x.fuel_price(), "fuelDays": x.fuel_days()}})
+
+
+@router.post("/api/worlds")
+async def worlds_create(request: Request):
+    from handlers import extras as x
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    ok, msg, doc = await x.create_world(body.get("name"), str(body.get("adminAccountID") or "").strip(),
+                                        body.get("description", ""), bool(body.get("featured")),
+                                        purchased=bool(body.get("free")))
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+    return JSONResponse(content={"ok": True, "world": doc})
+
+
+@router.post("/api/worlds/{name}/feature")
+async def worlds_feature(name: str, request: Request):
+    from handlers import extras as x
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    if not await x.set_featured(name, bool(body.get("featured"))):
+        raise HTTPException(status_code=404, detail="No such world")
+    return JSONResponse(content={"ok": True})
+
+
+@router.post("/api/worlds/{name}/edit")
+async def worlds_edit(name: str, request: Request):
+    from handlers import extras as x
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    ok, msg = await x.edit_world(name, body if isinstance(body, dict) else {})
+    if not ok:
+        raise HTTPException(status_code=404, detail=msg)
+    return JSONResponse(content={"ok": True})
+
+
+@router.delete("/api/worlds/{name}")
+async def worlds_delete(name: str):
+    from handlers import extras as x
+    if not await x.delete_world(name):
+        raise HTTPException(status_code=404, detail="No such world")
+    return JSONResponse(content={"ok": True})
+
+
+@router.get("/api/extras/calls")
+async def extras_calls():
+    from handlers import extras as x
+    unknown = [r async for r in x.extra_unknown.find({}, {"_id": 0}).sort("lastAt", -1).limit(100)]
+    recent = [r async for r in x.extra_calls.find({}, {"_id": 0}).sort("_id", -1).limit(30)]
+    return JSONResponse(content={"ok": True, "unknown": unknown, "recent": recent})
+
+
+@router.get("/api/rotations")
+async def rotations_get():
+    from handlers import extras as x
+    seen = set()
+    async for r in x.extra_unknown.find({"fn": {"$regex": "^rotation:"}}, {"_id": 0, "fn": 1}):
+        k = r["fn"][len("rotation:"):]
+        if k and k != "-":
+            seen.add(k)
+    ov = await x.rotation_overrides()
+    return JSONResponse(content={"ok": True, "seen": sorted(seen | set(ov)), "overrides": ov})
+
+
+@router.post("/api/rotations")
+async def rotations_set(request: Request):
+    from handlers import extras as x
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    key = str(body.get("key") or "").strip()[:80]
+    if not key:
+        raise HTTPException(status_code=400, detail="Give the rotation key")
+    val = body.get("value")
+    if val is not None and not isinstance(val, dict):
+        raise HTTPException(status_code=400, detail="The override must be a JSON object")
+    await x.set_rotation_override(key, val)
+    return JSONResponse(content={"ok": True})
+# ─── end EXTRAS-PATCH-v2 ─────────────────────────────────────────────────────
 
 @router.get("/login", response_class=HTMLResponse)
 async def editor_login_page(request: Request):
