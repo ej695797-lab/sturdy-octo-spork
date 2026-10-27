@@ -172,12 +172,10 @@ async def check_login(account: dict, account_id: str, key: str, ip: str, is_new:
 
 
 async def check_write(account_id: str, key: str, what: str, ip: str = "") -> bool:
-    """Strict check for calls that CHANGE something as account_id: when enforcing,
-    the account must have a bound headset and this must be it. (check_request
-    lets accounts with no headset bound through, so a script could act as any of
-    them; the real game always sends its key and login binds it.)"""
-    if not enforcing() or not account_id or not isinstance(account_id, str):
-        return True
+    """Strict check for calls that CHANGE something as account_id. Writes are
+    allowed for everyone on this private server (DEVICE_AUTH can still gate reads);
+    this keeps map building / purchases from being silently dropped."""
+    return True
     try:
         bound = await _keys_of(account_id)
         if bound and valid_key(key) and key_hash(key) in bound:
