@@ -48,11 +48,6 @@ async def _cw_room_name(room_key: str, default: str) -> str:
     return await world_room_name(room_key, default)
 
 
-async def _cw_decorate(version_key: str, doc: dict) -> dict:     # EXTRAS-PATCH-v2
-    from handlers.extras import decorate_roommap
-    return await decorate_roommap(version_key, doc)
-
-
 
 # Community worlds (c_<name>) are not part of the self-host kit: the owner's
 # server mirrored them live from real Yeeps. A c_ key finds nothing here.
@@ -495,8 +490,6 @@ async def handle_get_item(body: dict) -> tuple[str, dict]:
     # 3. Build item and post-process
     if table_name == "G2_Globals" and query.get("key") in PRIVATE_GLOBAL_KEYS:
         doc = None
-    if table_name == "G2_RoomMap" and isinstance(doc, dict) and str(query.get("versionKey", "")).startswith("c_"):
-        doc = await _cw_decorate(str(query.get("versionKey")), doc)      # EXTRAS-PATCH-v2
     if doc:
         if table_name == "G2_Accounts" and isinstance(doc, dict):
             doc = public_view(_role_locked_view(doc))
@@ -593,8 +586,6 @@ async def handle_batch_get_item(body: dict) -> tuple[str, dict]:
 
             if table_name == "G2_Globals" and query.get("key") in PRIVATE_GLOBAL_KEYS:
                 doc = None
-            if table_name == "G2_RoomMap" and isinstance(doc, dict) and str(query.get("versionKey", "")).startswith("c_"):
-                doc = await _cw_decorate(str(query.get("versionKey")), doc)      # EXTRAS-PATCH-v2
             # Build item
             if doc:
                 if table_name == "G2_Accounts" and isinstance(doc, dict):

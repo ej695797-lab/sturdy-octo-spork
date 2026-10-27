@@ -181,8 +181,6 @@ async def redeem_challenge(body: dict) -> dict:
     acc = await accounts.find_one({"accountID": account_id}, {"_id": 0, "currency": 1, field: 1}) or {}
     last = _parse(acc.get(field))
     currency = _int(acc.get("currency"), 0)
-    # Always grant the reward (matches the original stub's behaviour); the
-    # per-category last-redeemed time is still recorded for the client.
     reward, new_last = _reward(cat), _fmt(now)
     new_currency = min(MAX_CURRENCY, currency + reward)
     if account_id:
@@ -262,7 +260,6 @@ async def may_edit_world(account_id: str, room_key: str) -> bool:
     for key in ("staffPermissions", "staff", "permissions", "editors", "moderators"):
         val = (w.get(key) or {}).get(account_id) if isinstance(w.get(key), dict) else None
         if val is None:
-            # allow list form
             lst = w.get(key)
             if isinstance(lst, list) and account_id in lst:
                 return True
@@ -288,7 +285,6 @@ async def create_world(name, admin_id: str, description: str = "", featured: boo
            "createdAt": _fmt(_now()), "fuelExpireTimestamp": FAR, "visitCount": 0,
            "featured": bool(featured), "staffPermissions": {}}
     await worlds.insert_one(dict(doc))
-    # Room doc so the client can load the world (creative + editable).
     try:
         from services.dynamo_ops import _full_room
         from services.db import rooms
@@ -406,7 +402,6 @@ async def purchase_world(body: dict):
     acct = str(body.get("accountID") or "")
     if not n or not acct:
         return None
-    # Price: prefer the client's expectedPrice, fall back to a sane default.
     price = max(0, _int(body.get("expectedPrice", body.get("cost", 1000)), 1000))
     acc = await accounts.find_one({"accountID": acct}, {"_id": 0, "currency": 1}) or {}
     currency = _int(acc.get("currency"), 0)
