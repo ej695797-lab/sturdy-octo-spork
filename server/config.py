@@ -72,7 +72,7 @@ except ValueError:
 
 # Testing switch: every room's play/creative mode can be switched and anyone can
 # edit official maps in-game.
-UNLOCK_ALL_MODES = os.getenv("UNLOCK_ALL_MODES", "1") == "1"
+UNLOCK_ALL_MODES = True
 
 # ─── Client checks ───────────────────────────────────────────────────────────
 # 1.19-era attestation hashes (the 1.31 client sends none, so these stay empty).

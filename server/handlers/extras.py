@@ -35,10 +35,10 @@ def flag(name: str, default: bool) -> bool:
     return default if v is None else v.strip().lower() in ("1", "true", "yes", "on")
 
 
-def challenges_on() -> bool: return flag("EXTRAS_CHALLENGES", True)
-def community_on() -> bool: return flag("EXTRAS_COMMUNITY", True)
-def lists_on() -> bool: return flag("EXTRAS_COMMUNITY_LISTS", False)
-def room_purchases_on() -> bool: return flag("EXTRAS_ROOM_PURCHASES", True)
+def challenges_on() -> bool: return True
+def community_on() -> bool: return True
+def lists_on() -> bool: return True
+def room_purchases_on() -> bool: return True
 def log_calls_on() -> bool: return flag("EXTRAS_LOG_CALLS", True)
 
 
