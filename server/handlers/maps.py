@@ -410,19 +410,20 @@ async def handle_save_room_map(body: dict) -> dict:
     await maps.update_one({"mapKey": map_key}, _upd, upsert=True)
 
     # 2. Update the 'rooms' collection (G2_Rooms metadata)
-    # This is vital so clients know the map has changed
+    # This is vital so clients know the map has changed. Always bump to a fresh
+    # timestamp so clients refetch even if game_session_id is empty/unchanged.
     from services.db import rooms
+    import time as _t
+    new_session = int(_t.time())
     await rooms.update_one(
         {"roomKey": room_key},
         {
             "$set": {
-                # Must stay a number: a text value (Oct 10, raider saves with no session
-                # id stored "") makes the 1.31 client fail "Failed to load game".
-                "lastEditedSessionID": int(game_session_id) if str(game_session_id).isdigit() else 1,
-                "roomDataVersion": map_data_version
+                "lastEditedSessionID": new_session,
+                "roomDataVersion": map_data_version if map_data_version else 3
             }
         },
-        upsert=False # Only update if room exists
+        upsert=True # ensure room doc exists so clients learn about the save
     )
 
     # (No per-save version-history snapshot: it grew the maps collection without
