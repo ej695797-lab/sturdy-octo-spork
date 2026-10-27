@@ -2205,6 +2205,37 @@ async def worlds_delete(name: str):
     return JSONResponse(content={"ok": True})
 
 
+@router.post("/api/worlds/{name}/staff")
+async def worlds_staff(name: str, request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    from handlers import extras as x
+    w = await x.get_world(name)
+    if not w:
+        raise HTTPException(status_code=404, detail="No such world")
+    admin_id = str(body.get("adminAccountID") or body.get("accountID") or "").strip()
+    if admin_id and w.get("adminAccountID") and w.get("adminAccountID") != admin_id:
+        raise HTTPException(status_code=403, detail="Not the world admin")
+    perms = body.get("staffPermissions") or body.get("permissions") or body.get("staff")
+    if isinstance(perms, list):
+        perms = {str(x): True for x in perms}
+    if not isinstance(perms, dict):
+        target = body.get("staffAccountID") or body.get("targetAccountID") or body.get("targetAccount")
+        if target:
+            perms = {str(target): bool(body.get("canEdit", True))}
+    if not isinstance(perms, dict):
+        raise HTTPException(status_code=400, detail="staff permissions required")
+    from services.db import db as _db
+    _worlds = _db["community_worlds"]
+    existing = w.get("staffPermissions") or {}
+    merged = dict(existing)
+    merged.update({str(k)[:80]: (v if not isinstance(v, dict) else True) for k, v in list(perms.items())[:50]})
+    await _worlds.update_one({"worldKey": w["worldKey"]}, {"$set": {"staffPermissions": merged}})
+    return JSONResponse(content={"ok": True, "staffPermissions": merged})
+
+
 @router.get("/api/extras/calls")
 async def extras_calls():
     from handlers import extras as x
