@@ -10,44 +10,36 @@ from services.db import room_maps
 
 
 async def handle_cw_get_can_enter(body: dict) -> dict:
-    # Community worlds are off in the self-host kit (the owner's server mirrored
-    # them live from real Yeeps). Every world name is refused.
-    return {"canEnter": 1, "reason": "Community worlds are on this server."}
+    return {"canEnter": 1, "reason": ""}
 
 
 async def handle_cw_track_visit(body: dict) -> dict:
-    # Community worlds are off in the kit; nothing to record.
+    world_name = body.get("worldName", "")
+    if world_name:
+        version_key = f"c_{world_name}"
+        await room_maps.update_one(
+            {"versionKey": version_key},
+            {"$inc": {"cw_visits_total": 1}},
+        )
     return {"success": 1}
 
 
 async def handle_cw_try_purchase_fuel(body: dict) -> dict:
     return {
         "success": 1,
-        "newCurrency": 1,
-        "fuelExpireTimestamp": "3019 01/09 16:15:20",
-        "cost": 1,
+        "newCurrency": 0,
+        "fuelExpireTimestamp": "2099 01/01 00:00:00",
+        "cost": 0,
     }
 
 
 async def handle_cw_edit_permissions(body: dict) -> dict:
-    # Permissions are not stored: community worlds are read live from Yeeps (owner 2026-10-11).
+    world_name = body.get("worldName", "")
+    new_permissions = body.get("newPermissions", 0)
+    if world_name:
+        version_key = f"c_{world_name}"
+        await room_maps.update_one(
+            {"versionKey": version_key},
+            {"$set": {"cw_permissions": new_permissions}},
+        )
     return {"success": 1}
-
-# ─── EXTRAS-PATCH-v1 ────────────────────────────────────────────────────────
-from handlers import extras as _x
-
-
-async def handle_cw_get_can_enter(body: dict) -> dict:
-    return await _x.cw_get_can_enter(body)
-
-
-async def handle_cw_track_visit(body: dict) -> dict:
-    return await _x.cw_track_visit(body)
-
-
-async def handle_cw_try_purchase_fuel(body: dict) -> dict:
-    return await _x.cw_try_purchase_fuel(body)
-
-
-async def handle_cw_edit_permissions(body: dict) -> dict:
-    return await _x.cw_edit_permissions(body)
