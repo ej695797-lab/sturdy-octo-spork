@@ -58,8 +58,8 @@ _DAILY_FALLBACK_ITEMKEYS = {
     "cardChallenges": [{"key": "Join 920 Modding", "value": 920},
                        {"key": "Join discord.gg/qtuKn3mRj3", "value": 920},
                        {"key": "Made By 920Man/920 Modding", "value": 920}],
-    "easy": [{"key": "Join 920 Modding", "value": 920}],
-    "hard": [{"key": "Join discord.gg/qtuKn3mRj3", "value": 920}],
+    "easy": [{"key": "easy", "value": 920}],
+    "hard": [{"key": "hard", "value": 920}],
     "login": [{"key": "login", "value": 920}],
 }
 _DAILY_CACHE_KEY = "_daily_challenges_cache"
