@@ -5,26 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Yeeps Editor</title>
 <style>
-  :root { color-scheme: dark; }
+  :root { color-scheme: dark; --accent: #8b5cf6; --accent-hover: #a78bfa; }
   * { box-sizing: border-box; }
   body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
          background: #111; color: #ddd; font-size: 14px; }
-  .app { display: flex; min-height: 100vh; }
-  aside { width: 170px; flex-shrink: 0; background: #181818; border-right: 1px solid #333;
-          padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+  aside { order: 1; flex-shrink: 0; background: #181818; border-top: 1px solid #333;
+          padding: 8px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px;
+          position: sticky; bottom: 0; z-index: 10; }
   aside button { background: #222; color: #ccc; border: 1px solid #333; padding: 9px 12px;
-                 border-radius: 6px; cursor: pointer; text-align: left; width: 100%; }
-  aside button.on { background: #2a4; color: #fff; border-color: #2a4; }
-  aside a { color: #6cf; text-decoration: none; font-size: 13px; }
-  .sp { flex: 1; }
-  main { flex: 1; padding: 16px; max-width: 1000px; }
+                 border-radius: 6px; cursor: pointer; text-align: center; }
+  aside button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  aside a { color: var(--accent-hover); text-decoration: none; font-size: 13px; align-self: center; padding: 0 6px; }
+  .sp { display: none; }
+  main { order: 0; flex: 1; padding: 16px; width: 100%; max-width: 1032px; margin: 0 auto; }
   .row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
   input[type=text] { background: #0c0c0c; border: 1px solid #333; color: #ddd;
                      padding: 7px 10px; border-radius: 6px; min-width: 220px; }
   textarea { width: 100%; height: 55vh; background: #0c0c0c; border: 1px solid #333; color: #ddd;
              font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px;
              padding: 10px; border-radius: 6px; }
-  button.go { background: #2a4; color: #fff; border: 0; padding: 8px 18px; border-radius: 6px;
+  button.go { background: var(--accent); color: #fff; border: 0; padding: 8px 18px; border-radius: 6px;
               cursor: pointer; font-size: 14px; }
   button.del { background: #a33; color: #fff; border: 0; padding: 5px 10px; border-radius: 6px;
                cursor: pointer; }
@@ -51,20 +52,20 @@
   details { margin-bottom: 8px; border: 1px solid #333; border-radius: 6px; overflow: hidden; }
   summary { padding: 7px 10px; background: #1c1c1c; cursor: pointer; font-weight: 600; }
   details ul.list { border: 0; border-top: 1px solid #333; border-radius: 0; max-height: 300px; }
-  .has { color: #6c6; }
+  .has { color: var(--accent-hover); }
   table.errs { width: 100%; }
   table.errs td.msg { font-family: ui-monospace, Menlo, Consolas, monospace; word-break: break-word; cursor: pointer; }
   table.errs tr:hover td { background: #1a1a1a; }
-  .up { color: #e66; } .down { color: #6c6; }
+  .up { color: #e66; } .down { color: var(--accent-hover); }
   .pgrp { margin: 0 0 10px; }
   .pgrp .muted { display: block; margin-bottom: 5px; font-size: 12px; }
   .pgrp button { background: #222; color: #ddd; border: 1px solid #444; padding: 7px 11px;
                  border-radius: 6px; cursor: pointer; margin: 0 6px 6px 0; }
-  .pgrp button:hover { border-color: #2a4; }
+  .pgrp button:hover { border-color: var(--accent); }
   .pgrp button.off { color: #e99; }
   #pblog { height: 40vh; overflow: auto; }
   .bars { display: flex; align-items: flex-end; gap: 2px; height: 60px; margin: 8px 0 12px; }
-  .bars div { flex: 1; background: #2a4; min-height: 1px; }
+  .bars div { flex: 1; background: var(--accent); min-height: 1px; }
   pre.smp { background: #0c0c0c; border: 1px solid #333; padding: 8px; border-radius: 6px;
             white-space: pre-wrap; word-break: break-word; font-size: 12px; margin: 4px 0 10px; }
   select { background: #0c0c0c; border: 1px solid #333; color: #ddd; padding: 6px 8px; border-radius: 6px; }
@@ -72,21 +73,17 @@
   .pwhit { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; cursor: default !important; }
   .pwhit .pwname { flex: 1 1 200px; min-width: 0; }
   .pwhit button { background: #222; color: #ddd; border: 1px solid #444; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
-  .pwhit button:hover { border-color: #2a4; }
+  .pwhit button:hover { border-color: var(--accent); }
 
-  /* Phones: the side menu becomes a scrolling strip across the top, everything
-     else goes full width, inputs are 16px so iOS doesn't zoom on tap. */
+  /* Phones keep the tab controls in a scrolling strip at the bottom. */
   @media (max-width: 720px) {
     body { font-size: 15px; }
-    .app { flex-direction: column; }
-    aside { width: 100%; flex-direction: row; align-items: center; overflow-x: auto; position: sticky;
-            top: 0; z-index: 10; border-right: 0; border-bottom: 1px solid #333; padding: 8px; gap: 6px;
+    aside { flex-wrap: nowrap; justify-content: flex-start; align-items: center; overflow-x: auto;
+            border-top: 1px solid #333; padding: 8px; gap: 6px;
             -webkit-overflow-scrolling: touch; scrollbar-width: none; }
     aside::-webkit-scrollbar { display: none; }
-    aside button { width: auto; flex: 0 0 auto; white-space: nowrap; padding: 9px 13px; }
-    aside .sp { display: none; }
-    aside #ver, aside #who { white-space: nowrap; font-size: 12px; flex: 0 0 auto; }
-    aside #vsel { font-size: 16px; padding: 4px 6px; }
+    aside button { flex: 0 0 auto; white-space: nowrap; padding: 9px 13px; }
+    aside #ver, aside #who { display: none; }
     aside a { white-space: nowrap; flex: 0 0 auto; padding: 0 6px; }
     main { padding: 12px; max-width: 100%; min-width: 0; }
     .row { gap: 8px; }
@@ -109,6 +106,7 @@
 </head>
 <body>
 <div class="app">
+  <main id="view"></main>
   <aside>
     <button data-t="players" class="on">Players</button>
     <button data-t="online">Online</button>
@@ -124,11 +122,10 @@
     <button data-t="errors">Errors</button>
     <button data-t="settings">Settings</button>
     <span class="sp"></span>
-    <span class="muted" id="ver">Yeeps 1.31.0-blaze</span>
+    <span class="muted" id="ver">Yeeps 1.31.0-yeeper</span>
     <span class="muted" id="who"></span>
     <a href="/editor/logout">Log out</a>
   </aside>
-  <main id="view"></main>
 </div>
 <div id="msg"></div>
 
@@ -138,7 +135,7 @@ const view = document.getElementById("view");
 
 function toast(t, bad) {
   const m = document.getElementById("msg");
-  m.textContent = t; m.style.borderColor = bad ? "#a33" : "#2a4"; m.style.display = "block";
+  m.textContent = t; m.style.borderColor = bad ? "#a33" : "var(--accent)"; m.style.display = "block";
   clearTimeout(toast._t); toast._t = setTimeout(() => m.style.display = "none", 3500);
 }
 async function api(path, opts) {
@@ -198,7 +195,7 @@ function renderJsonEditor(opts) {
   let id = null, run = null, loaded = null;
   function updBlock() {
     const b = document.getElementById("blockrow");
-    if (b) b.textContent = (loaded && (loaded.adminBlocked == 1 || loaded.adminBlocked === true)) ? "Unban" : "Ban (+ IP)";
+    if (b) b.textContent = (loaded && (loaded.adminBlocked == 1 || loaded.adminBlocked === true)) ? "Unban" : "Ban";
   }
   async function open(theId) {
     id = theId;
@@ -250,8 +247,8 @@ function renderJsonEditor(opts) {
     const isBlocked = loaded && (loaded.adminBlocked == 1 || loaded.adminBlocked === true);
     try {
       const r = await opts.block(id, !isBlocked);
-      if (isBlocked) toast("Unbanned — can connect" + (r && r.unbannedIPs && r.unbannedIPs.length ? " (IPs: " + r.unbannedIPs.join(", ") + ")" : ""));
-      else toast("Banned " + (r && r.until ? "until " + r.until : "(permanent)") + (r && r.bannedIPs && r.bannedIPs.length ? " + " + r.bannedIPs.length + " IP(s)" : (r && r.permanent ? " (no IP on record yet)" : "")));
+      if (isBlocked) toast("Unbanned — can connect");
+      else toast("Banned " + (r && r.until ? "until " + r.until : "(permanent)"));
       await open(id);
     } catch (e) { toast(e.message, true); }
   };
@@ -268,16 +265,16 @@ const tabs = {
     kick: (id, reason) => api("/player/" + encodeURIComponent(id) + "/kick", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }) }),
     devreset: id => api("/player/" + encodeURIComponent(id) + "/device-reset", { method: "POST" }),
     block: (id, blocked) => {
-      if (!blocked) return api("/player/" + encodeURIComponent(id) + "/unban", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ alsoIP: true }) });
-      const raw = prompt("Ban length — e.g. 2h, 3d, 7d, 1w — or leave BLANK for permanent (permanent also IP-bans):", "");
+      if (!blocked) return api("/player/" + encodeURIComponent(id) + "/unban", { method: "POST" });
+      const raw = prompt("Ban length — e.g. 2h, 3d, 7d, 1w — or leave blank for permanent:", "");
       if (raw === null) return Promise.reject(new Error("cancelled"));
       const h = parseDur(raw);
       if (h === null) return Promise.reject(new Error("Bad length — use e.g. 2h, 3d, 7d, or blank for permanent"));
-      return api("/player/" + encodeURIComponent(id) + "/ban", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ alsoIP: true, durationHours: h }) });
+      return api("/player/" + encodeURIComponent(id) + "/ban", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ durationHours: h }) });
     },
   }),
   banned: async () => {
-    view.innerHTML = `<p class="note">Players that are currently banned. Click <b>Unban</b> to lift it (also removes any linked IP ban).</p>
+    view.innerHTML = `<p class="note">Players that are currently banned. Click <b>Unban</b> to lift the account and headset bans.</p>
       <div class="row"><button class="go" id="refb">Refresh</button> <span class="muted" id="bcount"></span></div>
       <ul class="list" id="blist"><li>loading...</li></ul>`;
     async function load() {
@@ -298,7 +295,7 @@ const tabs = {
       list.querySelectorAll("button[data-unban]").forEach(btn => btn.onclick = async () => {
         if (!confirm("Unban " + btn.dataset.unban + "?")) return;
         try {
-          await api("/player/" + encodeURIComponent(btn.dataset.unban) + "/unban", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ alsoIP: true }) });
+          await api("/player/" + encodeURIComponent(btn.dataset.unban) + "/unban", { method: "POST" });
           toast("Unbanned " + btn.dataset.unban); load();
         } catch (e) { toast(e.message, true); }
       });
@@ -313,7 +310,7 @@ const tabs = {
       save: (_id, o) => api("/default", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(o) }) });
   },
   maps: async () => {
-    view.innerHTML = `<p class="note">Maps in folders. Green = has a saved map. Click a map, then open a section to edit it: <b>Settings</b> (theme/biome, size, floor, liquid, lighting, flags), <b>Blocks</b>, or <b>Danger zone</b>.</p>
+    view.innerHTML = `<p class="note">Maps in folders. Purple = has a saved map. Click a map, then open a section to edit it: <b>Settings</b> (theme/biome, size, floor, liquid, lighting, flags), <b>Blocks</b>, or <b>Danger zone</b>.</p>
       <div class="row"><input type="text" id="pwq" placeholder="find a private world: Meta name, Discord, or player ID">
         <button class="go" id="pwgo">Find</button></div>
       <ul class="list" id="pwres" style="display:none"></ul>
@@ -1031,87 +1028,137 @@ const tabs = {
     load();
   },
   bot: async () => {
+    const GROUPS = [
+      ["Games", [
+        ["King of the Hill", "koth-start"], ["KOTH off", "koth-stop", 1],
+        ["Hot potato", "potato-start"], ["Potato off", "potato-stop", 1],
+        ["Boss", "boss-start"], ["Boss pause", "boss-pause"], ["Boss resume", "boss-resume"],
+        ["Boss off", "boss-stop", 1], ["Hill map", "map-start"], ["Map off", "map-stop", 1]
+      ]],
+      ["Arcade", [
+        ["Tetris", "tetris"], ["Snake", "snake"], ["Pong", "pong"], ["Pong 2 players", "pong-2p"],
+        ["Paint canvas", "canvas"], ["Canvas off", "canvas-stop", 1], ["Game off", "game-stop", 1]
+      ]],
+      ["Bad Apple (host video required)", [
+        ["Bad Apple", "apple", 0, 1], ["Bad Apple small", "apple-small", 0, 1],
+        ["Bad Apple no sound", "apple-mute", 0, 1], ["Stop Bad Apple", "apple-stop", 1, 1],
+        ["Bad Apple Sign", "applesign", 0, 1], ["Remove Apple Signs", "applesign-stop", 1, 1]
+      ]],
+      ["Cleanup", [["Clean up firebox spam", "cleanup"]]],
+      ["Powers", [
+        ["Lightning hand", "lightning-hand"], ["Freeze hand", "freeze-hand"], ["Finger gun", "finger-gun"],
+        ["Powers off", "powers-off", 1], ["Smite picked player", "smite", 0, 0, 1],
+        ["Freeze picked player", "freeze-player", 0, 0, 1], ["Thaw everyone", "thaw", 1],
+        ["Jump scare hand", "scare-hand"], ["Jump scare picked player", "jumpscare", 0, 0, 1],
+        ["Scare off", "scare-off", 1]
+      ]],
+      ["Big effects", [
+        ["Hand of god", "godhand"], ["Hand of god (both hands)", "godhand-both"],
+        ["Hand off", "godhand-off", 1], ["Black hole", "blackhole"], ["Meteor shower", "meteors"]
+      ]],
+      ["Effects", [
+        ["Rain", "rain"], ["Rain off", "rain-off", 1], ["Clean up rain", "rain-clean", 1],
+        ["Boom", "boom"], ["Coin planet", "coins-planet"], ["Coins off", "coins-off", 1],
+        ["Mimic picked player", "mimic", 0, 0, 1], ["Stop mimic", "mimic-stop", 1],
+        ["Who's here", "players"]
+      ]]
+    ];
     view.innerHTML = `
-      <p class="note">YeeperBot is a Photon bot that joins one of your rooms as a player (an extra actor in the room), so you can see it in game and read the room's live message feed here. Start it, then type a room key or pick an online player to join theirs.</p>
+      <p class="note">Hook YeeperBot to an online player to join and follow their room. These are fixed game controls; building, live talk, and view controls are not included.</p>
       <div class="row">
-        <input id="bname" placeholder="bot name" value="YeeperBot" style="max-width:160px">
-        <input id="broom" placeholder="room key, e.g. official_1 or p_o_..." style="min-width:240px">
-        <label style="white-space:nowrap"><input type="checkbox" id="bspawn" checked> Spawn as player</label>
-        <button class="go" id="bstart">Start</button>
-        <button class="blk" id="bstop">Stop</button>
-        <button class="go" id="bspawnnow">Spawn now</button>
+        <select id="bhook" style="min-width:260px"><option value="">loading online players...</option></select>
+        <button class="go" id="bstart">Hook bot to player</button>
+        <button class="blk" id="bstop">Stop bot</button>
         <button class="go" id="bref">Refresh</button>
       </div>
-      <div class="row"><span class="muted">Join a player:</span> <span id="bplayers" class="muted">loading...</span></div>
+      <div class="row">
+        <label class="muted" for="btarget">Picked player for targeted powers:</label>
+        <select id="btarget" style="min-width:260px"><option value="">pick an online player</option></select>
+      </div>
       <p class="note" id="bstate">…</p>
-      <div class="muted">Players in the bot's room</div>
-      <ul class="list" id="brooms"><li class="muted">—</li></ul>
-      <div class="muted">Live events (newest last)</div>
-      <pre id="bevents" style="max-height:320px"></pre>
+      <p class="note">Bad Apple controls require a host-provided video at <code>server/bot/media/bad_apple.mp4</code>.</p>
+      <div id="bactions"></div>
       <div class="muted">Log</div>
-      <pre id="blog" style="max-height:160px"></pre>`;
+      <pre id="blog" class="smp" style="max-height:160px;overflow:auto"></pre>`;
     const $ = id => document.getElementById(id);
+    function renderActions(mediaAvailable) {
+      $("bactions").innerHTML = GROUPS.map(([title, buttons]) =>
+        `<div class="pgrp"><span class="muted">${esc(title)}</span>${buttons.map(([label, action, off, media, needsTarget]) =>
+          `<button data-action="${esc(action)}" data-target="${needsTarget ? "1" : "0"}"${off ? ' class="off"' : ""}` +
+          `${media && !mediaAvailable ? " disabled" : ""}>${esc(label)}</button>`).join("")}</div>`
+      ).join("");
+      $("bactions").querySelectorAll("button[data-action]").forEach(b => b.onclick = () =>
+        sendAction(b.dataset.action, b.dataset.target === "1"));
+    }
+    async function players() {
+      for (const id of ["bhook", "btarget"]) {
+        const select = $(id), previous = select.value;
+        try {
+          const d = await api("/online");
+          const options = (d.players || []).map(p =>
+            `<option value="${esc(p.accountID)}">${esc(p.displayName)}${p.roomKey ? " — " + esc(p.roomKey) : ""}</option>`).join("");
+          select.innerHTML = `<option value="">${id === "bhook" ? "pick a player to follow" : "pick an online player"}</option>` + options;
+          if (previous && [...select.options].some(o => o.value === previous)) select.value = previous;
+        } catch (e) {
+          select.innerHTML = `<option value="">error: ${esc(e.message)}</option>`;
+        }
+      }
+    }
     async function refresh() {
       let s; try { s = await api("/bot"); } catch (e) { $("bstate").textContent = "Error: " + e.message; return; }
-      const st = s.running ? (s.state || "?") : (s.enabled ? "stopped" : "unavailable");
-      const roomName = s.room && typeof s.room === "object" ? s.room.name : s.room;
-      const roomInfo = s.room && typeof s.room === "object" && s.room.playerCount != null
-        ? ` · room <b>${esc(roomName)}</b> (${s.room.playerCount} in room)` : ` · room <b>${esc(roomName)}</b>`;
-      $("bstate").innerHTML = `<b>${esc(st)}</b>` + (roomName ? roomInfo : "") +
-        (s.running && s.name ? ` · as ${esc(s.name)}` : "") + (s.uptime ? ` · up ${s.uptime}s` : "") +
-        (s.spawned ? ` · <span style="color:#3fb950">avatar spawned (view ${s.viewId})</span>`
-                   : (s.spawn && s.inRoom ? ` · <span style="color:#d29922">spawn pending…</span>` : "")) +
+      const st = s.running ? "on" : (s.enabled ? "off" : "unavailable");
+      $("bstate").innerHTML = `<b>${esc(st)}</b>` +
+        (s.targetName ? ` · following <b>${esc(s.targetName)}</b>` : "") +
+        (s.room ? ` · room <b>${esc(s.room)}</b>` : "") +
+        (s.uptime ? ` · up ${s.uptime}s` : "") +
         (s.error ? ` · <span style="color:#f85149">${esc(s.error)}</span>` : "") +
         (!s.available ? ` · <span style="color:#f85149">${esc(s.reason || "")}</span>` : "");
-      const ps = s.players || [];
-      $("brooms").innerHTML = ps.length ? ps.map(p =>
-        `<li class="bli"><div class="binfo"><div class="bname">#${p.actor} ${esc(p.nick || "")}${p.local ? " (bot)" : ""}</div>` +
-        `<div class="bmeta">${esc(p.userId || "")}</div></div></li>`).join("")
-        : (s.inRoom ? `<li class="muted">No other players in the room (only the bot).</li>`
-                    : `<li class="muted">The bot isn't in a room.</li>`);
-      $("bevents").textContent = (s.events || []).map(e =>
-        e.kind ? `${e.t}  ${e.kind} ${esc(JSON.stringify(e.who == null ? "" : e.who))}`
-               : `${e.t}  code=${e.code} type=${e.type == null ? "?" : e.type}  ${JSON.stringify(e.data)}`).join("\n");
       $("blog").textContent = (s.log || []).join("\n");
-      const ev = $("bevents"); ev.scrollTop = ev.scrollHeight;
+      $("blog").scrollTop = $("blog").scrollHeight;
+      renderActions(!!s.badAppleAvailable);
+    }
+    async function sendAction(action, needsTarget) {
+      const body = { action };
+      if (needsTarget) {
+        body.target = $("btarget").value;
+        if (!body.target) { toast("Pick a player first", true); return; }
+      }
+      try {
+        await api("/bot/action", { method: "POST", headers: { "Content-Type": "application/json" },
+                                   body: JSON.stringify(body) });
+        toast("Action sent");
+      } catch (e) { toast(e.message, true); }
+      setTimeout(refresh, 900);
     }
     $("bref").onclick = refresh;
     $("bstart").onclick = async () => {
+      const target = $("bhook").value;
+      if (!target) { toast("Pick a player to hook the bot to", true); return; }
       try {
         await api("/bot/start", { method: "POST", headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ name: $("bname").value.trim(), room: $("broom").value.trim(), spawn: $("bspawn").checked }) });
-        toast("Bot starting");
+                                  body: JSON.stringify({ target }) });
+        toast("Bot joining the player's room");
       } catch (e) { toast(e.message, true); }
       setTimeout(refresh, 900);
-    };
-    $("bspawnnow").onclick = async () => {
-      try { const r = await api("/bot/spawn", { method: "POST" }); toast(r.ok ? "Spawn sent (view " + r.viewId + ")" : ("Spawn failed: " + (r.error || "not in room"))); }
-      catch (e) { toast(e.message, true); }
-      refresh();
     };
     $("bstop").onclick = async () => {
       try { await api("/bot/stop", { method: "POST" }); toast("Bot stopped"); }
       catch (e) { toast(e.message, true); }
       refresh();
     };
-    try {
-      const o = await api("/online");
-      const list = o.players || [];
-      $("bplayers").innerHTML = list.length
-        ? list.map(p => `<button class="go" data-r="${esc(p.roomKey)}" style="margin:2px">${esc(p.displayName)} → ${esc(p.roomKey || "?")}</button>`).join(" ")
-        : "nobody online";
-      document.querySelectorAll("#bplayers button[data-r]").forEach(b =>
-        b.onclick = () => { $("broom").value = b.dataset.r; toast("Room set — press Start"); });
-    } catch (_) { $("bplayers").textContent = "—"; }
+    await players();
     await refresh();
     clearInterval(window._botTimer);
     window._botTimer = setInterval(refresh, 3000);
+    clearInterval(window._botPlayersTimer);
+    window._botPlayersTimer = setInterval(players, 10000);
   },
 };
 
 
 document.querySelectorAll("aside button[data-t]").forEach(b => b.onclick = () => {
   clearInterval(window._botTimer);
+  clearInterval(window._botPlayersTimer);
   document.querySelectorAll("aside button[data-t]").forEach(x => x.classList.remove("on"));
   b.classList.add("on"); tabs[b.dataset.t]();
 });

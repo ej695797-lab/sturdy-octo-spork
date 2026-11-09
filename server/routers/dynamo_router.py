@@ -32,9 +32,8 @@ async def dynamo_handler(request: Request):
     op_name = target.rsplit(".", 1)[-1] if "." in target else target
     print(f"[dynamo] Operation: {op_name}")
 
-    from services.ip_bans import client_ip
-    payload_text, headers = await dispatch_dynamo(target, body, client_ip(request),
-                                                  getattr(request.state, "device_key", ""))
+    payload_text, headers = await dispatch_dynamo(target, body,
+                                                  device_key=getattr(request.state, "device_key", ""))
 
     return Response(
         content=payload_text,

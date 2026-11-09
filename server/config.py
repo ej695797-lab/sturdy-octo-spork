@@ -95,7 +95,6 @@ COVERT_DENY_MESSAGE = os.getenv(
     "COVERT_DENY_MESSAGE",
     "Couldn't reach the server. Check your connection and try again.")
 SHADOW_BAN_IDS = _set("SHADOW_BAN_IDS")
-SHADOW_BAN_IPS = _set("SHADOW_BAN_IPS")
 
 # Rotating client token (only observed unless ENFORCE_CLIENT_TOKEN=1; the kit
 # APK doesn't send one).
@@ -132,7 +131,7 @@ DISCORD_INVITE_URL = os.getenv("DISCORD_INVITE_URL", "https://discord.gg/VhFmdAy
 # Sign-in password for the host. Blank = the editor can't be signed into.
 EDITOR_PASSWORD = os.getenv("EDITOR_PASSWORD", "")
 
-# Local Photon bot (not part of the kit). Empty = bots disabled.
+# Editor-managed Photon bot controls. Blank = bot controls disabled.
 BOT_KEY = os.getenv("BOT_KEY", "")
 
 # Blocks owned by accounts that aren't in the database (official players in the

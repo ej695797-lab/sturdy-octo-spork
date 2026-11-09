@@ -8,7 +8,7 @@ anything served for an account is effectively public: anyone who knows an
 accountID (it's visible in-game) could read it. These fields are therefore
 stripped from every account read (Dynamo GetItem/BatchGetItem, login,
 g2_fetchAccountDatas) and dropped from every client account write. The server
-itself still reads/writes them in Mongo directly (IP bans, /link, the editor).
+removes legacy network-history fields from account documents at startup.
 """
 
 PRIVATE_ACCOUNT_FIELDS = frozenset({

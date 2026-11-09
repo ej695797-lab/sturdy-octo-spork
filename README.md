@@ -40,14 +40,13 @@ by hand, if you'd rather do it yourself.
   block, and a news-board Discord button. No other added content.
 - **A server** that runs in a console window on your PC (`start.bat` on Windows,
   `start.sh` on Linux/macOS): logins, the world, private worlds, moderation, and a
-  web editor at `/editor`.
+  web editor at `/editor`, including button controls for the Photon bot.
 - **The 1.31 world layout**: Starter House, Playground, Blue House, the Wilds, the
   tutorial, the Build-A-Map rooms and the rest, with **no maps built in them**: every
   room starts empty. See [Maps](#maps).
 - **Tools** to make your APK, check your server, and add your own blocks and music.
 
-Not included: community worlds, live player lookups from real Yeeps, a Discord bot, or
-a Photon bot.
+Not included: community worlds, live player lookups from real Yeeps, or a Discord bot.
 
 ## What you need
 
@@ -72,7 +71,8 @@ a Photon bot.
 ### 1. Make two Photon apps
 
 At https://dashboard.photonengine.com create a **PUN** app (Multiplayer Game, Photon PUN)
-and a **Voice** app (Photon Voice). Copy both App IDs. No custom authentication needed.
+and a **Voice** app (Photon Voice). Copy both App IDs. Game clients do not need custom
+authentication; the optional editor bot setup below does.
 
 ### 2. Start the server
 
@@ -88,6 +88,13 @@ Close the window and start it again after editing `.env`. Keep it open while peo
 
 Check it: `python tools/smoke_test.py http://127.0.0.1:8000 --editor-password <password>`
 should end with `ALL PASS`.
+
+The editor's Photon bot is optional. Set `BOT_KEY` to a private random value and
+`PHOTON_APP_ID` to the PUN App ID used in the host's APK, then configure the PUN app's
+Photon custom-auth URL to the server's `PUBLIC_BASE_URL`. The Bot tab can then hook the
+bot to an online player. It provides game, arcade, cleanup, power and effect buttons,
+but no build, live-talk or view controls. Bad Apple controls need a host-provided video
+at `server/bot/media/bad_apple.mp4`; no video is bundled.
 
 ### 3. Pick your server's address
 

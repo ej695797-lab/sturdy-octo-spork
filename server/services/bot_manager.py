@@ -1,172 +1,230 @@
-"""Runs one YeeperBot in a background thread and exposes it to the editor.
-
-pyphotonrealtime needs its socket pumped (``client.service()``); that runs in a
-daemon thread so the FastAPI event loop is never blocked. The thread imports the
-package lazily, so the web server boots fine when the bot is absent or disabled.
-"""
+"""Own the editor-controlled Photon bot process and its fixed action surface."""
 
 from __future__ import annotations
 
+import importlib.util
 import os
+import re
+import subprocess
+import sys
+import threading
 import time
+from pathlib import Path
 
+from bot.actions import ACTION_COMMANDS, MEDIA_ACTIONS, command_for
 from config import BOT_KEY
 
-# The Photon app id the client uses, the app version it connects with, and the
-# cloud region it lands in. Photon keeps rooms inside an (appId, appVersion,
-# region) tuple: a bot on a different app version (or a "best region" that
-# resolves elsewhere) sits in another matchmaking pool and never shares a room
-# with players.
-# Verified live from the running client (Explorer /api/lua/exec):
-#   PhotonNetwork.AppVersion = "1.31.0_2.45", PhotonNetwork.CloudRegion = "us"
-APP_ID = os.getenv("PHOTON_APP_ID", "a279e749-3e24-464c-9336-f3a412bdfdbc")
-APP_VERSION = os.getenv("PHOTON_APP_VERSION", "1.31.0_2.45")
-APP_REGION = os.getenv("PHOTON_REGION", "us")
-# Transport for the bot's Photon connection. Raw TCP (4530/4533) and UDP
-# (5055/5058) are blocked on some hosts (Render's free tier blocks non-HTTP
-# outbound), which leaves the bot stuck in "connecting" and it never joins.
-# WebSocketSecure (19090/19093) is TLS over HTTP ports and gets through where
-# the others don't, so it is the safe default. Override with PHOTON_PROTOCOL:
-# udp | tcp | ws | wss.
-APP_PROTOCOL = (os.getenv("PHOTON_PROTOCOL", "wss") or "wss").strip().lower()
-_PROTOCOLS = {"udp": "Udp", "tcp": "Tcp", "ws": "WebSocket", "websocket": "WebSocket",
-              "wss": "WebSocketSecure", "websocketsecure": "WebSocketSecure"}
-
-_MAX_LOG = 400
+SERVER_DIR = Path(__file__).resolve().parent.parent
+BOT_SCRIPT = SERVER_DIR / "bot" / "command_bot.py"
+BAD_APPLE_VIDEO = SERVER_DIR / "bot" / "media" / "bad_apple.mp4"
+BOT_ID = 1
+_MAX_LOG = 160
+_MENU_SEPARATOR = re.compile(r"^=+$")
 
 
 class BotManager:
     def __init__(self) -> None:
-        self._bot = None
-        self._thread = None
-        self._stop = None
+        self._process: subprocess.Popen | None = None
+        self._reader: threading.Thread | None = None
+        self._lock = threading.RLock()
+        self._lifecycle = threading.Lock()
         self.error = ""
-        self.startedAt = 0.0
+        self.started_at = 0.0
+        self.target_account = ""
+        self.target_name = ""
+        self.room = ""
         self.log: list[str] = []
-
-    # ── helpers ──────────────────────────────────────────────────────
-    def _note(self, text: str) -> None:
-        self.log.append(f"{time.strftime('%H:%M:%S')} {text}")
-        del self.log[:-_MAX_LOG]
-        print(f"[bot] {text}")
 
     def available(self) -> tuple[bool, str]:
         if not BOT_KEY:
             return False, "BOT_KEY is not set on the server (bots are off)"
-        try:
-            import pyphotonrealtime  # noqa: F401
-        except Exception as e:  # noqa: BLE001
-            return False, f"pyphotonrealtime not installed: {e}"
+        if not os.getenv("PHOTON_APP_ID"):
+            return False, "PHOTON_APP_ID must be set to the PUN app used by the game"
+        if not BOT_SCRIPT.is_file():
+            return False, "The Photon command engine is missing"
+        for package in ("websockets", "pymongo"):
+            if importlib.util.find_spec(package) is None:
+                return False, f"{package} is not installed"
         return True, ""
 
-    def _alive(self) -> bool:
-        return bool(self._thread and self._thread.is_alive())
+    def _note(self, text: str) -> None:
+        with self._lock:
+            self.log.append(f"{time.strftime('%H:%M:%S')} {text[:300]}")
+            del self.log[:-_MAX_LOG]
+        print(f"[bot] {text}")
 
-    # ── commands ─────────────────────────────────────────────────────
-    def start(self, *, name: str = "", room: str = "", spawn: bool = True) -> dict:
-        ok, why = self.available()
-        if not ok:
-            self.error = why
-            return self.status()
-        if self._alive():
-            if room:
-                self._bot.set_room(room)
-            if name:
-                self._bot.name = name[:24]
-            self._bot.spawn = bool(spawn)
-            return self.status()
-
-        from threading import Event, Thread
-
-        from bot.photon_bot import YeeperBot
-
-        self.error = ""
-        self.startedAt = time.time()
-        self._bot = YeeperBot(
-            name=(name or "YeeperBot")[:24],
-            app_id=APP_ID,
-            app_version=APP_VERSION,
-            bot_key=BOT_KEY,
-            room=room or "",
-            spawn=bool(spawn),
-            region=APP_REGION,
-            protocol=_PROTOCOLS.get(APP_PROTOCOL, "WebSocketSecure"),
-        )
-        if not self._bot.connect():
-            self.error = self._bot.error or "connect failed"
-            return self.status()
-        self._stop = Event()
-        self._thread = Thread(target=self._loop, name="yeeperbot", daemon=True)
-        self._thread.start()
-        self._note(f"started as {self._bot.name}" + (f", joining {room}" if room else "")
-                   + (" (spawn on)" if spawn else " (spawn off)"))
-        return self.status()
-
-    def _loop(self) -> None:
-        while self._stop is not None and not self._stop.is_set():
-            try:
-                self._bot.service()
-                self._bot._maybe_join()
-                self._bot._maybe_spawn()
-                self._bot._note_remotes()
-            except Exception as e:  # noqa: BLE001
-                self.error = f"service: {e}"
-                self._note(f"service error: {e}")
-                break
-            time.sleep(0.02)
+    def _read_output(self, process: subprocess.Popen) -> None:
+        in_menu = False
         try:
-            self._bot.disconnect()
-        except Exception:
+            for raw in process.stdout or ():
+                line = raw.rstrip()
+                if "YEEPS BOT" in line:
+                    in_menu = True
+                    continue
+                if in_menu:
+                    if _MENU_SEPARATOR.match(line.strip()):
+                        in_menu = False
+                    continue
+                line = line.replace("bot> ", "").strip()
+                if not line:
+                    continue
+                room_match = re.search(r"\(Photon room ([^)]+)\)", line)
+                if room_match:
+                    with self._lock:
+                        self.room = room_match.group(1)
+                joined_match = re.match(r"joined (\S+) as actor \d+", line)
+                if joined_match:
+                    with self._lock:
+                        self.room = joined_match.group(1)
+                self._note(line)
+        except (OSError, ValueError) as exc:
+            self._note(f"output reader stopped: {exc}")
+        finally:
+            code = process.poll()
+            if code not in (None, 0):
+                with self._lock:
+                    self.error = self.log[-1].split(" ", 1)[-1] if self.log else f"bot exited ({code})"
+
+    def start(self, *, target: str, target_name: str, room: str) -> dict:
+        available, reason = self.available()
+        if not available:
+            with self._lock:
+                self.error = reason
+            return {"ok": False, **self.status()}
+        target = str(target or "").strip()
+        if not target.startswith("o_") or len(target) > 80:
+            return {"ok": False, "error": "Choose an online player to hook the bot to"}
+
+        with self._lifecycle:
+            with self._lock:
+                old_process = self._process
+                same_target = (old_process is not None and old_process.poll() is None
+                               and self.target_account == target)
+            if same_target:
+                return {"ok": True, **self.status()}
+            if old_process is not None and old_process.poll() is None:
+                self._stop_process(old_process)
+
+            env = os.environ.copy()
+            env.pop("YEEPS_VIEW_DIR", None)
+            env.pop("YEEPS_TALK_PORT", None)
+            env.pop("YEEPS_BOT_ENV", None)
+            env.pop("YEEPS_LOOK_ACCT", None)
+            env.pop("AUTH", None)
+            env["PYTHONPATH"] = str(SERVER_DIR) + os.pathsep + env.get("PYTHONPATH", "")
+            env["PYTHONUNBUFFERED"] = "1"
+            command = [
+                sys.executable, "-u", "-m", "bot.command_bot",
+                "--name", "YeeperBot", "--bot-id", str(BOT_ID),
+                "run", "--target", target,
+            ]
+            try:
+                process = subprocess.Popen(
+                    command,
+                    cwd=str(SERVER_DIR),
+                    env=env,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    bufsize=1,
+                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                )
+            except OSError as exc:
+                with self._lock:
+                    self.error = f"couldn't start the bot: {exc}"
+                return {"ok": False, **self.status()}
+
+            with self._lock:
+                self._process = process
+                self._reader = threading.Thread(
+                    target=self._read_output, args=(process,), name="yeeperbot-output", daemon=True)
+                self.error = ""
+                self.started_at = time.time()
+                self.target_account = target
+                self.target_name = " ".join(str(target_name or "").split())[:64]
+                self.room = str(room or "")
+                self.log = []
+                reader = self._reader
+            reader.start()
+            self._note(f"starting for {self.target_name or target}")
+            return {"ok": True, **self.status()}
+
+    def _stop_process(self, process: subprocess.Popen, wait_s: float = 30) -> None:
+        try:
+            if process.stdin and process.poll() is None:
+                process.stdin.write("quit\n")
+                process.stdin.flush()
+                process.stdin.close()
+        except (BrokenPipeError, OSError, ValueError):
             pass
-        self._note("stopped")
+        try:
+            process.wait(timeout=wait_s)
+        except subprocess.TimeoutExpired:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=5)
 
     def stop(self) -> dict:
-        if self._stop is not None:
-            self._stop.set()
-        if self._thread is not None:
-            self._thread.join(timeout=3)
-        self._thread = None
-        self._stop = None
-        return self.status()
+        with self._lifecycle:
+            with self._lock:
+                process = self._process
+            if process is not None and process.poll() is None:
+                self._stop_process(process)
+                self._note("stopped")
+            with self._lock:
+                self._process = None
+                self._reader = None
+                self.target_account = ""
+                self.target_name = ""
+                self.room = ""
+            return {"ok": True, **self.status()}
 
-    def set_room(self, room: str) -> dict:
-        if self._bot is not None:
-            self._bot.set_room(room)
-            self._note(f"room -> {room or '(none)'}")
-        return self.status()
-
-    def raise_game(self, msg_type: int, payload) -> dict:
-        if self._bot is None:
-            return {"ok": False, "error": "bot not running"}
-        return {"ok": self._bot.raise_game(msg_type, payload), "type": msg_type}
-
-    def spawn_player(self) -> dict:
-        """Manually announce the bot's avatar (Photon Instantiate 202)."""
-        if self._bot is None:
-            return {"ok": False, "error": "bot not running"}
-        ok = self._bot.spawn_player()
-        return {"ok": ok, "viewId": self._bot.view_id, "inRoom": self._bot._client.in_room
-                if self._bot._client else False, "error": self._bot.error}
+    def action(self, action: str, target_name: str = "") -> dict:
+        if action not in ACTION_COMMANDS:
+            return {"ok": False, "error": "Unknown bot action"}
+        if action in MEDIA_ACTIONS and not BAD_APPLE_VIDEO.is_file():
+            return {"ok": False, "error": "Add a video at server/bot/media/bad_apple.mp4 to enable Bad Apple"}
+        command = command_for(action, target_name)
+        if command is None:
+            return {"ok": False, "error": "Choose a player for this action"}
+        with self._lock:
+            process = self._process
+            if process is None or process.poll() is not None:
+                return {"ok": False, "error": "Hook the bot to an online player first"}
+            try:
+                if process.stdin is None:
+                    return {"ok": False, "error": "The bot command input is unavailable"}
+                process.stdin.write(command + "\n")
+                process.stdin.flush()
+            except (BrokenPipeError, OSError, ValueError):
+                return {"ok": False, "error": "The bot stopped before the action could be sent"}
+        return {"ok": True, "queued": True}
 
     def status(self) -> dict:
-        ok, why = self.available()
-        base = {
-            "enabled": bool(BOT_KEY),
-            "available": ok,
-            "reason": why,
-            "running": self._thread is not None and self._thread.is_alive(),
-            "error": self.error,
-            "uptime": round(time.time() - self.startedAt, 1) if self.startedAt else 0,
-            "log": self.log[-60:],
-        }
-        if self._bot is not None:
-            base.update(self._bot.status())
-            if self._bot.error and not base["error"]:
-                base["error"] = self._bot.error
-        return base
-
-    def events(self) -> list:
-        return list(self._bot.events) if self._bot is not None else []
+        available, reason = self.available()
+        with self._lock:
+            process = self._process
+            running = process is not None and process.poll() is None
+            return {
+                "enabled": bool(BOT_KEY),
+                "available": available,
+                "reason": reason,
+                "running": running,
+                "state": "running" if running else ("error" if self.error else "stopped"),
+                "error": self.error,
+                "uptime": round(time.time() - self.started_at, 1) if running else 0,
+                "target": self.target_account,
+                "targetName": self.target_name,
+                "room": self.room,
+                "badAppleAvailable": BAD_APPLE_VIDEO.is_file(),
+                "log": list(self.log[-60:]),
+            }
 
 
 manager = BotManager()

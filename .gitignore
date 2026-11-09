@@ -3,6 +3,8 @@ server/.env
 server/.venv/
 server/data/
 server/logs/
+server/bot/logs/
+server/bot/media/
 server/tunnel.log
 tools/.keys/
 *.keystore

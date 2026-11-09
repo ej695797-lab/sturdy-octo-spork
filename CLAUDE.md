@@ -193,8 +193,9 @@ at `http://localhost:8080`, the BNM Explorer).
 
 MongoDB database `DB_NAME` (default `Yeeps131`). Main collections: `accounts`,
 `rooms`, `room_maps`, `maps` (`<roomKey>$current` = a room's map), `globals`,
-`bundles`, `player_statuses`, plus logs (`editor_logins`, `client_error_*`, `debug_logs`,
-`map_history` for reverts).
+`bundles`, `player_statuses`, plus logs (`client_error_*`, `debug_logs`, `map_history`
+for reverts). The server does not collect player IP history; startup clears legacy
+`lastIP` / `recentIPs` fields and old editor-login IP logs.
 
 `server/seed/world/*.json` is the 1.31 world layout: the `beta4` room map (22 nodes),
 20 room documents, globals (default player data `default_account_override` with ~1970

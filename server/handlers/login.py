@@ -19,31 +19,6 @@ from services.kick import DEFAULT_KICK_REASON
 
 LOGIN_LOG_FILE = Path("logs/login_traffic.log")
 
-# Keep references to fire-and-forget alert tasks so they aren't GC'd mid-flight.
-_bg_tasks: set = set()
-
-
-async def _alert_new_ip(account_id: str, name, oculus, new_ip: str, prior_ips: list) -> None:
-    """Post an ADMIN-webhook alert when an account logs in from an IP we've never
-    seen for it. ALERT ONLY — no auto-ban (a changed IP is usually a legit player
-    on a new network, and IP bans hit everyone sharing that IP). The admin can
-    ban the IP from the editor if it's actually account theft."""
-    try:
-        import re as _re
-        import httpx
-        from config import ADMIN_DISCORD_WEBHOOK, labeled
-        who = _re.sub(r"<[^>]+>", "", str(name or "")).strip() or str(oculus or account_id)
-        who = _re.sub(r"([*_`~|\\])", r"\\\1", who)  # neutralize Discord markdown
-        seen = ", ".join(f"`{p}`" for p in dict.fromkeys(prior_ips) if p) or "(none)"
-        msg = (f"New IP for **{who}** (`{account_id}`): `{new_ip}`\n"
-               f"not in recent IPs: {seen}\n"
-               f"Review — if this isn't them, ban the IP from the editor. "
-               f"(A changed IP is usually just a new network; this is only a heads-up.)")
-        async with httpx.AsyncClient(timeout=10) as c:
-            await c.post(ADMIN_DISCORD_WEBHOOK, json={"content": labeled(msg)[:1900]})
-    except Exception as _e:
-        print(f"[login] new-IP alert failed for {account_id}: {_e}")
-
 # Every cosmetic item key found in the client's string table (hats, masks,
 # heads, and toy/tool skins). Granted to every account so everything is
 # owned -- this is a private server, so there's no catalog endpoint to pull
@@ -2314,8 +2289,7 @@ async def handle_login(body: dict) -> dict:
     # Runs before this login's IP is stamped, so a stranger can't "earn" the IP.
     from services import device_auth
     _device_ok, _device_note = await device_auth.check_login(
-        account, account_id, str(body.get("_deviceKey") or ""),
-        str(body.get("_clientIP") or "").strip(), _is_new_account)
+        account, account_id, str(body.get("_deviceKey") or ""), _is_new_account)
 
     # Banned headset (services/device_bans.py): an account that this headset
     # really owns (its key is bound to the account, e.g. a brand-new account it
@@ -2334,8 +2308,7 @@ async def handle_login(body: dict) -> dict:
             _bk = await _da2._keys_of(account_id) or []
             _owns = _da2.key_hash(_raw_dk) in _bk
             if not _owns:
-                print(f"[device] banned headset tried to log in as {account_id} (not its account) - refused "
-                      f"ip={body.get('_clientIP', '')}")
+                print(f"[device] banned headset tried to log in as {account_id} (not its account) - refused")
                 _refuse_banned_dk = True
         if _owns and not account.get("adminBlocked"):
             _why = "Banned headset"
@@ -2343,8 +2316,7 @@ async def handle_login(body: dict) -> dict:
             await accounts.update_one({"accountID": account_id}, {"$set": {
                 "adminBlocked": 1, "isPermabanned": 1, "banReason": _why, "blockReason": _why,
                 "banCategory": "blocked", "banExpireTimestamp": ""}})
-            print(f"[device] {account_id} logged in from a BANNED headset -> account banned too "
-                  f"ip={body.get('_clientIP', '')}")
+            print(f"[device] {account_id} logged in from a BANNED headset -> account banned too")
             try:
                 from routers.editor_router import _discord_notify
                 await _discord_notify(f"A banned headset logged into **{account.get('displayName') or account_id}** "
@@ -2433,39 +2405,12 @@ async def handle_login(body: dict) -> dict:
     # ownership grants only ever lived in the response, never in Mongo
     # (invisible to the editor UI, and re-computed from scratch every login
     # instead of actually sticking).
+    account.pop("lastIP", None)
+    account.pop("recentIPs", None)
     await accounts.update_one(
         {"accountID": account_id},
         {"$set": {k: v for k, v in account.items() if k != "accountID"}},
     )
-
-    # Stamp the caller's IP on the account (lastIP + last 5 recentIPs) so an admin
-    # can ban a raider by username from the editor without hunting the logs.
-    _ip = str(body.get("_clientIP") or "").strip()
-    # Never remember the IP of a login the headset check refused: otherwise a
-    # second try from the same IP would count as "a network this account plays
-    # from" and could claim the account.
-    if _ip and _ip != "?" and _device_ok:
-        _prior_ips = list(account.get("recentIPs") or [])
-        try:
-            await accounts.update_one(
-                {"accountID": account_id},
-                {"$set": {"lastIP": _ip},
-                 "$push": {"recentIPs": {"$each": [_ip], "$slice": -5}}})
-        except Exception as _e:
-            print(f"[login] IP stamp failed for {account_id}: {_e}")
-        # ALERT (not ban) when this account logs in from an IP we've never seen
-        # for it. Skip first-ever login (no prior history). Pushing _ip above
-        # means we only alert once per new IP (it's "known" on the next join).
-        if _prior_ips and _ip not in _prior_ips:
-            try:
-                import asyncio
-                _t = asyncio.create_task(_alert_new_ip(
-                    account_id, account.get("displayName"), account.get("oculusID"),
-                    _ip, _prior_ips))
-                _bg_tasks.add(_t)
-                _t.add_done_callback(_bg_tasks.discard)
-            except Exception as _e:
-                print(f"[login] new-IP alert schedule failed for {account_id}: {_e}")
 
     # Build response from the full account payload to match legacy behavior.
     # Older clients often tolerate/expect additional fields beyond

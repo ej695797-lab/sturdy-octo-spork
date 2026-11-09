@@ -182,16 +182,10 @@ async def lambda_invoke(function_name: str, request: Request):
         inner_fn = str(body.get("functionName", "") or "").lower()
     except Exception:
         inner_fn = ""
-    # Record the caller's IP in the body so handle_login can stamp it on the
-    # account (lastIP/recentIPs) — this is what makes IP-banning by username easy.
-    try:
-        from services.ip_bans import client_ip as _cip
-        if isinstance(body, dict):
-            body["_clientIP"] = _cip(request)
-            body["_deviceKey"] = getattr(request.state, "device_key", "")
-            body["_clientBuildTag"] = getattr(request.state, "client_build_tag", "")
-    except Exception:
-        pass
+    if isinstance(body, dict):
+        body.pop("_clientIP", None)
+        body["_deviceKey"] = getattr(request.state, "device_key", "")
+        body["_clientBuildTag"] = getattr(request.state, "client_build_tag", "")
     print(f"[lambda] Invoking: {function_name}  inner={inner_fn or '-'}")
     if isinstance(body, dict):
         body["_fn"] = str(body.get("functionName") or function_name)
@@ -200,30 +194,20 @@ async def lambda_invoke(function_name: str, request: Request):
     # inner functionName.
     for match_str, handler in HANDLER_TABLE:
         if match_str in fn_lower or (inner_fn and match_str in inner_fn):
-            # The game logs in through /questLogIntoAccount, never through a
-            # lambda invoke. Since Oct 8 only raiders' scripts used this route
-            # (to pose as owner accounts), so refuse it and IP-ban the caller.
+            # Login is only supported through /questLogIntoAccount.
             if handler.__name__ == "handle_login":
-                _ip = (body.get("_clientIP", "") if isinstance(body, dict) else "") or ""
-                print(f"[guard] refused lambda-route login as "
-                      f"{(body.get('accountID') if isinstance(body, dict) else '?')} from {_ip or '?'}")
-                if _ip and not _ip.startswith(("127.", "::1", "10.", "192.168.")):
-                    try:
-                        from services.ip_bans import ban_ip
-                        await ban_ip(_ip, "login through the lambda route (raider script)")
-                    except Exception as _e:
-                        print(f"[guard] auto IP-ban failed for {_ip}: {_e}")
+                print("[guard] refused lambda-route login")
                 return _lambda_envelope({"data": {"success": 0, "error": "NOT_AUTHORIZED"}})
             # The caller must be the account it claims to be (headset key).
             if handler.__name__ != "handle_login" and isinstance(body, dict):
                 from services import device_auth
                 _ok, _ = await device_auth.check_request(body.get("accountID"), body.get("_deviceKey", ""),
-                                                         function_name, body.get("_clientIP", ""))
+                                                         function_name)
                 # Anything that CHANGES something also needs the account's own bound
                 # headset, even for accounts with none bound yet (scripts posing as them).
                 if _ok and match_str in WRITE_LAMBDAS:
                     _ok = await device_auth.check_write(body.get("accountID"), body.get("_deviceKey", ""),
-                                                        function_name, body.get("_clientIP", ""))
+                                                        function_name)
                 if not _ok:
                     return _lambda_envelope({"data": {"success": 0, "error": "NOT_AUTHORIZED"}})
             result = await handler(body)

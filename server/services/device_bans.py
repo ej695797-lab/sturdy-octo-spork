@@ -1,10 +1,8 @@
 """
-Headset bans (2026-10-10). An IP ban is easy to step around (home IPv6
-addresses rotate, a phone hotspot or VPN gives a new one), and a new Meta
-account means a new Yeeps account. The headset key (services/device_auth.py)
-stays the same on the same Quest, so a permanent ban also bans the account's
-bound headset(s): any account logging in or joining Photon from that headset
-is treated as banned.
+Headset bans (2026-10-10). A new Meta account means a new Yeeps account. The
+headset key (services/device_auth.py) stays the same on the same Quest, so a
+permanent ban also bans the account's bound headset(s): any account logging in
+or joining Photon from that headset is treated as banned.
 
 Stored in globals {"key": "banned_devices", "hashes": [...], "reasons": {...}}
 as the same key hashes accounts keep in `deviceKeys`.

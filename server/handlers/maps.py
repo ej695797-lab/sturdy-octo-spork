@@ -115,7 +115,7 @@ async def _may_save_shared(account_id: str, room_key: str, body: dict) -> bool:
     except Exception as e:
         why = f"check failed: {e}"
     if why:
-        print(f"[maps] BLOCKED save to {room_key} by {account_id}: {why} ip={body.get('_clientIP', '')}")
+        print(f"[maps] BLOCKED save to {room_key} by {account_id}: {why}")
         return False
     return True
 
@@ -140,8 +140,7 @@ async def _can_edit_protected(account_id: str, body: dict | None = None) -> bool
             bound = await device_auth._keys_of(account_id)
             key = body.get("_deviceKey", "")
             if not bound or not device_auth.valid_key(key) or device_auth.key_hash(key) not in bound:
-                print(f"[maps] protected-room save refused for {account_id}: not from its bound headset "
-                      f"ip={body.get('_clientIP', '')}")
+                print(f"[maps] protected-room save refused for {account_id}: not from its bound headset")
                 return False
         except Exception as e:
             print(f"[maps] headset check failed for {account_id}: {e}")

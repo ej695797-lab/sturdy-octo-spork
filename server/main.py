@@ -22,52 +22,19 @@ from routers.dynamo_router import router as dynamo_router
 from routers.editor_router import router as editor_router
 from seed.load_world import load_world
 from services.replay_log import lookup_replay
-from services.db import accounts, globals_col
+from services.db import accounts, globals_col, debug_logs, db as _db
 
 app = FastAPI(title="Yeeps v1 Private Server")
 
-# ── Abuse protection ─────────────────────────────────────────────────────────
-# Stop the MongoDB from being flooded by a public client spamming logins/saves:
-# a per-IP request rate limit plus a request-body size cap. In-memory state
-# (fine for a single Render instance); generous enough for normal play and the
-# burst of calls at room-load. The editor + Discord endpoints are exempt.
-import time as _time
+# ── Request size protection ──────────────────────────────────────────────────
+# Reject oversized requests before parsing or buffering their bodies.
 from services.build_gate import outdated_message
-_RL: dict = {}                          # ip -> [window_start, count]
-_RL_MAX = 600                           # max requests per window per IP
-_RL_WINDOW = 60                         # window seconds
 _MAX_BODY = 12 * 1024 * 1024            # 12 MB max request body
 _MAX_VIDEO_BODY = 100 * 1024 * 1024     # editor video uploads (Cloudflare's own cap is 100 MB)
-
-# Hardcoded IP bans (bans made from the editor live in services/ip_bans.py).
-# 81.141.248.32 ("giggleshitter") was lifted on 2026-10-10 at the owner's request.
-BLOCKED_IPS: set = set()
 
 
 @app.middleware("http")
 async def abuse_guard(request: Request, call_next):
-    # 0) hard IP ban (hardcoded set + persistent auto-bans from ip_bans)
-    try:
-        from services.ip_bans import client_ip, is_banned
-        ip0 = client_ip(request)
-        if ip0 in BLOCKED_IPS or await is_banned(ip0):
-            # A player banned mid-session stays in their Photon room unless their
-            # game hears about the ban, and it only does through its account poll
-            # (DynamoDB GetItem -> shouldForceRefresh) and refreshAccountOnline
-            # (-> isPermabanned). Let just those through so the ban lands and the
-            # game leaves; everything else from a banned IP stays 403.
-            # The header alone isn't enough: a raider's script sent X-Amz-Target
-            # GetItem on its lambda calls too (Oct 10), so the GetItem pass is
-            # only for the DynamoDB endpoint itself.
-            tgt = request.headers.get("x-amz-target", "")
-            _p = request.url.path
-            _dynamo_root = _p == "/" or (_p.startswith(("/k/", "/c/")) and _p.rstrip("/").count("/") <= 4
-                                         and "/functions/" not in _p and "/2015-03-31/" not in _p)
-            if not ((tgt.endswith(".GetItem") and _dynamo_root) or "g2_refreshAccountOnline" in _p):
-                return JSONResponse({"message": "Forbidden"}, status_code=403)
-    except Exception:
-        pass
-    # 1) reject oversized bodies outright
     try:
         cl = request.headers.get("content-length")
         lim = _MAX_BODY
@@ -75,25 +42,6 @@ async def abuse_guard(request: Request, call_next):
             lim = _MAX_VIDEO_BODY       # editor-only (login checked before the body is read)
         if cl and int(cl) > lim:
             return JSONResponse({"message": "Payload too large"}, status_code=413)
-    except Exception:
-        pass
-    # 2) per-IP rate limit on game traffic (skip admin editor + discord bot)
-    try:
-        path = request.scope.get("path", "") or ""
-        if "/editor" not in path and "/discord" not in path:
-            ip = request.client.host if request.client else "?"
-            now = _time.time()
-            w = _RL.get(ip)
-            if w is None or now - w[0] >= _RL_WINDOW:
-                _RL[ip] = [now, 1]
-            else:
-                w[1] += 1
-                if w[1] > _RL_MAX:
-                    return JSONResponse({"message": "Too Many Requests"}, status_code=429)
-            if len(_RL) > 5000:          # bound memory: drop idle IPs
-                cutoff = now - _RL_WINDOW
-                for k in [k for k, v in list(_RL.items()) if v[0] < cutoff]:
-                    _RL.pop(k, None)
     except Exception:
         pass
     return await call_next(request)
@@ -172,8 +120,13 @@ class _QuietPolls(logging.Filter):
     def filter(self, record):
         a = record.args
         try:
-            return not (isinstance(a, tuple) and len(a) >= 5 and int(a[4]) < 400
-                        and str(a[2]).startswith(self._PATHS))
+            if not (isinstance(a, tuple) and len(a) >= 5):
+                return True
+            quiet = int(a[4]) < 400 and str(a[2]).startswith(self._PATHS)
+            if quiet:
+                return False
+            record.args = ("[redacted]",) + a[1:]
+            return True
         except Exception:
             return True
 
@@ -209,7 +162,6 @@ async def log_http_traffic(request: Request, call_next):
 
     log_entry = (
         f"[{now}]\n"
-        f"Client: {request.client.host if request.client else 'unknown'}\n"
         f"Method: {request.method}\n"
         f"Path: {full_path}\n"
         f"RequestBody: {request_body_text}\n"
@@ -232,6 +184,16 @@ if _TRAFFIC_LOG:
 async def startup_event():
     """Load the 1.31.0-blaze world into an empty database (SEED_WORLD=1)."""
     import config as _cfg
+    await accounts.update_many({}, {"$unset": {"lastIP": "", "recentIPs": ""}})
+    await globals_col.update_one({"key": "banned_ips"},
+                                 {"$unset": {"ips": "", "reasons": ""}})
+    await _db["editor_logins"].delete_many({})
+    await _db["photon_auths"].update_many({}, {"$unset": {
+        "ip": "", "query.ip": "", "query.clientIp": "", "query.clientIP": "",
+        "query.ipAddress": "", "query.remoteIp": "",
+    }})
+    await debug_logs.update_many({}, {"$unset": {"payload._clientIP": "", "ip": ""}})
+    print("[privacy] removed stored IP history and login logs")
     if getattr(_cfg, "SEED_DB", True):
         await load_world()
     else:
@@ -240,6 +202,14 @@ async def startup_event():
     print("  Yeeps 1.31.0-yeeper920 self-host server is READY")
     print(f"  Game API + editor: {_cfg.PUBLIC_BASE_URL}   (editor: /editor)")
     print("=" * 60)
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Gracefully stop the editor-managed Photon bot with the web server."""
+    import asyncio
+    from services.bot_manager import manager
+    await asyncio.to_thread(manager.stop)
 
 
 # ─── Include routers ─────────────────────────────────────────────────
@@ -287,6 +257,7 @@ async def debug_traffic(request: Request, n: int = 60, q: str = ""):
         with HTTP_LOG_FILE.open("rb") as f:
             f.seek(0, 2); f.seek(max(0, f.tell() - 4 * 1024 * 1024))
             text = f.read().decode("utf-8", errors="replace")
+        text = re.sub(r"(?m)^Client:.*\r?\n", "", text)
     except Exception as e:
         return JSONResponse(content={"error": str(e), "blocks": []})
     blocks = [b for b in text.split("=" * 80) if b.strip()]
@@ -304,7 +275,6 @@ async def _log_photon_auth(account_id: str, allowed: bool, request, extra: dict 
     actually online. Collection photon_auths, TTL 2 days."""
     try:
         from services.db import db as _db
-        from services.ip_bans import client_ip as _cip
         col = _db["photon_auths"]
         await col.create_index("at", expireAfterSeconds=2 * 86400)
         # fileHashes is ~8.5 KB and identical per APK build: keep a 16-hex fingerprint
@@ -312,21 +282,19 @@ async def _log_photon_auth(account_id: str, allowed: bool, request, extra: dict 
         import hashlib as _hl
         q = {}
         for k, v in request.query_params.items():
-            if k.lower() in ("token", "summaryhash", "botkey"):
+            if k.lower() in ("token", "summaryhash", "botkey", "dk") or "ip" in k.lower():
                 continue
             if k.lower() == "filehashes":
                 k, v = "fileHashesFp", _hl.sha256(v.encode()).hexdigest()[:16]
             q[k] = v[:200]
         await col.insert_one({"at": datetime.now(timezone.utc), "accountID": account_id,
-                              "allowed": bool(allowed), "ip": _cip(request),
-                              "query": q, **(extra or {})})
+                              "allowed": bool(allowed), "query": q, **(extra or {})})
     except Exception as _e:
         print(f"[photon] auth log failed: {_e}")
 
 
 async def _bot_photon_auth(q, request):
-    """Photon custom auth for the owner's local bot (yeeps-bot). Wrong/disabled
-    key -> the same covert deny a modified client gets."""
+    """Photon custom auth for the editor-managed bot. Wrong/disabled keys are denied."""
     import hmac as _hm
     from config import BOT_KEY, COVERT_DENY_MESSAGE
     if not BOT_KEY or not _hm.compare_digest(str(q.get("botKey")), BOT_KEY):
@@ -337,7 +305,7 @@ async def _bot_photon_auth(q, request):
     except ValueError:
         n = 1
     aid = f"o_99000000000000{n:02d}"
-    name = re.sub(r"[^A-Za-z0-9_ .-]", "", str(q.get("botName") or "BlazeBot"))[:24] or "BlazeBot"
+    name = re.sub(r"[^A-Za-z0-9_ .-]", "", str(q.get("botName") or "YeeperBot"))[:24] or "YeeperBot"
     if not await accounts.find_one({"accountID": aid}, {"_id": 1}):
         from handlers.login import DEFAULT_ACCOUNT, _server_time
         acc = dict(DEFAULT_ACCOUNT)
@@ -355,7 +323,7 @@ async def _bot_photon_auth(q, request):
 
 async def _photon_auth_denied(account_id: str, request) -> str | None:
     """Return a deny MESSAGE if this connection must be rejected at Photon
-    custom-auth, else None. Rejects banned account / IP / name, AND outdated or
+    custom-auth, else None. Rejects banned accounts and names, plus outdated or
     modified builds (e.g. coslink's dev-menu clone).
 
     Enforcing the build check HERE matters: a patched client can ignore the
@@ -367,11 +335,9 @@ async def _photon_auth_denied(account_id: str, request) -> str | None:
     positives for not-yet-attested clients)."""
     from config import (ALLOWED_ATTEST_HASHES, RETIRED_ATTEST_HASHES,
                         REQUIRED_CLIENT_VERSION, COVERT_DENY_MESSAGE,
-                        SHADOW_BAN_IDS, SHADOW_BAN_IPS,
+                        SHADOW_BAN_IDS,
                         ENFORCE_CLIENT_TOKEN, valid_client_tokens)
     try:
-        from services.ip_bans import is_banned, client_ip
-        ip = client_ip(request)
         # The game is closed (globals gameClosed, services/build_gate.py): no room joins.
         from services.build_gate import closed_message
         _closed = await closed_message()
@@ -380,11 +346,9 @@ async def _photon_auth_denied(account_id: str, request) -> str | None:
         # Covert targets first: a generic "can't connect" message, so they can't
         # tell they were banned or how. Env lists let you covert-ban without a DB
         # trace at all.
-        if (account_id and account_id in SHADOW_BAN_IDS) or (ip and ip in SHADOW_BAN_IPS):
-            print(f"[photon] shadow(list) DENIED {account_id} ip={ip}")
+        if account_id and account_id in SHADOW_BAN_IDS:
+            print(f"[photon] shadow(list) DENIED {account_id}")
             return COVERT_DENY_MESSAGE
-        if await is_banned(ip):
-            return "You are banned."
         adoc = None
         if account_id and account_id != "o_0":
             adoc = await accounts.find_one(
@@ -402,7 +366,7 @@ async def _photon_auth_denied(account_id: str, request) -> str | None:
             # room join must come from a headset bound to this account.
             from services import device_auth as _da
             _dk = str(request.query_params.get("dk") or getattr(request.state, "device_key", "") or "")
-            _dok, _ = await _da.check_request(account_id, _dk, "photon join", ip,
+            _dok, _ = await _da.check_request(account_id, _dk, "photon join",
                                               enforce=_da.photon_enforcing())
             if not _dok:
                 return ("This account is locked to another headset. "
@@ -414,12 +378,12 @@ async def _photon_auth_denied(account_id: str, request) -> str | None:
             if _da.photon_enforcing():
                 _bound = await _da._keys_of(account_id)
                 if not _da.valid_key(_dk) or not _bound or _da.key_hash(_dk) not in _bound:
-                    print(f"[photon] DENIED {account_id}: no matching bound headset key ip={ip}")
+                    print(f"[photon] DENIED {account_id}: no matching bound headset key")
                     return ("This account is locked to another headset. "
                             "Ask an admin to reset your headset lock.")
             from services.device_bans import is_device_banned
             if await is_device_banned(_dk):
-                print(f"[photon] banned headset DENIED {account_id} ip={ip}")
+                print(f"[photon] banned headset DENIED {account_id}")
                 return "You are banned."
             if _da.valid_key(_dk):
                 _da._log(f"photon join {account_id} with headset key ok", every=600)
@@ -620,9 +584,8 @@ async def catch_all(request: Request, path: str = ""):
             print(f"[DIAG] REQ {op} {tbl}: {json.dumps(body)[:1200]}")
 
         from services.dynamo_ops import dispatch_dynamo
-        from services.ip_bans import client_ip as _dyn_ip
-        payload_text, headers = await dispatch_dynamo(target, body, _dyn_ip(request),
-                                                      getattr(request.state, "device_key", ""))
+        payload_text, headers = await dispatch_dynamo(target, body,
+                                                      device_key=getattr(request.state, "device_key", ""))
         if _diag:
             print(f"[DIAG] RES {op} {tbl}: {payload_text[:1200]}")
         print(f"-> 200 application/x-amz-json-1.0")
@@ -641,22 +604,21 @@ async def catch_all(request: Request, path: str = ""):
     # only seen by AWS SDK Lambda.Invoke callers (step 2 above).
     from routers.lambda_router import HANDLER_TABLE
     fn_lower = path.lower()
-    try:
-        from services.ip_bans import client_ip as _cip
-        if isinstance(body, dict):
-            body["_clientIP"] = _cip(request)
+    if isinstance(body, dict):
+        body.pop("_clientIP", None)
+        try:
             body["_clientBuildTag"] = getattr(request.state, "client_build_tag", "")
             body["_deviceKey"] = getattr(request.state, "device_key", "")
             body["_fn"] = path.rstrip("/").rsplit("/", 1)[-1]
-    except Exception:
-        pass
+        except Exception:
+            pass
     for match_str, handler in HANDLER_TABLE:
         if match_str in fn_lower:
             print(f"Service: Direct API | route: {path} | handler: {handler.__name__}")
             if handler.__name__ != "handle_login" and isinstance(body, dict):
                 from services import device_auth
                 _ok, _ = await device_auth.check_request(body.get("accountID"), body.get("_deviceKey", ""),
-                                                         path, body.get("_clientIP", ""))
+                                                         path)
                 if not _ok:
                     return JSONResponse(content={"data": {"success": 0, "error": "NOT_AUTHORIZED"}})
             result = await handler(body)

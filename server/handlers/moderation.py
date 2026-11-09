@@ -67,7 +67,7 @@ async def handle_moderator_ban_account(body: dict) -> dict:
     why = await _staff_check(body) if target and target != mod else "no target"
     if why:
         if target:
-            print(f"[mod] IGNORED ban by {mod} on {target} ({why}) ip={body.get('_clientIP', '')}")
+            print(f"[mod] IGNORED ban by {mod} on {target} ({why})")
         return {"success": 1}   # menu shows for everyone; only staff actually bans
     # The client's field is targetBanDurationHours (hours); fall back to other
     # likely names. 0 / missing = permanent.
@@ -100,7 +100,7 @@ async def handle_moderator_warn_account(body: dict) -> dict:
     why = await _staff_check(body) if target and target != mod else "no target"
     if why:
         if target:
-            print(f"[mod] IGNORED warn by {mod} on {target} ({why}) ip={body.get('_clientIP', '')}")
+            print(f"[mod] IGNORED warn by {mod} on {target} ({why})")
         return {"success": 1}
     reason = (body.get("banReason") or "").strip() or "Warned by staff"
     await accounts.update_one({"accountID": target}, {

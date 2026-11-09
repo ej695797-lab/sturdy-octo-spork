@@ -57,11 +57,6 @@ def _editor_password(window: int = None) -> str:
 # Admin allowlist: ONLY these accountIDs may open the editor, even with the right
 # password. Empty set = no restriction. Override via env EDITOR_ADMINS (comma-sep).
 EDITOR_ADMINS = set(filter(None, (os.getenv("EDITOR_ADMINS") or "").replace(" ", "").split(",")))
-# Only these editor usernames may SEE player IPs (lastIP/recentIPs and the IP-ban
-# list). Player IPs are sensitive, so for everyone else they're stripped/masked.
-# Override/extend via env IP_VIEW_NAMES (comma-separated display names).
-IP_VIEW_NAMES = set(filter(None, (n.strip() for n in
-    (os.getenv("IP_VIEW_NAMES") or "").split(","))))
 # Signs editor sessions. start.bat/start.sh put a random one in .env; without it a
 # fresh random secret is used (signed-in editors are signed out on restart).
 EDITOR_SECRET          = os.getenv("EDITOR_SECRET") or __import__("secrets").token_hex(32)
@@ -76,138 +71,12 @@ _COOKIE = "yeeps_editor"
 _TTL = 12 * 3600  # 12-hour sessions
 
 
-def _ip_net(ip: str) -> str:
-    from services.device_auth import _net
-    return _net(ip or "")
-
-
-def _sign(name: str, ip: str = "") -> str:
+def _sign(name: str) -> str:
     # Bind the session to the current password window (rotation boots everyone).
-    # Not locked to a network (removed 2026-10-09 at the owner's request, so the
-    # editor works on mobile data / other Wi-Fi). The login network is signed
-    # into the cookie only so a session used from somewhere else gets reported.
     w = _pw_window()
     exp = str(int(time.time()) + _TTL)
-    net = _ip_net(ip)
-    mac = hmac.new(EDITOR_SECRET.encode(), f"{name}|{w}|{exp}|{net}".encode(), hashlib.sha256).hexdigest()
-    return f"{name}|{w}|{exp}|{net}|{mac}"
-
-
-# ---- editor IP log + "different network" alerts --------------------------
-# Every sign-in attempt is stored in "editor_logins" with its IP and rough
-# location. The admin webhook is told when someone signs in from a network the
-# account doesn't play Yeeps from, or when a session is used from a different
-# network than it signed in on.
-editor_logins = _db["editor_logins"]
-_session_nets: dict = {}      # cookie mac -> networks already seen/reported
-_bg_tasks: set = set()
-
-
-def _ip_info(ip: str) -> dict:
-    from services import geo
-    return {"ip": ip, "net": _ip_net(ip), "place": geo.describe(ip), "vpn": geo.vpn_hint(ip)}
-
-
-def _where(info: dict) -> str:
-    return info["place"] + (f", {info['vpn']} (VPN)" if info.get("vpn") else "")
-
-
-async def _play_ips(acct_id) -> set:
-    """IPs this account has played Yeeps from (EDITOR_ADMINS pool theirs: they're
-    the same person's accounts)."""
-    ids = list(EDITOR_ADMINS) if acct_id in EDITOR_ADMINS else [acct_id]
-    known = set()
-    async for a in accounts.find({"accountID": {"$in": [x for x in ids if x]}},
-                                 {"_id": 0, "lastIP": 1, "recentIPs": 1}):
-        known.update(filter(None, [a.get("lastIP")] + list(a.get("recentIPs") or [])))
-    return known
-
-
-def _km_from_play(ip: str, known: set):
-    try:
-        from services import geo
-        km = geo.nearest_km(ip, known)
-        return None if km is None else int(round(km))
-    except Exception:
-        return None
-
-
-async def _log_editor_ip(kind: str, name: str, acct_id, info: dict, **extra) -> None:
-    try:
-        await editor_logins.insert_one({
-            "at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
-            "kind": kind, "name": name, "accountID": acct_id, **info, **extra})
-    except Exception as e:
-        print(f"[editor] ip log failed: {e}")
-
-
-def _session_hash(token: str) -> str:
-    """Stable id of a session (its cookie MAC, hashed) for editor_logins lookups."""
-    return hashlib.sha256((token or "").rsplit("|", 1)[-1].encode()).hexdigest()[:32]
-
-
-async def _session_account(request: Request):
-    """accountID this editor session signed in as (from its login record), or None.
-    Display names aren't unique, so owner-only features check this, not the name."""
-    if not _authed_name(request):
-        return None
-    tok = request.cookies.get(_COOKIE, "")
-    doc = await editor_logins.find_one({"kind": "login", "sessionHash": _session_hash(tok)},
-                                       {"_id": 0, "accountID": 1})
-    if not doc:
-        # Sessions signed in before login records kept a sessionHash: match the
-        # cookie's own signed fields (name, login network, login time = exp - TTL)
-        # to that sign-in's record instead.
-        parts = tok.rsplit("|", 4)
-        if len(parts) == 5:
-            name, _w, exp, net, _mac = parts
-            t0 = int(exp) - _TTL
-            fmt = lambda t: datetime.fromtimestamp(t, timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-            async for d in editor_logins.find(
-                    {"kind": "login", "net": net, "sessionHash": {"$exists": False},
-                     "at": {"$gte": fmt(t0 - 5), "$lte": fmt(t0 + 5)}},
-                    {"_id": 0, "accountID": 1, "name": 1}):
-                if str(d.get("name", "")).lower() == name.lower():
-                    doc = d
-                    break
-    return (doc or {}).get("accountID")
-
-
-async def _report_session_move(name: str, login_net: str, ip: str) -> None:
-    info = _ip_info(ip)
-    doc = await _name_exists(name)
-    acct_id = doc.get("accountID") if doc else None
-    known = await _play_ips(acct_id)
-    plays_here = ip in known or info["net"] in {_ip_net(x) for x in known}
-    await _log_editor_ip("session-moved", name, acct_id, info, loginNet=login_net, playsHere=plays_here)
-    km = _km_from_play(ip, known)
-    far = f", ~{km} km from where they play" if km is not None and not plays_here else ""
-    await _discord_notify(
-        f"EDITOR ALERT: **{name}**'s editor session is now being used from a different network "
-        f"[{ip}] ({_where(info)}{far}). It signed in from {login_net}."
-        + ("" if plays_here else " That account doesn't play Yeeps from this network."))
-
-
-def _check_session_net(request: Request, name: str, mac: str, login_net: str) -> None:
-    """Report (once per session per network) a session used away from its login network."""
-    try:
-        from services.ip_bans import client_ip
-        ip = client_ip(request) or ""
-        net = _ip_net(ip)
-        if not net or net == login_net:
-            return
-        seen = _session_nets.setdefault(mac, set())
-        if net in seen:
-            return
-        seen.add(net)
-        if len(_session_nets) > 500:
-            _session_nets.pop(next(iter(_session_nets)))
-        import asyncio
-        t = asyncio.get_running_loop().create_task(_report_session_move(name, login_net, ip))
-        _bg_tasks.add(t)
-        t.add_done_callback(_bg_tasks.discard)
-    except Exception:
-        pass
+    mac = hmac.new(EDITOR_SECRET.encode(), f"{name}|{w}|{exp}".encode(), hashlib.sha256).hexdigest()
+    return f"{name}|{w}|{exp}|{mac}"
 
 
 # KILL SWITCH: when True the whole editor is locked -- every session is treated
@@ -223,51 +92,23 @@ def _authed_name(request: Request):
         return None
     tok = request.cookies.get(_COOKIE, "")
     try:
-        # name|window|exp|loginNet|mac (sessions signed before the IP log
-        # existed have no loginNet and are accepted without move reports).
+        # Accept the previous cookie shape so existing sessions survive deployment.
         parts = tok.rsplit("|", 4)
         if len(parts) == 5:
             name, w, exp, net, mac = parts
-            good = hmac.new(EDITOR_SECRET.encode(), f"{name}|{w}|{exp}|{net}".encode(), hashlib.sha256).hexdigest()
-            if not hmac.compare_digest(good, mac):
-                name, w, exp, mac = tok.rsplit("|", 3)
-                net = None
+            message = f"{name}|{w}|{exp}|{net}"
         else:
             name, w, exp, mac = tok.rsplit("|", 3)
-            net = None
-        if net is None:
-            good = hmac.new(EDITOR_SECRET.encode(), f"{name}|{w}|{exp}".encode(), hashlib.sha256).hexdigest()
-            if not hmac.compare_digest(good, mac):
-                return None
+            message = f"{name}|{w}|{exp}"
+        good = hmac.new(EDITOR_SECRET.encode(), message.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(good, mac):
+            return None
         if int(exp) < time.time():
             return None
         # Kit: the password doesn't rotate, so sessions just last _TTL.
-        if net is not None:
-            _check_session_net(request, name, mac, net)
         return name
     except Exception:
         return None
-
-
-def _can_see_ips(request: Request) -> bool:
-    """Kit: the host (anyone signed in with the editor password) sees player IPs."""
-    return bool(_authed_name(request))
-
-async def _name_exists(name: str):
-    """Look the Meta name up in the accounts collection (displayName / oculusID /
-    accountID, case-insensitive). Returns the matched doc or None."""
-    n = (name or "").strip()
-    if not n:
-        return None
-    esc = re.escape(n)
-    return await accounts.find_one(
-        {"$or": [
-            {"displayName": {"$regex": f"^{esc}$", "$options": "i"}},
-            {"oculusID": {"$regex": f"^{esc}$", "$options": "i"}},
-            {"accountID": n},
-        ]},
-        {"_id": 0, "accountID": 1, "displayName": 1, "oculusID": 1, "discordID": 1},
-    )
 
 
 async def _name_matches(name: str) -> list:
@@ -381,13 +222,6 @@ def _owner_device_ok(request: Request) -> bool:
         return False
 
 
-async def _on_owner_network(request: Request, acct) -> bool:
-    from services.ip_bans import client_ip
-    ip = client_ip(request)
-    known = await _play_ips(acct)
-    return bool(ip) and (ip in known or _ip_net(ip) in {_ip_net(x) for x in known})
-
-
 # Owner names: "must sign in from home or a trusted device" rule. Off by default
 # (owner, 2026-10-11) - the owner password is still required. EDITOR_OWNER_DEVICE_RULE=1 turns it on.
 EDITOR_OWNER_DEVICE_RULE = os.getenv("EDITOR_OWNER_DEVICE_RULE", "0") == "1"
@@ -396,7 +230,7 @@ EDITOR_OWNER_DEVICE_RULE = os.getenv("EDITOR_OWNER_DEVICE_RULE", "0") == "1"
 async def _owner_trusted(request: Request, acct) -> bool:
     if not EDITOR_OWNER_DEVICE_RULE:
         return True
-    return _owner_device_ok(request) or await _on_owner_network(request, acct)
+    return _owner_device_ok(request)
 
 
 def _device_ok_for(request: Request, acct) -> bool:
@@ -413,13 +247,12 @@ def _device_ok_for(request: Request, acct) -> bool:
 
 
 async def _trusted_for(request: Request, acct) -> bool:
-    """Every editor account (2026-10-11): used from the network its headset plays
-    from, or from a device that signed in there before."""
+    """Whether an editor account is on a previously trusted browser."""
     if not acct:
         return False
     if acct in EDITOR_ADMINS:
         return await _owner_trusted(request, acct)
-    return _device_ok_for(request, acct) or await _on_owner_network(request, acct)
+    return _device_ok_for(request, acct)
 
 
 async def _owner_account_for(name: str):
@@ -445,19 +278,6 @@ async def _owner_account_for(name: str):
 EDITOR_OWNER_ONLY = os.getenv("EDITOR_OWNER_ONLY", "1") == "1"
 
 
-# VPN/relay block for the editor. Off by default (owner, 2026-10-11); set
-# EDITOR_BLOCK_VPN=1 to turn it back on. The trusted-network rule still applies.
-EDITOR_BLOCK_VPN = os.getenv("EDITOR_BLOCK_VPN", "0") == "1"
-
-
-def _from_vpn(request: Request) -> bool:
-    if not EDITOR_BLOCK_VPN:
-        return False
-    from services.ip_bans import client_ip
-    from services import geo
-    return bool(geo.vpn_hint(client_ip(request) or ""))
-
-
 # ---- editor tiers (owner, 2026-10-11) ---------------------------------------
 # owner  = EDITOR_ADMINS accounts: everything.
 # admin  = Discord role "hi lol": every tab (not the owner-only bits).
@@ -478,8 +298,8 @@ _EDITOR_TIER_ALLOWED = [
     ("DELETE", r"/api/announce"),
 ]
 # fields a data editor may not change on a player
-_EDITOR_TIER_LOCKED_FIELDS = {"discordUsername", "lastIP", "recentIPs"}   # owner 2026-10-11: data editors edit
-# every other player field; the Discord username and IP fields stay owner-only
+_EDITOR_TIER_LOCKED_FIELDS = {"discordUsername"}   # owner 2026-10-11: data editors edit
+# every other player field; the Discord username stays owner-only
 
 
 # Owner 2026-10-12: data editors use the full site again, like admins. The owner-only
@@ -544,14 +364,13 @@ async def list_players(q: str = "", limit: int = 50):
 
 
 @router.get("/api/player/{account_id}")
-async def get_player(account_id: str, request: Request):
-    """Return full account document (player IPs hidden unless IP_VIEW_NAMES)."""
+async def get_player(account_id: str):
+    """Return the account document without obsolete network-history fields."""
     doc = await accounts.find_one({"accountID": account_id}, {"_id": 0})
     if doc is None:
         raise HTTPException(status_code=404, detail="Account not found")
-    if not _can_see_ips(request):
-        doc.pop("lastIP", None)
-        doc.pop("recentIPs", None)
+    doc.pop("lastIP", None)
+    doc.pop("recentIPs", None)
     return JSONResponse(content=doc)
 
 
@@ -1250,43 +1069,6 @@ async def banned_players(request: Request):
     return JSONResponse(content={"banned": out, "count": len(out)})
 
 
-@router.get("/api/ipbans")
-async def ip_bans_list(request: Request):
-    if not _can_see_ips(request):
-        return JSONResponse(content={"restricted": True, "ips": []})
-    from services.ip_bans import list_bans
-    return JSONResponse(content=await list_bans())
-
-
-@router.post("/api/ipban")
-async def ip_ban_add(request: Request):
-    from services.ip_bans import ban_ip
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
-    ip = str(body.get("ip", "")).strip()
-    if not ip:
-        raise HTTPException(status_code=400, detail="Give an ip to ban")
-    who = _authed_name(request) or "?"
-    await ban_ip(ip, body.get("reason") or f"editor ban by {who}")
-    await _discord_notify(f"⛔ **{who}** IP-banned `{ip}`")
-    return JSONResponse(content={"ok": True, "banned": ip})
-
-
-@router.post("/api/ipunban")
-async def ip_ban_remove(request: Request):
-    from services.ip_bans import unban_ip
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
-    ip = str(body.get("ip", "")).strip()
-    had = await unban_ip(ip)
-    await _discord_notify(f"✅ **{_authed_name(request) or '?'}** IP-unbanned `{ip}`")
-    return JSONResponse(content={"ok": True, "wasBanned": had})
-
-
 def _fmt_hours(h: float) -> str:
     """Short human label for a ban duration in hours."""
     if h < 1:
@@ -1303,15 +1085,13 @@ def _fmt_hours(h: float) -> str:
 @router.post("/api/player/{account_id}/ban")
 async def ban_player(account_id: str, request: Request):
     """Ban a player. Body `durationHours` > 0 makes it a TIMED ban that auto-lifts
-    when it expires (account block only — no permanent IP ban for a temporary
-    ban); omitted / 0 = PERMANENT (account block + IP ban)."""
-    from services.ip_bans import ban_ip
+    when it expires; omitted / 0 = PERMANENT."""
     try:
         body = await request.json()
     except Exception:
         body = {}
     doc = await accounts.find_one({"accountID": account_id},
-                                  {"_id": 0, "displayName": 1, "lastIP": 1, "recentIPs": 1, "deviceKeys": 1})
+                                  {"_id": 0, "displayName": 1, "deviceKeys": 1})
     if not doc:
         raise HTTPException(status_code=404, detail="Account not found")
     who = _authed_name(request) or "?"
@@ -1333,11 +1113,8 @@ async def ban_player(account_id: str, request: Request):
                                             "banCategory": "blocked",
                                             "banExpireTimestamp": expire,
                                             "shouldForceRefresh": 1}})
-        # A temporary ban must NOT leave a permanent IP ban behind (IP bans don't
-        # expire and hit everyone sharing that IP), so the account block is enough.
-        ips = []
     else:
-        # PERMANENT ban: block the account AND every IP it has logged in from.
+        # Permanent bans apply to the account and its bound headsets.
         expire = ""
         reason = f"Banned by {who} via editor (permanent)"
         await accounts.update_one({"accountID": account_id},
@@ -1346,32 +1123,20 @@ async def ban_player(account_id: str, request: Request):
                                             "banCategory": "blocked",
                                             "banExpireTimestamp": "",
                                             "shouldForceRefresh": 1}})
-        ips = sorted(set(filter(None, [doc.get("lastIP")] + list(doc.get("recentIPs") or []))))
-        for ip in ips:
-            await ban_ip(ip, f"account {account_id} ({doc.get('displayName')}) banned by {who}")
         # ...and its headset(s), so a new account on the same Quest is banned too.
         from services.device_bans import ban_devices
         await ban_devices(doc.get("deviceKeys") or [], f"account {account_id} banned by {who}")
 
     span = f"until {expire}" if expire else "permanent"
     await _discord_notify(f"**{who}** banned **{doc.get('displayName') or account_id}** "
-                          f"(`{account_id}`) [{span}]"
-                          + (f" + {len(ips)} IP(s): {', '.join(ips)}" if ips else ""))
-    # Hide the actual IPs from editor users who aren't allowed to see them.
-    shown = ips if _can_see_ips(request) else ["(hidden)"] * len(ips)
-    return JSONResponse(content={"ok": True, "bannedIPs": shown,
-                                 "until": expire, "permanent": not expire})
+                          f"(`{account_id}`) [{span}]")
+    return JSONResponse(content={"ok": True, "until": expire, "permanent": not expire})
 
 
 @router.post("/api/player/{account_id}/unban")
-async def unban_player(account_id: str, request: Request):
-    from services.ip_bans import unban_ip
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
+async def unban_player(account_id: str):
     doc = await accounts.find_one({"accountID": account_id},
-                                  {"_id": 0, "displayName": 1, "lastIP": 1, "recentIPs": 1})
+                                  {"_id": 0, "displayName": 1})
     if not doc:
         raise HTTPException(status_code=404, detail="Account not found")
     who = _authed_name(request) or "?"
@@ -1384,15 +1149,8 @@ async def unban_player(account_id: str, request: Request):
     from services.device_bans import unban_devices
     _ud = await accounts.find_one({"accountID": account_id}, {"_id": 0, "deviceKeys": 1})
     await unban_devices((_ud or {}).get("deviceKeys") or [])
-    unbanned = []
-    if body.get("alsoIP"):
-        for ip in set(filter(None, [doc.get("lastIP")] + list(doc.get("recentIPs") or []))):
-            if await unban_ip(ip):
-                unbanned.append(ip)
-    await _discord_notify(f"✅ **{who}** unbanned **{doc.get('displayName') or account_id}** (`{account_id}`)"
-                          + (f" + IPs {', '.join(unbanned)}" if unbanned else ""))
-    shown = unbanned if _can_see_ips(request) else ["(hidden)"] * len(unbanned)
-    return JSONResponse(content={"ok": True, "unbannedIPs": shown})
+    await _discord_notify(f"**{who}** unbanned **{doc.get('displayName') or account_id}** (`{account_id}`)")
+    return JSONResponse(content={"ok": True})
 
 
 # ── Kick (boot) players ─────────────────────────────────────────────
@@ -2076,25 +1834,34 @@ f.addEventListener('submit',async e=>{
 
 
 # ─── Photon bot (owner only) ─────────────────────────────────────────
-# The YeeperBot joins a Yeeps room as a normal Photon actor, so its room and the
-# room's live message feed can be watched from the editor. All of the work lives
-# in services/bot_manager.py; pyphotonrealtime is optional, so these routes just
-# report why the bot is unavailable when the package is missing.
-_bot_cache = {"t": 0.0, "data": None}
+async def _bot_target(account_id: str) -> dict:
+    from services.kick import online_account_ids
+    from services.db import player_statuses
+
+    account_id = str(account_id or "").strip()
+    if not account_id.startswith("o_") or len(account_id) > 80:
+        raise HTTPException(status_code=400, detail="Choose an online player")
+    if account_id not in await online_account_ids():
+        raise HTTPException(status_code=400, detail="That player is no longer online")
+    account = await accounts.find_one({"accountID": account_id},
+                                      {"_id": 0, "accountID": 1, "displayName": 1})
+    status = await player_statuses.find_one(
+        {"accountID": account_id}, {"_id": 0, "photonRoomName": 1})
+    if not account or not status or not status.get("photonRoomName"):
+        raise HTTPException(status_code=400, detail="That player has no active Photon room")
+    return {
+        "accountID": account_id,
+        "displayName": account.get("displayName") or account_id,
+        "photonRoomName": status["photonRoomName"],
+    }
+
 
 @router.get("/api/bot")
 async def bot_status(request: Request):
     if not _authed_name(request):
         raise HTTPException(status_code=401, detail="unauthorized")
     from services.bot_manager import manager
-    now = time.time()
-    if _bot_cache["data"] is not None and now - _bot_cache["t"] < 0.5:
-        return JSONResponse(content=_bot_cache["data"])
-    data = {"ok": True, **manager.status(),
-            "events": manager.events()[-80:]}
-    _bot_cache["t"] = now
-    _bot_cache["data"] = data
-    return JSONResponse(content=data)
+    return JSONResponse(content={"ok": True, **manager.status()})
 
 
 @router.post("/api/bot/start")
@@ -2104,12 +1871,19 @@ async def bot_start(request: Request):
     try:
         body = await request.json()
     except Exception:
-        body = {}
+        raise HTTPException(status_code=400, detail="request body must be JSON")
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="request body must be an object")
+    target = await _bot_target((body or {}).get("target"))
     from services.bot_manager import manager
-    name = str((body or {}).get("name") or "")[:24]
-    room = str((body or {}).get("room") or "")[:64]
-    spawn = bool((body or {}).get("spawn", True))
-    return JSONResponse(content={"ok": True, **manager.start(name=name, room=room, spawn=spawn)})
+    import asyncio
+    result = await asyncio.to_thread(
+        manager.start,
+        target=target["accountID"],
+        target_name=target["displayName"],
+        room=target["photonRoomName"],
+    )
+    return JSONResponse(content=result, status_code=200 if result.get("ok") else 503)
 
 
 @router.post("/api/bot/stop")
@@ -2117,50 +1891,38 @@ async def bot_stop(request: Request):
     if not _authed_name(request):
         raise HTTPException(status_code=401, detail="unauthorized")
     from services.bot_manager import manager
-    return JSONResponse(content={"ok": True, **manager.stop()})
+    import asyncio
+    return JSONResponse(content=await asyncio.to_thread(manager.stop))
 
 
-@router.post("/api/bot/room")
-async def bot_room(request: Request):
+@router.post("/api/bot/action")
+async def bot_action(request: Request):
     if not _authed_name(request):
         raise HTTPException(status_code=401, detail="unauthorized")
     try:
         body = await request.json()
     except Exception:
-        body = {}
+        raise HTTPException(status_code=400, detail="request body must be JSON")
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="request body must be an object")
+    action = str((body or {}).get("action") or "").strip()
+    from bot.actions import ACTION_COMMANDS, TARGET_ACTIONS
+    if action not in ACTION_COMMANDS:
+        raise HTTPException(status_code=400, detail="Unknown bot action")
+    target_name = ""
+    if action in TARGET_ACTIONS:
+        target = await _bot_target((body or {}).get("target"))
+        from services.bot_manager import manager
+        current_room = manager.status().get("room")
+        if not current_room or target["photonRoomName"] != current_room:
+            raise HTTPException(status_code=400, detail="Pick a player in the bot's current room")
+        target_name = target["displayName"]
     from services.bot_manager import manager
-    return JSONResponse(content={"ok": True,
-                                 **manager.set_room(str((body or {}).get("room") or "")[:64])})
-
-
-@router.post("/api/bot/raise")
-async def bot_raise(request: Request):
-    """Send one in-world message (event 200, envelope {0,2,5,4}) - for testing
-    a message type against the live game."""
-    if not _authed_name(request):
-        raise HTTPException(status_code=401, detail="unauthorized")
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
-    from services.bot_manager import manager
-    try:
-        msg_type = int((body or {}).get("type"))
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=400, detail="type (int) is required")
-    return JSONResponse(content={"ok": True,
-                                 **manager.raise_game(msg_type, (body or {}).get("payload") or [])})
-
-
-@router.post("/api/bot/spawn")
-async def bot_spawn(request: Request):
-    """Announce the bot as a visible player in its room (Photon Instantiate
-    202 of Photon/NetworkMessenger). The game only draws an avatar for a player
-    it has received this event for, so without it the bot is invisible."""
-    if not _authed_name(request):
-        raise HTTPException(status_code=401, detail="unauthorized")
-    from services.bot_manager import manager
-    return JSONResponse(content={"ok": True, **manager.spawn_player()})
+    import asyncio
+    result = await asyncio.to_thread(manager.action, action, target_name)
+    if not result.get("ok"):
+        raise HTTPException(status_code=409, detail=result.get("error") or "The bot could not run that action")
+    return JSONResponse(content=result)
 
 
 
@@ -2253,8 +2015,7 @@ async def editor_login_page(request: Request):
 
 @router.post("/login")
 async def editor_login(request: Request):
-    """Kit sign-in: any name + the host password (EDITOR_PASSWORD in .env).
-    Wrong passwords count toward the IP auto-ban (services/ip_bans.py)."""
+    """Kit sign-in: any name + the host password (EDITOR_PASSWORD in .env)."""
     if not KIT_EDITOR_PASSWORD:
         return JSONResponse({"ok": False, "error": "Set EDITOR_PASSWORD in the server's .env file first, "
                                                    "then restart the server."}, status_code=503)
@@ -2264,24 +2025,14 @@ async def editor_login(request: Request):
         body = {}
     name = (str(body.get("name", "")).strip() or "host")[:40]
     pw = str(body.get("password", ""))
-    from services.ip_bans import client_ip, record_failed_login, clear_failures
-    ip = client_ip(request) or "?"
-    info = _ip_info(ip)
     if not hmac.compare_digest(pw, KIT_EDITOR_PASSWORD):
-        banned_now = await record_failed_login(ip)
-        await _log_editor_ip("wrong-code", name, None, info, autoBanned=bool(banned_now))
-        print(f"[editor] wrong password for {name!r} from {ip}")
-        if banned_now:
-            return JSONResponse({"ok": False, "error": "Too many failed attempts. Your IP has been banned."},
-                                status_code=403)
+        print(f"[editor] wrong password for {name!r}")
         return JSONResponse({"ok": False, "error": "Wrong password."}, status_code=401)
-    clear_failures(ip)
-    token = _sign(name, ip)
+    token = _sign(name)
     resp = JSONResponse({"ok": True})
     resp.set_cookie(_COOKIE, token, max_age=_TTL, httponly=True, samesite="lax")
-    await _log_editor_ip("login", name, None, info, sessionHash=_session_hash(token), tier="owner")
-    await _discord_notify(f"**{name}** logged into the editor [{ip}] ({_where(info)})")
-    print(f"[editor] login OK for {name!r} from {ip}")
+    await _discord_notify(f"**{name}** logged into the editor")
+    print(f"[editor] login OK for {name!r}")
     return resp
 
 

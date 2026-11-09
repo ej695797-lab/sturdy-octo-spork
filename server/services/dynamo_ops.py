@@ -838,7 +838,7 @@ def _write_tables(op: str, body: dict) -> list:
     return [body.get("TableName", "") or "?"]
 
 
-async def dispatch_dynamo(target: str, body: dict, client_ip: str = "", device_key: str = "") -> tuple[str, dict]:
+async def dispatch_dynamo(target: str, body: dict, device_key: str = "") -> tuple[str, dict]:
     """
     Dispatch a DynamoDB operation by X-Amz-Target.
     Returns (body_text, headers).
@@ -851,23 +851,14 @@ async def dispatch_dynamo(target: str, body: dict, client_ip: str = "", device_k
                 key = json.dumps(body.get("Key") or {k: body.get("Item", {}).get(k) for k in list(body.get("Item") or {})[:2]})[:200]
             except Exception:
                 key = "?"
-            print(f"[guard] BLOCKED client {op} on {','.join(tables)} from {client_ip or '?'}: {key}")
-            # The game never makes these writes, so whoever sent one is raiding:
-            # IP-ban them (Oct 10: three addresses tried to wipe lobby maps).
-            if client_ip and client_ip != "?" and not client_ip.startswith(("127.", "::1", "10.", "192.168.")):
-                try:
-                    from services.ip_bans import ban_ip
-                    await ban_ip(client_ip, f"raw DB {op} on {','.join(tables)} {key[:80]}")
-                    print(f"[guard] IP-banned {client_ip}")
-                except Exception as _e:
-                    print(f"[guard] auto IP-ban failed for {client_ip}: {_e}")
+            print(f"[guard] BLOCKED client {op} on {','.join(tables)}: {key}")
             return _make_response({})
         # The allowed write (a player's own presence) must come from that player's headset.
         from services import device_auth
         _acct = unwrap_key(body.get("Key") or {}).get("accountID", "") if isinstance(body, dict) else ""
-        _ok, _ = await device_auth.check_request(_acct, device_key, f"{op} {tables[0]}", client_ip)
+        _ok, _ = await device_auth.check_request(_acct, device_key, f"{op} {tables[0]}")
         if _ok:
-            _ok = await device_auth.check_write(_acct, device_key, f"{op} {tables[0]}", client_ip)
+            _ok = await device_auth.check_write(_acct, device_key, f"{op} {tables[0]}")
         if not _ok:
             return _make_response({})
     handler = OPERATION_HANDLERS.get(op)

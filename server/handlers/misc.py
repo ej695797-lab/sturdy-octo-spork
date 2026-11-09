@@ -207,61 +207,13 @@ async def handle_fetch_random_world_list(body: dict) -> dict:
     return await _world_list("random")
 
 
-def _debug_full_log(ip: str, max_lines: int = 5000) -> list:
-    """This player's recent lines from the live devlog (the APK streams every Unity log line,
-    warning, error and stack trace there): the newest ~60 MB, filtered by their IP."""
-    import os as _o
-    path = _o.path.join(_o.path.dirname(_o.path.dirname(_o.path.abspath(__file__))), "logs", "devlog.log")
-    if not ip:
-        return []
-    tag = f" {ip} "
-    out = []
-    try:
-        with open(path, "rb") as f:
-            f.seek(0, 2)
-            f.seek(max(0, f.tell() - 60_000_000))
-            f.readline()
-            for raw in f:
-                if tag.encode() in raw:
-                    out.append(raw.decode("utf-8", "replace").rstrip("\n"))
-                    if len(out) > max_lines * 2:
-                        out = out[-max_lines:]
-    except FileNotFoundError:
-        return []
-    return out[-max_lines:]
-
-
 async def handle_log_debug(body: dict) -> dict:
-    """Record what the client reports so it can be read back from /editor. Owner
-    2026-10-18 ("make the debug button send WAY more logs"): every press also saves the
-    player's full recent devlog (up to 5000 lines) as logs/debug_reports/<file>.txt."""
+    """Record the log text explicitly submitted by the client."""
+    body.pop("_clientIP", None)
     entry = {
         "at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
         "payload": body,
     }
-    try:
-        import asyncio as _aio, os as _o, re as _re
-        ip = str(body.get("_clientIP") or "")
-        acct = str(body.get("accountID") or "")
-        lines = await _aio.to_thread(_debug_full_log, ip)
-        if lines:
-            d = _o.path.join(_o.path.dirname(_o.path.dirname(_o.path.abspath(__file__))), "logs", "debug_reports")
-            _o.makedirs(d, exist_ok=True)
-            name = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S") + "_" + _re.sub(r"[^A-Za-z0-9_]", "", acct)[:40] + ".txt"
-            build = str(body.get("_clientBuildTag") or "").split(".")[0]
-            head = (f"Debug report  account {acct}  build {build}  ip {ip}  at {entry['at']} UTC\n"
-                    f"=== game's own log ===\n{body.get('logs') or ''}\n\n=== full devlog ({len(lines)} lines) ===\n")
-            with open(_o.path.join(d, name), "w") as fh:
-                fh.write(head + "\n".join(lines) + "\n")
-            entry["reportFile"] = name
-            entry["reportLines"] = len(lines)
-            entry["reportErrors"] = sum(1 for l in lines if "[Error]" in l or "[Exception]" in l or "Exception" in l)
-            # keep the newest 300 report files
-            files = sorted(f for f in _o.listdir(d) if f.endswith(".txt"))
-            for f in files[:-300]:
-                _o.remove(_o.path.join(d, f))
-    except Exception as e:
-        print(f"[debug] full log attach failed: {e}")
     print(f"[debug] {json.dumps(body)[:900]}")
     try:
         await debug_logs.insert_one(dict(entry))
@@ -287,14 +239,8 @@ async def handle_fetch_global_fatal_error(body: dict) -> dict:
     Set it with a globals row {"key": "fatalError", "data": "<message>"};
     clear the row (or leave data empty) to turn it off.
     """
-    from services import build_gate as _bg
     _aid = str(body.get("accountID") or "")
-    _ip = str(body.get("_clientIP") or "")
-    print(f"[fatal_error] asked by acct={_aid or '-'} ip={_ip or '-'} keys={sorted(k for k in body if not k.startswith('_'))}")
-    if _bg.was_link_blocked(_aid, _ip):
-        print(f"[fatal_error] serving /link message to {_aid or _ip}")
-        msg = _bg.LINK_REQUIRED_MESSAGE
-        return {"success": 1, "errorMessage": msg, "fatalError": msg, "message": msg}
+    print(f"[fatal_error] asked by acct={_aid or '-'} keys={sorted(k for k in body if not k.startswith('_'))}")
     try:
         row = await globals_col.find_one({"key": "fatalError"}, {"_id": 0})
     except Exception:
