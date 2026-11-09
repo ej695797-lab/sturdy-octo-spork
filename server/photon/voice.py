@@ -32,6 +32,7 @@ def opus_packets(path, cache_dir=None, bitrate="30k"):
     (ffmpeg libopus -> Ogg, then the Ogg pages are unpacked). Cached as .ogg."""
     import imageio_ffmpeg
     cache_dir = cache_dir or os.path.dirname(path)
+    os.makedirs(cache_dir, exist_ok=True)
     ogg = os.path.join(cache_dir, os.path.splitext(os.path.basename(path))[0] + "_voice.ogg")
     if not os.path.isfile(ogg) or os.path.getmtime(ogg) < os.path.getmtime(path):
         subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-v", "error", "-y", "-i", path, "-vn", "-ac", "1",
