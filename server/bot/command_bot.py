@@ -1365,6 +1365,8 @@ async def cmd_run(a):
     # --- effects engine: moving/spinning outlines with gravity ----------------
     fx = {"objs": [], "pellet_actor": None, "shots": 0}
     track(fx, "pellet_actor")
+    pillow_burst = {"actor": None, "enabled": False, "last": 0.0}
+    track(pillow_burst, "actor")
     FX_TICK, FX_MAX_SHOTS = 0.1, 10**9      # no limit: shots never run out
 
     def q_dir(q):
@@ -1401,6 +1403,37 @@ async def cmd_run(a):
         await bot.rpc(bot.view_id, "RpcMapObjectPreviewCreated", [user_id, o["id"], pattern, color],
                       receivers=pun.RECV_OTHERS)
         fx["objs"].append(o)
+
+    async def pillow_burst_shots(actor):
+        pose = bot.pose_of(actor)
+        if not pose:
+            return
+        body, rotation = pose
+        direction = pun.Vector3(*q_forward(rotation))
+        origin = body + pun.Vector3(0, 1.1, 0) + direction * 0.4
+        for _ in range(4):
+            spread = pun.Vector3(random.uniform(-0.12, 0.12),
+                                 random.uniform(-0.08, 0.08),
+                                 random.uniform(-0.12, 0.12))
+            velocity = direction + spread
+            length = math.sqrt(velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2) or 1.0
+            await fx_add(origin, random.choice(GLOW), vel=velocity * (18.0 / length),
+                         life=0.7, spin=14.0)
+
+    def on_pillow_burst(code, sender, data):
+        if not pillow_burst["enabled"] or sender != pillow_burst["actor"] or code != pun.EV_RPC:
+            return
+        rpc = pun.decode_rpc(data)
+        if not rpc or rpc["method"] != "RpcMapObjectCreated" or not rpc["args"] \
+                or str(rpc["args"][0]).lower() != "1x1_stuffed":
+            return
+        now = time.monotonic()
+        if now - pillow_burst["last"] < 0.7:
+            return
+        pillow_burst["last"] = now
+        asyncio.get_running_loop().create_task(pillow_burst_shots(sender))
+
+    bot.handlers.append(on_pillow_burst)
 
     async def fx_tick():
         now = time.monotonic()
@@ -3971,6 +4004,35 @@ async def cmd_run(a):
                     asyncio.get_running_loop().create_task(shoot(hand_p + d * 0.15, d, sender))
 
     bot.handlers.append(on_finger)
+
+    # Holding the followed player's right trigger gives a small, rate-limited lift.
+    tracked_flight = {"actor": None, "enabled": False, "last_boost": 0.0}
+    track(tracked_flight, "actor")
+
+    def on_tracked_flight(code, sender, data):
+        if code not in (pun.EV_SEND_SERIALIZE, pun.EV_SEND_SERIALIZE_RELIABLE) \
+                or not tracked_flight["enabled"] or sender != tracked_flight["actor"]:
+            return
+        pose = bot.poses.get(sender)
+        if not pose or len(pose) < 3 + 14 + 8:
+            return
+        try:
+            right_trigger = float(pose[3 + 14 + 7])
+        except (TypeError, ValueError, IndexError):
+            return
+        now = time.monotonic()
+        if right_trigger < 0.9 or now - tracked_flight["last_boost"] < 0.4:
+            return
+        props = bot.actors.get(sender) or {}
+        account_id = props.get(253)
+        if not account_id:
+            return
+        tracked_flight["last_boost"] = now
+        asyncio.get_running_loop().create_task(bot.rpc(
+            bot.view_id, "RpcApplyPlayerKnockback",
+            [account_id, pun.Vector3(0, 3.0, 0), 3, None, -1], receivers=pun.RECV_OTHERS))
+
+    bot.handlers.append(on_tracked_flight)
 
     # --- POWERS on the finger-gun gesture: LIGHTNING and FREEZE -----------------
     # Built from block outlines (previews), real explosions/knockback and, for the
@@ -6857,6 +6919,30 @@ async def cmd_run(a):
                         tag = " (bot)" if act == bot.actor else ""
                         has = "" if act in bot.poses or act == bot.actor else " [no pose yet]"
                         print(f"  #{act} {clean_name((pr or {}).get(255))}{tag}{has}")
+                elif cmd == "fly":
+                    if off:
+                        tracked_flight.update(actor=None, enabled=False)
+                        tracked_flight["actor_acct"] = None
+                        print("tracked-player flight off")
+                        continue
+                    t = bot.actor_by_name(who)
+                    if t is None:
+                        print("can't find the tracked player in this room"); continue
+                    tracked_flight.update(actor=t, enabled=True, last_boost=0.0)
+                    remember(tracked_flight, "actor")
+                    print(f"right-trigger flight ON for {pname(t)}")
+                elif cmd == "pillowburst":
+                    if off:
+                        pillow_burst.update(actor=None, enabled=False)
+                        pillow_burst["actor_acct"] = None
+                        print("Pillow burst off")
+                        continue
+                    t = bot.actor_by_name(who)
+                    if t is None:
+                        print("can't find the tracked player in this room"); continue
+                    pillow_burst.update(actor=t, enabled=True, last=0.0)
+                    remember(pillow_burst, "actor")
+                    print(f"Pillow burst ON for {pname(t)}: place a 1x1 Pillow")
                 elif cmd == "disco":
                     await bot.rpc(bot.view_id, "SendBeginParty", [], receivers=pun.RECV_OTHERS)
                     await bot.rpc(bot.view_id, "SendStartParty", [], receivers=pun.RECV_OTHERS)
