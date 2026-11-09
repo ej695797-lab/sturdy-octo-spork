@@ -88,8 +88,9 @@ class BotManager:
                 with self._lock:
                     self.error = self.log[-1].split(" ", 1)[-1] if self.log else f"bot exited ({code})"
 
-    def _new_audio_file(self, data: bytes = b"") -> str:
-        with tempfile.NamedTemporaryFile(prefix="yeeper-bad-apple-", suffix=".mp3", delete=False) as audio:
+    def _new_media_file(self, data: bytes = b"", ext: str = "mp3") -> str:
+        suffix = ".mp4" if ext == "mp4" else ".mp3"
+        with tempfile.NamedTemporaryFile(prefix="yeeper-bad-apple-", suffix=suffix, delete=False) as audio:
             audio.write(data)
             return audio.name
 
@@ -104,15 +105,20 @@ class BotManager:
             except OSError as exc:
                 self._note(f"couldn't remove temporary Bad Apple audio: {exc}")
 
-    def set_media_audio(self, data: bytes) -> None:
+    def set_media(self, data: bytes, ext: str = "mp3") -> bool:
         with self._lock:
             if self._audio_path:
+                expected_suffix = ".mp4" if ext == "mp4" else ".mp3"
+                if Path(self._audio_path).suffix != expected_suffix:
+                    self._note("uploaded media type changed; stop and restart the bot to load it")
+                    return True
+                self._audio_ready = True
                 with open(self._audio_path, "wb") as audio:
                     audio.write(data)
-                self._audio_ready = True
+        return False
 
     def start(self, *, target: str, target_name: str, room: str,
-              media_data: bytes = b"") -> dict:
+              media_data: bytes = b"", media_ext: str = "mp3") -> dict:
         available, reason = self.available()
         if not available:
             with self._lock:
@@ -133,7 +139,7 @@ class BotManager:
                 self._stop_process(old_process)
             self._remove_audio_file()
             try:
-                self._audio_path = self._new_audio_file(media_data)
+                self._audio_path = self._new_media_file(media_data, media_ext)
                 self._audio_ready = bool(media_data)
             except OSError as exc:
                 with self._lock:
@@ -227,7 +233,7 @@ class BotManager:
         if action not in ACTION_COMMANDS:
             return {"ok": False, "error": "Unknown bot action"}
         if action in MEDIA_ACTIONS and not (self._audio_ready or BAD_APPLE_VIDEO.is_file()):
-            return {"ok": False, "error": "Upload an MP3 in the Bot tab to enable Bad Apple"}
+            return {"ok": False, "error": "Upload an MP3 or MP4 in the Bot tab to enable Bad Apple"}
         command = command_for(action, target_name, item_id)
         if command is None:
             message = "Choose an item from the confirmed item list" if action in ITEM_ACTIONS \
@@ -263,6 +269,7 @@ class BotManager:
                 "targetName": self.target_name,
                 "room": self.room,
                 "badAppleAvailable": self._audio_ready or BAD_APPLE_VIDEO.is_file(),
+                "badAppleType": Path(self._audio_path).suffix.lstrip(".") if self._audio_ready else "",
                 "log": list(self.log[-60:]),
             }
 

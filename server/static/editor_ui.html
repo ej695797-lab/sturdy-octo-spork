@@ -1038,9 +1038,11 @@ const tabs = {
       ]],
       ["Arcade", [
         ["Tetris", "tetris"], ["Snake", "snake"], ["Pong", "pong"], ["Pong 2 players", "pong-2p"],
+        ["Flappy Bird", "flappy-bird"], ["Minesweeper", "minesweeper"],
+        ["Tic-Tac-Toe (2 player)", "tic-tac-toe"], ["Connect Four (2 player)", "connect-four"],
         ["Paint canvas", "canvas"], ["Canvas off", "canvas-stop", 1], ["Game off", "game-stop", 1]
       ]],
-      ["Bad Apple (host video required)", [
+      ["Bad Apple", [
         ["Bad Apple waveform", "apple", 0, 1], ["Bad Apple small", "apple-small", 0, 1],
         ["Bad Apple no sound", "apple-mute", 0, 1], ["Stop Bad Apple", "apple-stop", 1, 1],
         ["Bad Apple on first sign", "applesign", 0, 1], ["Stop sign playback", "applesign-stop", 1, 1]
@@ -1071,7 +1073,7 @@ const tabs = {
       ]]
     ];
     view.innerHTML = `
-      <p class="note">Hook YeeperBot to an online player to join and follow their room. These are fixed game controls; building, live talk, and view controls are not included.</p>
+      <p class="note">Hook YeeperBot to an online player, then place the marker pillow and (for Flappy Bird or Minesweeper) a controller marker when prompted. Grab the Flappy Bird control to flap. For Minesweeper, grab reveal or flag mode, then grab a board tile. Tic-Tac-Toe and Connect Four are two-player games: grab an empty tile to place a mark or drop a piece in that column. These are fixed game controls; building, live talk, and view controls are not included.</p>
       <div class="row">
         <select id="bhook" style="min-width:260px"><option value="">loading online players...</option></select>
         <button class="go" id="bstart">Hook bot to player</button>
@@ -1084,12 +1086,19 @@ const tabs = {
       </div>
       <p class="note" id="bstate">…</p>
       <div class="row">
-        <label for="bappleaudio">Bad Apple MP3 (12 MB max)</label>
-        <input type="file" id="bappleaudio" accept="audio/mpeg,.mp3">
+        <label for="bappleaudio">Bad Apple MP3 or MP4 (12 MB max)</label>
+        <input type="file" id="bappleaudio" accept="audio/mpeg,.mp3,video/mp4,.mp4">
         <button class="go" id="bappleupload">Upload or replace</button>
         <span class="muted" id="bapplestatus"></span>
       </div>
-      <p class="note">Bad Apple uses an audio waveform made from this MP3; the upload is kept in the server's MongoDB, not in the repository.</p>
+      <p class="note">MP4 shows its video; MP3 provides only an audio waveform. Media is kept in MongoDB, not in the repository.</p>
+      <div class="row">
+        <label for="bdusername">Yeeps username to link:</label>
+        <input type="text" id="bdusername" maxlength="80" placeholder="Exact in-game username">
+        <button class="go" id="bdlinkcode">Generate pairing code</button>
+        <code id="bdcode"></code>
+      </div>
+      <p class="note">Verify the player before issuing a code, then share it privately. It is one-use, account-specific, and expires in 10 minutes.</p>
       <div class="row">
         <label for="bitemsearch">Search confirmed spawnable items:</label>
         <input type="search" id="bitemsearch" placeholder="Search by name or ID">
@@ -1138,9 +1147,12 @@ const tabs = {
     async function refresh() {
       let s; try { s = await api("/bot"); } catch (e) { $("bstate").textContent = "Error: " + e.message; return; }
       const st = s.running ? "on" : (s.enabled ? "off" : "unavailable");
+      const discordState = s.discordBot && s.discordBot.connected ? "connected"
+        : (s.discordBot && s.discordBot.configured ? "configured, offline" : "not configured");
       $("bstate").innerHTML = `<b>${esc(st)}</b>` +
         (s.targetName ? ` · following <b>${esc(s.targetName)}</b>` : "") +
         (s.room ? ` · room <b>${esc(s.room)}</b>` : "") +
+        ` · Discord profile bot ${esc(discordState)}` +
         (s.uptime ? ` · up ${s.uptime}s` : "") +
         (s.error ? ` · <span style="color:#f85149">${esc(s.error)}</span>` : "") +
         (!s.available ? ` · <span style="color:#f85149">${esc(s.reason || "")}</span>` : "");
@@ -1150,8 +1162,8 @@ const tabs = {
       itemCatalog = s.itemCatalog || [];
       renderItems($("bitemsearch").value);
       $("bapplestatus").textContent = s.badAppleSize
-        ? `Uploaded (${(s.badAppleSize / 1024 / 1024).toFixed(1)} MB)`
-        : (s.badAppleAvailable ? "Media available" : "No MP3 uploaded");
+        ? `Uploaded ${String(s.badAppleType || "MP3").toUpperCase()} (${(s.badAppleSize / 1024 / 1024).toFixed(1)} MB)`
+        : (s.badAppleAvailable ? "Media available" : "No media uploaded");
     }
     async function sendAction(action, needsTarget, itemId = "") {
       const body = { action };
@@ -1177,14 +1189,25 @@ const tabs = {
     $("bitemoff").onclick = () => sendAction("item-gun-off", false);
     $("bappleupload").onclick = async () => {
       const file = $("bappleaudio").files[0];
-      if (!file) { toast("Choose an MP3 file first", true); return; }
-      if (file.size > 12 * 1024 * 1024) { toast("MP3 must be 12 MB or smaller", true); return; }
+      if (!file) { toast("Choose an MP3 or MP4 file first", true); return; }
+      if (file.size > 12 * 1024 * 1024) { toast("Media file must be 12 MB or smaller", true); return; }
       try {
-        await api("/bot/media", { method: "POST",
-          headers: { "Content-Type": file.type || "audio/mpeg" }, body: file });
-        toast("Bad Apple MP3 uploaded");
+        const result = await api("/bot/media", { method: "POST",
+          headers: { "Content-Type": file.type || (file.name.toLowerCase().endsWith(".mp4") ? "video/mp4" : "audio/mpeg") }, body: file });
+        toast(result.restartRequired ? "Uploaded; stop and restart the bot to load it" : "Bad Apple media uploaded");
         refresh();
       } catch (e) { toast(e.message, true); }
+    };
+    $("bdlinkcode").onclick = async () => {
+      const username = $("bdusername").value.trim();
+      if (!username) { toast("Enter the exact Yeeps username", true); return; }
+      $("bdcode").textContent = "Generating…";
+      try {
+        const result = await api("/bot/link-code", { method: "POST",
+          headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username }) });
+        $("bdcode").textContent = `${result.username}: ${result.code} (10 minutes)`;
+        toast("Pairing code generated; share it privately");
+      } catch (e) { $("bdcode").textContent = ""; toast(e.message, true); }
     };
     $("bstart").onclick = async () => {
       const target = $("bhook").value;

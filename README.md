@@ -46,7 +46,8 @@ by hand, if you'd rather do it yourself.
   room starts empty. See [Maps](#maps).
 - **Tools** to make your APK, check your server, and add your own blocks and music.
 
-Not included: community worlds, live player lookups from real Yeeps, or a Discord bot.
+Not included: community worlds or live player lookups from real Yeeps. An optional Discord
+profile bot can link accounts and edit usernames and colors.
 
 ## What you need
 
@@ -93,11 +94,22 @@ The editor's Photon bot is optional. Set `BOT_KEY` to a private random value and
 `PHOTON_APP_ID` to the PUN App ID used in the host's APK, then configure the PUN app's
 Photon custom-auth URL to the server's `PUBLIC_BASE_URL`. The Bot tab can then hook the
 bot to an online player. It provides game, arcade, cleanup, power and effect buttons,
-including finger-gun modes, directional right-trigger flight, and an item-spawner gun
-for the confirmed IDs shown in the editor. It has no build, live-talk or view controls.
-Upload an MP3 in the Bot tab for Bad Apple; its waveform visualization uses pillow blocks
-for the screen or the first sign placed by the tracked player. The audio is stored in
-MongoDB, not in the repository.
+including Flappy Bird, Minesweeper, two-player Tic-Tac-Toe and Connect Four, finger-gun
+modes, directional right-trigger flight, and an item-spawner gun for the confirmed IDs
+shown in the editor. It has no build, live-talk or view controls.
+Upload an MP4 in the Bot tab to show video frames, or an MP3 for an audio waveform; playback
+uses pillow blocks for the screen or the first sign placed by the tracked player. Media is
+stored in MongoDB, not in the repository.
+
+The optional Discord profile bot is disabled unless `DISCORD_BOT_TOKEN` is configured.
+Create a Discord application and bot, invite it with the `bot` and `applications.commands`
+scopes, and set the token as a private environment variable. `DISCORD_GUILD_ID` is optional
+and makes slash commands appear in that server immediately; without it, global commands may
+take time to propagate. In the editor's Bot tab, generate a one-use code for the exact Yeeps
+username and give it privately to that player. The player runs `/link` with their username
+and code in Discord, then `/profile` to choose username, skin color, or eye color. Codes
+expire after 10 minutes; colors accept six-digit hex such as `#7A42C8`. Keep the bot token
+out of source control and use Render's environment settings when hosted there.
 
 ### 3. Pick your server's address
 

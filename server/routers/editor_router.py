@@ -18,6 +18,7 @@ import re
 import hmac
 from datetime import datetime, timedelta, timezone
 import hashlib
+import secrets
 import time
 from datetime import datetime, timezone
 from fastapi import Depends
@@ -1863,13 +1864,68 @@ async def bot_status(request: Request):
     from bot.actions import ITEM_CATALOG
     from services.remote import bot_media
     from services.bot_manager import manager
-    media = await bot_media.find_one({"key": "bad_apple"}, {"_id": 0, "size": 1})
+    from services.discord_profile_bot import discord_profile_bot_status
+    media = await bot_media.find_one({"key": "bad_apple"}, {"_id": 0, "size": 1, "ext": 1})
     status = manager.status()
     return JSONResponse(content={
         "ok": True, **status,
         "badAppleAvailable": bool(media) or status["badAppleAvailable"],
         "badAppleSize": int((media or {}).get("size", 0)),
+        "badAppleType": (media or {}).get("ext", "mp3"),
+        "discordBot": discord_profile_bot_status(),
         "itemCatalog": [{"id": key, "name": label} for key, label in ITEM_CATALOG.items()],
+    })
+
+
+@router.post("/api/bot/link-code")
+async def bot_link_code(request: Request):
+    editor_name = _authed_name(request)
+    if not editor_name:
+        raise HTTPException(status_code=401, detail="unauthorized")
+    if not os.getenv("DISCORD_BOT_TOKEN", "").strip():
+        raise HTTPException(status_code=503, detail="The Discord profile bot is not configured")
+    from services.discord_profile_bot import discord_profile_bot_status
+    if not discord_profile_bot_status()["connected"]:
+        raise HTTPException(status_code=503, detail="The Discord profile bot is not connected yet")
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="request body must be JSON")
+    username = str((body or {}).get("username") or "").strip() if isinstance(body, dict) else ""
+    if not username or len(username) > 80:
+        raise HTTPException(status_code=400, detail="Enter the exact Yeeps username")
+    cursor = accounts.find(
+        {"displayName": {"$regex": f"^{re.escape(username)}$", "$options": "i"}},
+        {"_id": 0, "accountID": 1, "displayName": 1},
+    ).limit(2)
+    matches = await cursor.to_list(length=2)
+    if len(matches) != 1:
+        raise HTTPException(status_code=404, detail="That username did not identify exactly one account")
+    account = matches[0]
+    from services.db import db
+    links = db["discord_profile_links"]
+    if await links.find_one({"accountID": account["accountID"]}):
+        raise HTTPException(status_code=409, detail="That Yeeps account is already linked to Discord")
+    now = time.time()
+    codes = db["discord_link_codes"]
+    await codes.delete_many({"$or": [
+        {"expiresAt": {"$lte": now}},
+        {"accountID": account["accountID"]},
+    ]})
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    code = "".join(secrets.choice(alphabet) for _ in range(10))
+    digest = hashlib.sha256(code.encode("ascii")).hexdigest()
+    await codes.insert_one({
+        "accountID": account["accountID"],
+        "codeHash": digest,
+        "expiresAt": now + 600,
+        "issuedAt": now,
+    })
+    return JSONResponse(content={
+        "ok": True,
+        "username": account.get("displayName") or username,
+        "code": code,
+        "expiresIn": 600,
     })
 
 
@@ -1885,8 +1941,9 @@ async def bot_start(request: Request):
         raise HTTPException(status_code=400, detail="request body must be an object")
     target = await _bot_target((body or {}).get("target"))
     from services.remote import bot_media
-    media = await bot_media.find_one({"key": "bad_apple"}, {"_id": 0, "data": 1})
+    media = await bot_media.find_one({"key": "bad_apple"}, {"_id": 0, "data": 1, "ext": 1})
     media_data = bytes((media or {}).get("data") or b"")
+    media_ext = str((media or {}).get("ext") or "mp3")
     from services.bot_manager import manager
     import asyncio
     result = await asyncio.to_thread(
@@ -1895,6 +1952,7 @@ async def bot_start(request: Request):
         target_name=target["displayName"],
         room=target["photonRoomName"],
         media_data=media_data,
+        media_ext=media_ext,
     )
     return JSONResponse(content=result, status_code=200 if result.get("ok") else 503)
 
@@ -1945,33 +2003,38 @@ async def bot_media_upload(request: Request):
     if not editor_name:
         raise HTTPException(status_code=401, detail="unauthorized")
     content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
-    if content_type not in ("audio/mpeg", "audio/mp3", "application/octet-stream"):
-        raise HTTPException(status_code=415, detail="Upload an MP3 file")
+    if content_type not in ("audio/mpeg", "audio/mp3", "video/mp4", "application/octet-stream"):
+        raise HTTPException(status_code=415, detail="Upload an MP3 or MP4 file")
     limit = 12 * 1024 * 1024
     chunks = []
     size = 0
     async for chunk in request.stream():
         size += len(chunk)
         if size > limit:
-            raise HTTPException(status_code=413, detail="MP3 must be 12 MB or smaller")
+            raise HTTPException(status_code=413, detail="Media file must be 12 MB or smaller")
         chunks.append(chunk)
     data = b"".join(chunks)
     has_id3 = data.startswith(b"ID3") and len(data) > 10
     has_frame_sync = any(data[i] == 0xFF and data[i + 1] & 0xE0 == 0xE0
                          for i in range(min(len(data) - 1, 4096)))
-    if not data or not (has_id3 or has_frame_sync):
-        raise HTTPException(status_code=400, detail="The uploaded file does not look like an MP3")
+    is_mp4 = len(data) > 12 and data[4:8] == b"ftyp"
+    ext = "mp4" if content_type == "video/mp4" or is_mp4 else "mp3"
+    if not data or (ext == "mp4" and not is_mp4) \
+            or (ext == "mp3" and not (has_id3 or has_frame_sync)):
+        file_type = "MP4" if ext == "mp4" else "MP3"
+        raise HTTPException(status_code=400, detail=f"The uploaded file does not look like an {file_type}")
     from services.remote import bot_media
     from services.bot_manager import manager
     await bot_media.update_one(
         {"key": "bad_apple"},
-        {"$set": {"key": "bad_apple", "name": "bad_apple.mp3", "data": data,
+        {"$set": {"key": "bad_apple", "name": f"bad_apple.{ext}", "ext": ext, "data": data,
                   "size": len(data), "by": editor_name, "ts": int(time.time())}},
         upsert=True,
     )
     import asyncio
-    await asyncio.to_thread(manager.set_media_audio, data)
-    return JSONResponse(content={"ok": True, "size": len(data)})
+    restart_required = await asyncio.to_thread(manager.set_media, data, ext)
+    return JSONResponse(content={"ok": True, "size": len(data), "ext": ext,
+                                 "restartRequired": restart_required})
 
 
 

@@ -39,7 +39,7 @@ async def abuse_guard(request: Request, call_next):
         cl = request.headers.get("content-length")
         lim = _MAX_BODY
         if request.method == "POST" and (request.scope.get("path") or "").startswith("/editor/api/video"):
-            lim = _MAX_VIDEO_BODY       # editor-only (login checked before the body is read)
+            lim = _MAX_VIDEO_BODY       # editor-only media uploads (login checked before the body is read)
         if cl and int(cl) > lim:
             return JSONResponse({"message": "Payload too large"}, status_code=413)
     except Exception:
@@ -198,6 +198,15 @@ async def startup_event():
         await load_world()
     else:
         print("[seed] Skipped (SEED_WORLD=0)")
+    discord_token = os.getenv("DISCORD_BOT_TOKEN", "").strip()
+    if discord_token:
+        import asyncio
+        from services.discord_profile_bot import run_discord_profile_bot
+        app.state.discord_profile_task = asyncio.create_task(run_discord_profile_bot(discord_token))
+        app.state.discord_profile_task.add_done_callback(
+            lambda task: print(f"[discord-profile] stopped: {task.exception()!r}")
+            if not task.cancelled() and task.exception() else None
+        )
     print("=" * 60)
     print("  Yeeps 1.31.0-yeeper920 self-host server is READY")
     print(f"  Game API + editor: {_cfg.PUBLIC_BASE_URL}   (editor: /editor)")
@@ -206,10 +215,15 @@ async def startup_event():
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Gracefully stop the editor-managed Photon bot with the web server."""
+    """Gracefully stop the editor-managed Photon bot and optional Discord bot."""
     import asyncio
     from services.bot_manager import manager
     await asyncio.to_thread(manager.stop)
+    task = getattr(app.state, "discord_profile_task", None)
+    if task:
+        from services.discord_profile_bot import stop_discord_profile_bot
+        await stop_discord_profile_bot()
+        await asyncio.gather(task, return_exceptions=True)
 
 
 # ─── Include routers ─────────────────────────────────────────────────
