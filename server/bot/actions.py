@@ -1,6 +1,7 @@
 """Allowlisted actions exposed by the editor's Photon bot controls."""
 
 ACTION_COMMANDS = {
+    "disco-start": "disco",
     "koth-start": "koth",
     "koth-stop": "koth off",
     "potato-start": "potato",

@@ -6857,6 +6857,10 @@ async def cmd_run(a):
                         tag = " (bot)" if act == bot.actor else ""
                         has = "" if act in bot.poses or act == bot.actor else " [no pose yet]"
                         print(f"  #{act} {clean_name((pr or {}).get(255))}{tag}{has}")
+                elif cmd == "disco":
+                    await bot.rpc(bot.view_id, "SendBeginParty", [], receivers=pun.RECV_OTHERS)
+                    await bot.rpc(bot.view_id, "SendStartParty", [], receivers=pun.RECV_OTHERS)
+                    print("sent Disco party RPCs")
                 elif cmd == "vput":                 # editor View tab: vput PATTERN X Y Z COLOR [FWD UP]
                     try:
                         pat, col = args[0], args[4]
