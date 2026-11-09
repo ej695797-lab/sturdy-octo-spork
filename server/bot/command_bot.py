@@ -18,6 +18,7 @@ import time
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 
+from bot.actions import ITEM_CATALOG
 from photon import pun
 from photon.client import (NAME_SERVER, OP_AUTHENTICATE, OP_JOIN_ROOM, OP_RAISE_EVENT,
                            P_ACTOR_LIST, P_ACTOR_NR, P_ADDRESS, P_BROADCAST, P_CODE, P_DATA,
@@ -711,6 +712,9 @@ is enough). Leave NAME out and it means you.
   rain clean                remove every block the rain left
   fingergun [NAME]          finger gun + pull the trigger = explosive shot
   fingergun off [NAME]      take it from everyone / from one player
+  itemgun ITEM_ID           tracked player's finger gun shoots that confirmed item
+  itemgun off               stop the item-spawner gun
+  fly [NAME] / fly off      hold the right trigger and point the right controller to fly
   lightning [NAME]          the finger gun shoots LIGHTNING (storm cloud, jagged bolt, blast)
   freeze [NAME]             the finger gun shoots an ICE shard: a 3x3x3 outline cage + freeze grenades for 15 s
   lightning off / freeze off   take them back (freeze off also thaws everyone)
@@ -768,15 +772,15 @@ is enough). Leave NAME out and it means you.
   canvas [big]              pillow = canvas (bottom-middle), 2nd pillow = colour palette;
                             hit/grab a colour, then point your bat at the canvas to paint
   canvas clear / canvas off wipe it white / remove it
-  apple [big|small]         play Bad Apple!! WITH the song on your screen (or, if you
+  apple [big|small]         play the song and its waveform on a pillow screen (or, if you
                             have none, on the wall you face); big = whole wall
-  apple mute / apple FILE   no sound / any other video
+  apple mute / apple FILE   no sound / another video file
   cleanup [NAME|ACCOUNT]    delete every block that player placed in this room
                             (default: the "firebox" spam bot)
   talk / talk off            talk to the players live from the editor's Talk panel (your
                             voice plays at the hooked player's face; you hear them back)
-  applesign                 each 1x1 pillow you place becomes a tall sign playing
-                            Bad Apple as text art (with the song); applesign off
+  applesign                 the first sign you place plays Bad Apple as text art
+                            with the song; applesign off stops playback and keeps the sign
   apple off                 stop
   apple off                 stop and remove the screen
   mimic NAME [METERS]       a copy of NAME beside them (2 m) that walks, moves and looks like
@@ -1365,8 +1369,6 @@ async def cmd_run(a):
     # --- effects engine: moving/spinning outlines with gravity ----------------
     fx = {"objs": [], "pellet_actor": None, "shots": 0}
     track(fx, "pellet_actor")
-    pillow_burst = {"actor": None, "enabled": False, "last": 0.0}
-    track(pillow_burst, "actor")
     FX_TICK, FX_MAX_SHOTS = 0.1, 10**9      # no limit: shots never run out
 
     def q_dir(q):
@@ -1403,37 +1405,6 @@ async def cmd_run(a):
         await bot.rpc(bot.view_id, "RpcMapObjectPreviewCreated", [user_id, o["id"], pattern, color],
                       receivers=pun.RECV_OTHERS)
         fx["objs"].append(o)
-
-    async def pillow_burst_shots(actor):
-        pose = bot.pose_of(actor)
-        if not pose:
-            return
-        body, rotation = pose
-        direction = pun.Vector3(*q_forward(rotation))
-        origin = body + pun.Vector3(0, 1.1, 0) + direction * 0.4
-        for _ in range(4):
-            spread = pun.Vector3(random.uniform(-0.12, 0.12),
-                                 random.uniform(-0.08, 0.08),
-                                 random.uniform(-0.12, 0.12))
-            velocity = direction + spread
-            length = math.sqrt(velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2) or 1.0
-            await fx_add(origin, random.choice(GLOW), vel=velocity * (18.0 / length),
-                         life=0.7, spin=14.0)
-
-    def on_pillow_burst(code, sender, data):
-        if not pillow_burst["enabled"] or sender != pillow_burst["actor"] or code != pun.EV_RPC:
-            return
-        rpc = pun.decode_rpc(data)
-        if not rpc or rpc["method"] != "RpcMapObjectCreated" or not rpc["args"] \
-                or str(rpc["args"][0]).lower() != "1x1_stuffed":
-            return
-        now = time.monotonic()
-        if now - pillow_burst["last"] < 0.7:
-            return
-        pillow_burst["last"] = now
-        asyncio.get_running_loop().create_task(pillow_burst_shots(sender))
-
-    bot.handlers.append(on_pillow_burst)
 
     async def fx_tick():
         now = time.monotonic()
@@ -1609,6 +1580,8 @@ async def cmd_run(a):
     # --- buttcoins: real game items, orbiting a player / a planet in the sky ----
     co = {"items": {}, "orbit": None, "orbit_n": 3, "orbit_r": 1.3, "planet": None, "t0": time.monotonic(),
           "tick": 0}
+    item_gun = {"actor": None, "item_key": None, "items": {}}
+    track(item_gun, "actor")
     track(co, "orbit")
     ZERO, IDENT = pun.Vector3(), pun.Quaternion(1, 0, 0, 0)
 
@@ -1624,6 +1597,18 @@ async def cmd_run(a):
                       receivers=pun.RECV_OTHERS)
         co["items"][iid] = {"key": key, "pos": pos, "kind": kind}
         return iid
+
+    async def itemgun_spawn(key, pos, direction):
+        if key not in ITEM_CATALOG or len(item_gun["items"]) >= 24:
+            return
+        iid = rand_id()
+        velocity = direction * 7.0
+        await bot.rpc(bot.view_id, "RpcCreateItem",
+                      [iid, key, 0, None, pos, IDENT, velocity, ZERO,
+                       TypedArray(ord("s"), []), Byte(1), Byte(1)], receivers=pun.RECV_OTHERS)
+        await bot.rpc(bot.view_id, "RpcItemTransformation",
+                      [user_id, iid, 1, None, pos, IDENT, velocity, ZERO], receivers=pun.RECV_OTHERS)
+        item_gun["items"][iid] = key
 
     async def item_move(iid, pos, rot):
         await bot.rpc(bot.view_id, "RpcItemTransformation", [user_id, iid, 1, None, pos, rot, ZERO, ZERO],
@@ -1642,6 +1627,8 @@ async def cmd_run(a):
             r = pun.decode_rpc(data)
             if r and r["method"] == "RpcDestroyItem" and r["args"] and r["args"][0] in co["items"]:
                 co["items"].pop(r["args"][0], None)
+            if r and r["method"] == "RpcDestroyItem" and r["args"]:
+                item_gun["items"].pop(r["args"][0], None)
 
     bot.handlers.append(on_item_gone)
 
@@ -1759,6 +1746,9 @@ async def cmd_run(a):
     def find_video(arg):
         if arg and os.path.isfile(os.path.expanduser(arg)):
             return os.path.expanduser(arg)
+        uploaded = os.getenv("YEEPS_BAD_APPLE_MEDIA", "")
+        if not arg and uploaded and os.path.isfile(uploaded) and os.path.getsize(uploaded) > 0:
+            return uploaded
         bundled = os.path.join(HERE, "media", "bad_apple.mp4")   # archive.org/details/TouhouBadApple
         if not arg and os.path.isfile(bundled):
             return bundled
@@ -1770,10 +1760,16 @@ async def cmd_run(a):
         return None
 
     def decode_frames(path, w, h, fps):
-        """Video -> list of frames, each a set of lit (white) pixel (col, row)."""
+        """Video or audio waveform -> frames of lit pixels."""
         import subprocess, imageio_ffmpeg
-        cmd = [imageio_ffmpeg.get_ffmpeg_exe(), "-v", "error", "-i", path,
-               "-vf", f"fps={fps},scale={w}:{h}:flags=area,format=gray", "-f", "rawvideo", "-"]
+        ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+        if path.lower().endswith((".mp3", ".wav", ".ogg")):
+            graph = f"[0:a]showwaves=s={w}x{h}:mode=cline:rate={fps}:colors=white,format=gray[v]"
+            cmd = [ffmpeg, "-v", "error", "-i", path, "-filter_complex", graph,
+                   "-map", "[v]", "-f", "rawvideo", "-pix_fmt", "gray", "-"]
+        else:
+            cmd = [ffmpeg, "-v", "error", "-i", path,
+                   "-vf", f"fps={fps},scale={w}:{h}:flags=area,format=gray", "-f", "rawvideo", "-"]
         raw = subprocess.run(cmd, capture_output=True, check=True).stdout
         n = len(raw) // (w * h)
         frames = []
@@ -1893,7 +1889,14 @@ async def cmd_run(a):
         name = os.path.basename(path)
         w, h = lay["w"], lay["h"]
         print(f"apple: converting {name} to {w}x{h} at {fps} fps...")
-        frames = await asyncio.to_thread(decode_frames, path, w, h, fps)
+        try:
+            frames = await asyncio.to_thread(decode_frames, path, w, h, fps)
+        except Exception as e:
+            print(f"apple: couldn't decode media ({e!r})")
+            return
+        if not frames:
+            print("apple: media produced no visual frames")
+            return
         packets = []
         if audio:
             try:
@@ -2000,8 +2003,7 @@ async def cmd_run(a):
         await build_board(lay)
         print("screen ready - type apple to play on it, 'screen off' to remove it\nbot> ", end="", flush=True)
 
-    # --- apple on a sign: every 1x1 pillow the owner places becomes a tall text
-    # sign (1x1x2_textSign) facing them that plays Bad Apple as text art -------
+    # --- Bad Apple text animation on the first sign the followed player places ---
     # The sign is a legacy UI Text in Londrina Solid, size 36, no rich text, in a
     # 300x252 box: 5 lines fit (a 6th is cut off) and a text over ~60 characters is
     # dropped. The font has no braille or block glyphs (braille showed nothing), so a
@@ -2011,11 +2013,17 @@ async def cmd_run(a):
            "voice": None, "w": 11, "h": 5, "fps": 8, "plain": True}
 
     def decode_sign_frames(path, w, h, fps):
-        """Video -> frames (sets of lit pixels), centre-cropped square then w x h."""
+        """Video or audio waveform -> frames of lit pixels."""
         import subprocess, imageio_ffmpeg
-        cmd = [imageio_ffmpeg.get_ffmpeg_exe(), "-v", "error", "-i", path, "-vf",
-               f"fps={fps},crop='min(iw,ih)':'min(iw,ih)',scale={w}:{h}:flags=area,format=gray",
-               "-f", "rawvideo", "-"]
+        ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+        if path.lower().endswith((".mp3", ".wav", ".ogg")):
+            graph = f"[0:a]showwaves=s={w}x{h}:mode=cline:rate={fps}:colors=white,format=gray[v]"
+            cmd = [ffmpeg, "-v", "error", "-i", path, "-filter_complex", graph,
+                   "-map", "[v]", "-f", "rawvideo", "-pix_fmt", "gray", "-"]
+        else:
+            cmd = [ffmpeg, "-v", "error", "-i", path, "-vf",
+                   f"fps={fps},crop='min(iw,ih)':'min(iw,ih)',scale={w}:{h}:flags=area,format=gray",
+                   "-f", "rawvideo", "-"]
         raw = subprocess.run(cmd, capture_output=True, check=True).stdout
         return [{(k % w, k // w) for k, px in enumerate(raw[i * w * h:(i + 1) * w * h]) if px >= 128}
                 for i in range(len(raw) // (w * h))]
@@ -2030,57 +2038,52 @@ async def cmd_run(a):
         await bot.rpc(bot.view_id, "RpcSimpleCustomMapObjectMessage", [SIGN, x, y, z, f"{account}|{text}"],
                       receivers=pun.RECV_OTHERS)
 
-    sign_gone = {}        # pillow cell -> Event set when the game confirms it was removed
-
     def on_sign_pick(code, sender, data):
-        if not asg["on"] or code != pun.EV_RPC:
+        if code != pun.EV_RPC:
             return
         r = pun.decode_rpc(data)
         if not r:
             return
         a_ = r["args"] or []
-        if r["method"] == "RpcDestroyMapObject" and len(a_) >= 4 and str(a_[0]) == "1x1_stuffed":
-            ev = sign_gone.get((int(a_[1]), int(a_[2]), int(a_[3])))
-            if ev:
-                ev.set()
+        if r["method"] == "RpcDestroyMapObject" and len(a_) >= 4 and str(a_[0]) == SIGN:
+            try:
+                cell = (int(a_[1]), int(a_[2]), int(a_[3]))
+            except (TypeError, ValueError):
+                return
+            asg["signs"].pop(cell, None)
+            if not asg["signs"] and asg["task"]:
+                asg["stop"] = True
             return
-        if sender != asg["actor"] or r["method"] != "RpcMapObjectCreated" or str(a_[0]) != "1x1_stuffed":
+        if r["method"] == "RpcSimpleCustomMapObjectMessage" and len(a_) >= 5 \
+                and str(a_[0]) == SIGN and sender != bot.actor:
+            try:
+                cell = (int(a_[1]), int(a_[2]), int(a_[3]))
+            except (TypeError, ValueError):
+                return
+            entry = asg["signs"].get(cell)
+            message = str(a_[4])
+            if entry is not None and "|" in message:
+                entry["original_text"] = message.split("|", 1)[1]
             return
-        cell = (int(a_[1]), int(a_[2]), int(a_[3]))
-        asyncio.get_running_loop().create_task(sign_at(cell))
+        if not asg["on"] or sender != asg["actor"] or r["method"] != "RpcMapObjectCreated" \
+                or not a_ or str(a_[0]) != SIGN or len(a_) < 5:
+            return
+        try:
+            cell = (int(a_[1]), int(a_[2]), int(a_[3]))
+        except (TypeError, ValueError):
+            return
+        if asg["signs"]:
+            return
+        asg["signs"][cell] = {"original_text": ""}
+        asyncio.get_running_loop().create_task(start_sign_play())
 
     bot.handlers.append(on_sign_pick)
 
-    async def sign_at(cell):
-        await asyncio.sleep(0.3)
-        # The pillow becomes the sign. The game only frees the spot once the
-        # room confirms the removal (a sign sent before that lands on top of the
-        # pillow and is silently dropped), so wait for that confirmation.
-        ev = sign_gone[cell] = asyncio.Event()
-        await take(cell, "1x1_stuffed")
-        try:
-            await asyncio.wait_for(ev.wait(), 3.0)
-        except asyncio.TimeoutError:
-            pass
-        sign_gone.pop(cell, None)
-        await asyncio.sleep(0.4)
-        live.cells.discard(cell)
-        x, y, z = cell
-        fwd = 4
-        t0 = asg["actor"]
-        if t0 is not None and bot.pose_of(t0):
-            me, at = bot.pose_of(t0)[0], cell_world(cell)
-            dx, dz = me.x - at.x, me.z - at.z
-            fwd = (0 if dx > 0 else 1) if abs(dx) > abs(dz) else (4 if dz > 0 else 5)
-        await bot.rpc(bot.view_id, "RpcMapObjectCreated", [SIGN, x, y, z, fwd, 2, "white", account, False],
-                      receivers=pun.RECV_OTHERS)
-        live.cells.update({(x, y, z), (x, y + 1, z)})
-        asg["signs"][cell] = fwd
-        await asyncio.sleep(0.4)
-        await sign_say(cell, "Bad Apple!!")
-        if not asg["task"]:
+    async def start_sign_play():
+        await asyncio.sleep(0.5)
+        if asg["on"] and asg["signs"] and not asg["task"]:
             asg["task"] = asyncio.get_running_loop().create_task(sign_play())
-        print(f"\napplesign: sign up at {cell} ({len(asg['signs'])} playing)\nbot> ", end="", flush=True)
+            print("\napplesign: animating the first sign you placed\nbot> ", end="", flush=True)
 
     async def sign_play():
         w, h, fps = asg["w"], asg["h"], asg["fps"]
@@ -2137,24 +2140,24 @@ async def cmd_run(a):
             t0 = bot.actor_by_name(who)
             if t0 is not None:
                 ensure_avatar(t0)
-            for c in list(asg["signs"]):
-                await sign_say(c, "Bad Apple!!")
+            for c, entry in list(asg["signs"].items()):
+                await sign_say(c, entry["original_text"])
             asg["task"] = None
             asg["stop"] = False
 
     async def signs_off():
         asg["on"] = False
         asg["stop"] = True
-        if asg["task"]:
+        task = asg["task"]
+        if task:
             try:
-                await asyncio.wait_for(asyncio.shield(asg["task"]), 5)
-            except Exception:
-                asg["task"].cancel()
-        for (x, y, z) in list(asg["signs"]):
-            await bot.rpc(bot.view_id, "RpcDestroyMapObject", [SIGN, x, y, z, account, 0, False],
-                          receivers=pun.RECV_OTHERS)
-            live.cells.discard((x, y, z)); live.cells.discard((x, y + 1, z))
-            await asyncio.sleep(0.01)
+                await asyncio.wait_for(asyncio.shield(task), 5)
+            except asyncio.TimeoutError:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
         asg["signs"].clear()
         asg["stop"] = False
 
@@ -3994,7 +3997,11 @@ async def cmd_run(a):
                 n = math.sqrt(d.x * d.x + d.y * d.y + d.z * d.z) or 1.0
                 d = d * (1 / n)
                 mode = st.get("mode", "gun")
-                if mode in ("lightning", "freeze", "scare"):
+                if mode == "item":
+                    key = st.get("item_key")
+                    if key and sender == item_gun["actor"] and key == item_gun["item_key"]:
+                        asyncio.get_running_loop().create_task(itemgun_spawn(key, hand_p + d * 1.0, d))
+                elif mode in ("lightning", "freeze", "scare"):
                     if time.monotonic() < st["cd"]:
                         continue                           # still recharging
                     st["cd"] = time.monotonic() + {"lightning": 1.2, "freeze": 1.6, "scare": 3.0}[mode]
@@ -4005,7 +4012,7 @@ async def cmd_run(a):
 
     bot.handlers.append(on_finger)
 
-    # Holding the followed player's right trigger gives a small, rate-limited lift.
+    # Point the followed player's right controller and hold the trigger to fly.
     tracked_flight = {"actor": None, "enabled": False, "last_boost": 0.0}
     track(tracked_flight, "actor")
 
@@ -4017,20 +4024,26 @@ async def cmd_run(a):
         if not pose or len(pose) < 3 + 14 + 8:
             return
         try:
+            values = pose[3:]
             right_trigger = float(pose[3 + 14 + 7])
+            body_rotation = tuple(values[3:7])
+            hand_rotation = q_mul(body_rotation, tuple(values[17:21]))
         except (TypeError, ValueError, IndexError):
             return
         now = time.monotonic()
-        if right_trigger < 0.9 or now - tracked_flight["last_boost"] < 0.4:
+        if right_trigger < 0.9 or now - tracked_flight["last_boost"] < 0.12:
             return
         props = bot.actors.get(sender) or {}
         account_id = props.get(253)
         if not account_id:
             return
+        direction = q_rotate(hand_rotation, (0.0, 0.0, 1.0))
+        magnitude = math.sqrt(direction.x ** 2 + direction.y ** 2 + direction.z ** 2) or 1.0
+        force = direction * (16.0 / magnitude) + pun.Vector3(0, 4.0, 0)
         tracked_flight["last_boost"] = now
         asyncio.get_running_loop().create_task(bot.rpc(
             bot.view_id, "RpcApplyPlayerKnockback",
-            [account_id, pun.Vector3(0, 3.0, 0), 3, None, -1], receivers=pun.RECV_OTHERS))
+            [account_id, force, 3, None, -1], receivers=pun.RECV_OTHERS))
 
     bot.handlers.append(on_tracked_flight)
 
@@ -6931,18 +6944,6 @@ async def cmd_run(a):
                     tracked_flight.update(actor=t, enabled=True, last_boost=0.0)
                     remember(tracked_flight, "actor")
                     print(f"right-trigger flight ON for {pname(t)}")
-                elif cmd == "pillowburst":
-                    if off:
-                        pillow_burst.update(actor=None, enabled=False)
-                        pillow_burst["actor_acct"] = None
-                        print("Pillow burst off")
-                        continue
-                    t = bot.actor_by_name(who)
-                    if t is None:
-                        print("can't find the tracked player in this room"); continue
-                    pillow_burst.update(actor=t, enabled=True, last=0.0)
-                    remember(pillow_burst, "actor")
-                    print(f"Pillow burst ON for {pname(t)}: place a 1x1 Pillow")
                 elif cmd == "disco":
                     await bot.rpc(bot.view_id, "SendBeginParty", [], receivers=pun.RECV_OTHERS)
                     await bot.rpc(bot.view_id, "SendStartParty", [], receivers=pun.RECV_OTHERS)
@@ -7240,6 +7241,23 @@ async def cmd_run(a):
                                       for a_ in fg["accts"] for x in [next((k for k, pr in bot.actors.items()
                                       if isinstance(pr, dict) and str(pr.get(253, "")).startswith(a_ + "$")), None)])
                     print(f"finger gun ON for {pname(t)} (has it now: {names})")
+                elif cmd == "itemgun":
+                    if off:
+                        if item_gun["actor"] is not None:
+                            fg["accts"].pop(acct_of(item_gun["actor"]), None)
+                        item_gun.update(actor=None, item_key=None)
+                        print("item spawner gun off")
+                        continue
+                    key = args[0] if args else ""
+                    if key not in ITEM_CATALOG:
+                        print("choose one of the confirmed item IDs from the editor's item list"); continue
+                    t = bot.actor_by_name(who)
+                    if t is None:
+                        print("can't find the tracked player in this room"); continue
+                    item_gun.update(actor=t, item_key=key)
+                    fg["accts"][acct_of(t)] = fg_state("item")
+                    fg["accts"][acct_of(t)]["item_key"] = key
+                    print(f"item spawner gun ON for {pname(t)}: {key}")
                 elif cmd in ("coins", "coin", "buttcoin", "buttcoins"):
                     sub = args[0].lower() if args else ""
                     if sub == "off":
@@ -7395,13 +7413,16 @@ async def cmd_run(a):
                 elif cmd in ("applesign", "signapple"):
                     if off:
                         await signs_off()
-                        print("applesign off - signs removed"); continue
+                        print("applesign off - playback stopped; your sign stays in the room"); continue
+                    if asg["on"]:
+                        print("applesign is already on"); continue
                     t0, args = hooked(args)
                     if t0 is None:
                         print("no player to do that for"); continue
                     asg["actor"], asg["on"] = t0, True
-                    print("applesign on - every 1x1 pillow you place turns into a tall sign playing Bad Apple "
-                          "(facing you). 'applesign off' removes them.")
+                    asg["signs"].clear()
+                    print("applesign on - the first sign you place will play Bad Apple as text; "
+                          "'applesign off' stops playback and keeps your sign.")
                 elif cmd == "talk":
                     if off:
                         await talk_stop()

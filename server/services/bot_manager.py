@@ -7,11 +7,12 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from pathlib import Path
 
-from bot.actions import ACTION_COMMANDS, MEDIA_ACTIONS, command_for
+from bot.actions import ACTION_COMMANDS, ITEM_ACTIONS, MEDIA_ACTIONS, command_for
 from config import BOT_KEY
 
 SERVER_DIR = Path(__file__).resolve().parent.parent
@@ -34,6 +35,8 @@ class BotManager:
         self.target_name = ""
         self.room = ""
         self.log: list[str] = []
+        self._audio_path = ""
+        self._audio_ready = False
 
     def available(self) -> tuple[bool, str]:
         if not BOT_KEY:
@@ -85,7 +88,31 @@ class BotManager:
                 with self._lock:
                     self.error = self.log[-1].split(" ", 1)[-1] if self.log else f"bot exited ({code})"
 
-    def start(self, *, target: str, target_name: str, room: str) -> dict:
+    def _new_audio_file(self, data: bytes = b"") -> str:
+        with tempfile.NamedTemporaryFile(prefix="yeeper-bad-apple-", suffix=".mp3", delete=False) as audio:
+            audio.write(data)
+            return audio.name
+
+    def _remove_audio_file(self) -> None:
+        path, self._audio_path = self._audio_path, ""
+        self._audio_ready = False
+        if path:
+            try:
+                os.unlink(path)
+            except FileNotFoundError:
+                pass
+            except OSError as exc:
+                self._note(f"couldn't remove temporary Bad Apple audio: {exc}")
+
+    def set_media_audio(self, data: bytes) -> None:
+        with self._lock:
+            if self._audio_path:
+                with open(self._audio_path, "wb") as audio:
+                    audio.write(data)
+                self._audio_ready = True
+
+    def start(self, *, target: str, target_name: str, room: str,
+              media_data: bytes = b"") -> dict:
         available, reason = self.available()
         if not available:
             with self._lock:
@@ -104,6 +131,14 @@ class BotManager:
                 return {"ok": True, **self.status()}
             if old_process is not None and old_process.poll() is None:
                 self._stop_process(old_process)
+            self._remove_audio_file()
+            try:
+                self._audio_path = self._new_audio_file(media_data)
+                self._audio_ready = bool(media_data)
+            except OSError as exc:
+                with self._lock:
+                    self.error = f"couldn't prepare Bad Apple audio: {exc}"
+                return {"ok": False, **self.status()}
 
             env = os.environ.copy()
             env.pop("YEEPS_VIEW_DIR", None)
@@ -113,6 +148,7 @@ class BotManager:
             env.pop("AUTH", None)
             env["PYTHONPATH"] = str(SERVER_DIR) + os.pathsep + env.get("PYTHONPATH", "")
             env["PYTHONUNBUFFERED"] = "1"
+            env["YEEPS_BAD_APPLE_MEDIA"] = self._audio_path
             command = [
                 sys.executable, "-u", "-m", "bot.command_bot",
                 "--name", "YeeperBot", "--bot-id", str(BOT_ID),
@@ -133,6 +169,7 @@ class BotManager:
                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                 )
             except OSError as exc:
+                self._remove_audio_file()
                 with self._lock:
                     self.error = f"couldn't start the bot: {exc}"
                 return {"ok": False, **self.status()}
@@ -183,16 +220,19 @@ class BotManager:
                 self.target_account = ""
                 self.target_name = ""
                 self.room = ""
+                self._remove_audio_file()
             return {"ok": True, **self.status()}
 
-    def action(self, action: str, target_name: str = "") -> dict:
+    def action(self, action: str, target_name: str = "", item_id: str = "") -> dict:
         if action not in ACTION_COMMANDS:
             return {"ok": False, "error": "Unknown bot action"}
-        if action in MEDIA_ACTIONS and not BAD_APPLE_VIDEO.is_file():
-            return {"ok": False, "error": "Add a video at server/bot/media/bad_apple.mp4 to enable Bad Apple"}
-        command = command_for(action, target_name)
+        if action in MEDIA_ACTIONS and not (self._audio_ready or BAD_APPLE_VIDEO.is_file()):
+            return {"ok": False, "error": "Upload an MP3 in the Bot tab to enable Bad Apple"}
+        command = command_for(action, target_name, item_id)
         if command is None:
-            return {"ok": False, "error": "Choose a player for this action"}
+            message = "Choose an item from the confirmed item list" if action in ITEM_ACTIONS \
+                else "Choose a player for this action"
+            return {"ok": False, "error": message}
         with self._lock:
             process = self._process
             if process is None or process.poll() is not None:
@@ -222,7 +262,7 @@ class BotManager:
                 "target": self.target_account,
                 "targetName": self.target_name,
                 "room": self.room,
-                "badAppleAvailable": BAD_APPLE_VIDEO.is_file(),
+                "badAppleAvailable": self._audio_ready or BAD_APPLE_VIDEO.is_file(),
                 "log": list(self.log[-60:]),
             }
 

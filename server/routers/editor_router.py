@@ -1860,8 +1860,17 @@ async def _bot_target(account_id: str) -> dict:
 async def bot_status(request: Request):
     if not _authed_name(request):
         raise HTTPException(status_code=401, detail="unauthorized")
+    from bot.actions import ITEM_CATALOG
+    from services.remote import bot_media
     from services.bot_manager import manager
-    return JSONResponse(content={"ok": True, **manager.status()})
+    media = await bot_media.find_one({"key": "bad_apple"}, {"_id": 0, "size": 1})
+    status = manager.status()
+    return JSONResponse(content={
+        "ok": True, **status,
+        "badAppleAvailable": bool(media) or status["badAppleAvailable"],
+        "badAppleSize": int((media or {}).get("size", 0)),
+        "itemCatalog": [{"id": key, "name": label} for key, label in ITEM_CATALOG.items()],
+    })
 
 
 @router.post("/api/bot/start")
@@ -1875,6 +1884,9 @@ async def bot_start(request: Request):
     if not isinstance(body, dict):
         raise HTTPException(status_code=400, detail="request body must be an object")
     target = await _bot_target((body or {}).get("target"))
+    from services.remote import bot_media
+    media = await bot_media.find_one({"key": "bad_apple"}, {"_id": 0, "data": 1})
+    media_data = bytes((media or {}).get("data") or b"")
     from services.bot_manager import manager
     import asyncio
     result = await asyncio.to_thread(
@@ -1882,6 +1894,7 @@ async def bot_start(request: Request):
         target=target["accountID"],
         target_name=target["displayName"],
         room=target["photonRoomName"],
+        media_data=media_data,
     )
     return JSONResponse(content=result, status_code=200 if result.get("ok") else 503)
 
@@ -1906,7 +1919,7 @@ async def bot_action(request: Request):
     if not isinstance(body, dict):
         raise HTTPException(status_code=400, detail="request body must be an object")
     action = str((body or {}).get("action") or "").strip()
-    from bot.actions import ACTION_COMMANDS, TARGET_ACTIONS
+    from bot.actions import ACTION_COMMANDS, ITEM_ACTIONS, TARGET_ACTIONS
     if action not in ACTION_COMMANDS:
         raise HTTPException(status_code=400, detail="Unknown bot action")
     target_name = ""
@@ -1919,10 +1932,46 @@ async def bot_action(request: Request):
         target_name = target["displayName"]
     from services.bot_manager import manager
     import asyncio
-    result = await asyncio.to_thread(manager.action, action, target_name)
+    item_id = str((body or {}).get("item") or "").strip() if action in ITEM_ACTIONS else ""
+    result = await asyncio.to_thread(manager.action, action, target_name, item_id)
     if not result.get("ok"):
         raise HTTPException(status_code=409, detail=result.get("error") or "The bot could not run that action")
     return JSONResponse(content=result)
+
+
+@router.post("/api/bot/media")
+async def bot_media_upload(request: Request):
+    editor_name = _authed_name(request)
+    if not editor_name:
+        raise HTTPException(status_code=401, detail="unauthorized")
+    content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    if content_type not in ("audio/mpeg", "audio/mp3", "application/octet-stream"):
+        raise HTTPException(status_code=415, detail="Upload an MP3 file")
+    limit = 12 * 1024 * 1024
+    chunks = []
+    size = 0
+    async for chunk in request.stream():
+        size += len(chunk)
+        if size > limit:
+            raise HTTPException(status_code=413, detail="MP3 must be 12 MB or smaller")
+        chunks.append(chunk)
+    data = b"".join(chunks)
+    has_id3 = data.startswith(b"ID3") and len(data) > 10
+    has_frame_sync = any(data[i] == 0xFF and data[i + 1] & 0xE0 == 0xE0
+                         for i in range(min(len(data) - 1, 4096)))
+    if not data or not (has_id3 or has_frame_sync):
+        raise HTTPException(status_code=400, detail="The uploaded file does not look like an MP3")
+    from services.remote import bot_media
+    from services.bot_manager import manager
+    await bot_media.update_one(
+        {"key": "bad_apple"},
+        {"$set": {"key": "bad_apple", "name": "bad_apple.mp3", "data": data,
+                  "size": len(data), "by": editor_name, "ts": int(time.time())}},
+        upsert=True,
+    )
+    import asyncio
+    await asyncio.to_thread(manager.set_media_audio, data)
+    return JSONResponse(content={"ok": True, "size": len(data)})
 
 
 

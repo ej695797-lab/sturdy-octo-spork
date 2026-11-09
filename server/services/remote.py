@@ -19,6 +19,7 @@ import uuid
 from services.db import db, globals_col
 
 disk_audio = db["disk_audio"]
+bot_media = db["bot_media"]
 
 # The APK decodes these natively (stb_vorbis / 16-bit PCM WAV); MP3 is not supported.
 AUDIO_TYPES = {"ogg": "audio/ogg", "wav": "audio/wav"}

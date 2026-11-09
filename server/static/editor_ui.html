@@ -1041,9 +1041,9 @@ const tabs = {
         ["Paint canvas", "canvas"], ["Canvas off", "canvas-stop", 1], ["Game off", "game-stop", 1]
       ]],
       ["Bad Apple (host video required)", [
-        ["Bad Apple", "apple", 0, 1], ["Bad Apple small", "apple-small", 0, 1],
+        ["Bad Apple waveform", "apple", 0, 1], ["Bad Apple small", "apple-small", 0, 1],
         ["Bad Apple no sound", "apple-mute", 0, 1], ["Stop Bad Apple", "apple-stop", 1, 1],
-        ["Bad Apple Sign", "applesign", 0, 1], ["Remove Apple Signs", "applesign-stop", 1, 1]
+        ["Bad Apple on first sign", "applesign", 0, 1], ["Stop sign playback", "applesign-stop", 1, 1]
       ]],
       ["Cleanup", [["Clean up firebox spam", "cleanup"]]],
       ["Guns", [
@@ -1054,8 +1054,7 @@ const tabs = {
         ["Jumpscare gun", "scare-hand"], ["Jumpscare gun off", "scare-off", 1]
       ]],
       ["Tracked player powers", [
-        ["Right-trigger flight", "tracked-fly"], ["Flight off", "tracked-fly-off", 1],
-        ["Pillow burst on place", "pillow-burst"], ["Pillow burst off", "pillow-burst-off", 1],
+        ["Directional right-trigger flight", "tracked-fly"], ["Flight off", "tracked-fly-off", 1],
         ["Smite picked player", "smite", 0, 0, 1],
         ["Freeze picked player", "freeze-player", 0, 0, 1], ["Thaw everyone", "thaw", 1],
         ["Jump scare picked player", "jumpscare", 0, 0, 1]
@@ -1084,7 +1083,21 @@ const tabs = {
         <select id="btarget" style="min-width:260px"><option value="">pick an online player</option></select>
       </div>
       <p class="note" id="bstate">…</p>
-      <p class="note">Bad Apple controls require a host-provided video at <code>server/bot/media/bad_apple.mp4</code>.</p>
+      <div class="row">
+        <label for="bappleaudio">Bad Apple MP3 (12 MB max)</label>
+        <input type="file" id="bappleaudio" accept="audio/mpeg,.mp3">
+        <button class="go" id="bappleupload">Upload or replace</button>
+        <span class="muted" id="bapplestatus"></span>
+      </div>
+      <p class="note">Bad Apple uses an audio waveform made from this MP3; the upload is kept in the server's MongoDB, not in the repository.</p>
+      <div class="row">
+        <label for="bitemsearch">Search confirmed spawnable items:</label>
+        <input type="search" id="bitemsearch" placeholder="Search by name or ID">
+        <select id="bitem" style="min-width:260px"></select>
+        <button class="go" id="bitemgun">Equip item-spawner gun</button>
+        <button class="blk" id="bitemoff">Item gun off</button>
+      </div>
+      <p class="note">This list contains only item IDs confirmed in the current bot/game data, not a complete game catalog.</p>
       <div id="bactions"></div>
       <div class="muted">Log</div>
       <pre id="blog" class="smp" style="max-height:160px;overflow:auto"></pre>`;
@@ -1097,6 +1110,16 @@ const tabs = {
       ).join("");
       $("bactions").querySelectorAll("button[data-action]").forEach(b => b.onclick = () =>
         sendAction(b.dataset.action, b.dataset.target === "1"));
+    }
+    let itemCatalog = [];
+    function renderItems(search = "") {
+      const selected = $("bitem").value;
+      const query = search.trim().toLowerCase();
+      const matches = itemCatalog.filter(item =>
+        !query || item.id.toLowerCase().includes(query) || item.name.toLowerCase().includes(query));
+      $("bitem").innerHTML = matches.map(item =>
+        `<option value="${esc(item.id)}">${esc(item.name)} (${esc(item.id)})</option>`).join("");
+      if (matches.some(item => item.id === selected)) $("bitem").value = selected;
     }
     async function players() {
       for (const id of ["bhook", "btarget"]) {
@@ -1124,9 +1147,15 @@ const tabs = {
       $("blog").textContent = (s.log || []).join("\n");
       $("blog").scrollTop = $("blog").scrollHeight;
       renderActions(!!s.badAppleAvailable);
+      itemCatalog = s.itemCatalog || [];
+      renderItems($("bitemsearch").value);
+      $("bapplestatus").textContent = s.badAppleSize
+        ? `Uploaded (${(s.badAppleSize / 1024 / 1024).toFixed(1)} MB)`
+        : (s.badAppleAvailable ? "Media available" : "No MP3 uploaded");
     }
-    async function sendAction(action, needsTarget) {
+    async function sendAction(action, needsTarget, itemId = "") {
       const body = { action };
+      if (itemId) body.item = itemId;
       if (needsTarget) {
         body.target = $("btarget").value;
         if (!body.target) { toast("Pick a player first", true); return; }
@@ -1139,6 +1168,24 @@ const tabs = {
       setTimeout(refresh, 900);
     }
     $("bref").onclick = refresh;
+    $("bitemsearch").oninput = () => renderItems($("bitemsearch").value);
+    $("bitemgun").onclick = () => {
+      const itemId = $("bitem").value;
+      if (!itemId) { toast("No confirmed item matches that search", true); return; }
+      sendAction("item-gun", false, itemId);
+    };
+    $("bitemoff").onclick = () => sendAction("item-gun-off", false);
+    $("bappleupload").onclick = async () => {
+      const file = $("bappleaudio").files[0];
+      if (!file) { toast("Choose an MP3 file first", true); return; }
+      if (file.size > 12 * 1024 * 1024) { toast("MP3 must be 12 MB or smaller", true); return; }
+      try {
+        await api("/bot/media", { method: "POST",
+          headers: { "Content-Type": file.type || "audio/mpeg" }, body: file });
+        toast("Bad Apple MP3 uploaded");
+        refresh();
+      } catch (e) { toast(e.message, true); }
+    };
     $("bstart").onclick = async () => {
       const target = $("bhook").value;
       if (!target) { toast("Pick a player to hook the bot to", true); return; }

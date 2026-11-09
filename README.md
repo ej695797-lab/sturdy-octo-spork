@@ -93,9 +93,11 @@ The editor's Photon bot is optional. Set `BOT_KEY` to a private random value and
 `PHOTON_APP_ID` to the PUN App ID used in the host's APK, then configure the PUN app's
 Photon custom-auth URL to the server's `PUBLIC_BASE_URL`. The Bot tab can then hook the
 bot to an online player. It provides game, arcade, cleanup, power and effect buttons,
-including finger-gun modes, right-trigger lift for the hooked player, and a rate-limited
-Pillow-placement burst effect, but no build, live-talk or view controls. Bad Apple
-controls need a host-provided video at `server/bot/media/bad_apple.mp4`; no video is bundled.
+including finger-gun modes, directional right-trigger flight, and an item-spawner gun
+for the confirmed IDs shown in the editor. It has no build, live-talk or view controls.
+Upload an MP3 in the Bot tab for Bad Apple; its waveform visualization uses pillow blocks
+for the screen or the first sign placed by the tracked player. The audio is stored in
+MongoDB, not in the repository.
 
 ### 3. Pick your server's address
 
