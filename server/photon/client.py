@@ -10,7 +10,7 @@ import time
 
 import websockets
 
-from .protocol16 import Reader, op_request
+from .protocol16 import Byte, Reader, op_request
 
 NAME_SERVER = "wss://ns.photonengine.io:19093"
 LIB_VERSION = "4.1.8.0"
@@ -118,7 +118,7 @@ def auth_params(app_id, app_version, region, auth_query=None, token=None):
     if token:
         p[P_TOKEN] = token
     elif auth_query is not None:
-        p[P_AUTH_TYPE] = AUTH_TYPE_CUSTOM
+        p[P_AUTH_TYPE] = Byte(AUTH_TYPE_CUSTOM)
         p[P_AUTH_PARAMS] = auth_query   # query string forwarded to the auth URL
     return p
 
