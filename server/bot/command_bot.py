@@ -2177,24 +2177,47 @@ async def cmd_run(a):
     # --- Bad Apple text animation on the first sign the followed player places ---
     # The sign drops messages longer than about 60 characters. Keep the 5-line
     # frame and rich-text size tags within that limit.
-    asg = {"on": False, "actor": None, "signs": {}, "task": None, "stop": False, "frames": {},
+    asg = {"on": False, "actor": None, "signs": {}, "task": None, "stop": False,
            "w": 8, "h": 5, "fps": 8, "plain": True}
 
-    def decode_sign_frames(path, w, h, fps):
-        """Video or audio waveform -> frames of lit pixels."""
-        import subprocess, imageio_ffmpeg
+    async def stream_sign_frames(path, w, h, fps):
+        """Decode sign frames incrementally so playback doesn't wait for the full video."""
+        import imageio_ffmpeg
         ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
         if path.lower().endswith((".mp3", ".wav", ".ogg")):
             graph = f"[0:a]showwaves=s={w}x{h}:mode=cline:rate={fps}:colors=white,format=gray[v]"
-            cmd = [ffmpeg, "-v", "error", "-i", path, "-filter_complex", graph,
+            cmd = [ffmpeg, "-nostdin", "-v", "error", "-i", path, "-filter_complex", graph,
                    "-map", "[v]", "-f", "rawvideo", "-pix_fmt", "gray", "-"]
         else:
-            cmd = [ffmpeg, "-v", "error", "-i", path, "-vf",
+            cmd = [ffmpeg, "-nostdin", "-v", "error", "-i", path, "-vf",
                    f"fps={fps},crop='min(iw,ih)':'min(iw,ih)',scale={w}:{h}:flags=area,format=gray",
-                   "-f", "rawvideo", "-"]
-        raw = subprocess.run(cmd, capture_output=True, check=True).stdout
-        return [{(k % w, k // w) for k, px in enumerate(raw[i * w * h:(i + 1) * w * h]) if px >= 128}
-                for i in range(len(raw) // (w * h))]
+                   "-f", "rawvideo", "-pix_fmt", "gray", "-"]
+        proc = await asyncio.create_subprocess_exec(
+            *cmd, stdin=asyncio.subprocess.DEVNULL, stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE)
+        stderr_task = asyncio.create_task(proc.stderr.read())
+        frame_size = w * h
+        try:
+            while True:
+                try:
+                    raw = await asyncio.wait_for(proc.stdout.readexactly(frame_size), timeout=60)
+                except asyncio.IncompleteReadError as e:
+                    if e.partial:
+                        raise RuntimeError("ffmpeg returned an incomplete sign frame")
+                    break
+                yield {(k % w, k // w) for k, px in enumerate(raw) if px >= 128}
+            return_code = await proc.wait()
+            error = (await stderr_task).decode("utf-8", errors="replace").strip()
+            if return_code:
+                raise RuntimeError(error or f"ffmpeg exited with code {return_code}")
+        except asyncio.TimeoutError as e:
+            raise RuntimeError("ffmpeg timed out while decoding a sign frame") from e
+        finally:
+            if proc.returncode is None:
+                proc.kill()
+                await proc.wait()
+            if not stderr_task.done():
+                await stderr_task
     SIGN = "1x1x2_textSign"
 
     def sign_text(lit, w, h, plain):
@@ -2261,23 +2284,29 @@ async def cmd_run(a):
         w, h, fps = asg["w"], asg["h"], asg["fps"]
         try:
             path = find_video(None)
-            key = (path, w, h, fps)
-            if key not in asg["frames"]:
-                print("\napplesign: converting the video...")
-                asg["frames"][key] = await asyncio.to_thread(decode_sign_frames, path, w, h, fps)
-            frames = asg["frames"][key]
+            if not path or not os.path.isfile(path):
+                raise FileNotFoundError("Bad Apple video was not found")
+            print("\napplesign: decoding and animating the video...")
             start = time.monotonic() + 0.3
 
             async def animate_sign():
-                for i, lit in enumerate(frames):
-                    if asg["stop"] or not asg["signs"]:
-                        break
-                    txt = sign_text(lit, w, h, asg["plain"])
-                    for c in list(asg["signs"]):
-                        await sign_say(c, txt, asg["signs"][c]["owner"])
-                    delay = start + (i + 1) / fps - time.monotonic()
-                    if delay > 0:
-                        await asyncio.sleep(delay)
+                i = 0
+                frames = stream_sign_frames(path, w, h, fps)
+                try:
+                    async for lit in frames:
+                        if asg["stop"] or not asg["signs"]:
+                            break
+                        txt = sign_text(lit, w, h, asg["plain"])
+                        for c in list(asg["signs"]):
+                            await sign_say(c, txt, asg["signs"][c]["owner"])
+                        delay = start + (i + 1) / fps - time.monotonic()
+                        if delay > 0:
+                            await asyncio.sleep(delay)
+                        i += 1
+                finally:
+                    await frames.aclose()
+                if not i and not asg["stop"]:
+                    raise RuntimeError("ffmpeg produced no sign frames")
 
             await animate_sign()
         except Exception as e:
