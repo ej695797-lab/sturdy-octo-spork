@@ -330,12 +330,15 @@ async def handle_refresh_account_online(body: dict) -> dict:
 
 async def handle_try_redeem_currency_stash(body: dict) -> dict:
     account_id = str(body.get("accountID") or body.get("accountId") or "")
-    stash_id = str(body.get("stashID") or body.get("stashId") or body.get("currencyStashID")
-                    or body.get("currencyStashId") or body.get("stashKey") or "").strip()
+    room_key = str(body.get("roomKey") or "").strip()
+    stash_key = str(body.get("stashID") or body.get("stashId") or body.get("currencyStashID")
+                     or body.get("currencyStashId") or body.get("stashKey") or "").strip()
     invalid = []
     if not account_id.startswith("o_") or len(account_id) > 80:
         invalid.append("account_id")
-    if not stash_id or len(stash_id) > 120:
+    if not room_key or len(room_key) > 120:
+        invalid.append("room_key")
+    if not stash_key or len(stash_key) > 120:
         invalid.append("stash_id")
     if invalid:
         fields = {str(key): type(value).__name__ for key, value in body.items()
@@ -343,6 +346,7 @@ async def handle_try_redeem_currency_stash(body: dict) -> dict:
         print(f"[stash] rejected ({','.join(invalid)}); request fields/types={fields}")
         return {"success": 0, "newCurrency": 0, "currencyAmount": 0}
 
+    stash_id = f"room:{room_key}:{stash_key}"
     from pymongo import ReturnDocument
     updated = await accounts.find_one_and_update(
         {"accountID": account_id, "redeemedStashIDs": {"$ne": stash_id}},
