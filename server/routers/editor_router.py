@@ -1135,9 +1135,9 @@ async def ban_player(account_id: str, request: Request):
 
 
 @router.post("/api/player/{account_id}/unban")
-async def unban_player(account_id: str):
+async def unban_player(account_id: str, request: Request):
     doc = await accounts.find_one({"accountID": account_id},
-                                  {"_id": 0, "displayName": 1})
+                                  {"_id": 0, "displayName": 1, "deviceKeys": 1})
     if not doc:
         raise HTTPException(status_code=404, detail="Account not found")
     who = _authed_name(request) or "?"
@@ -1148,8 +1148,7 @@ async def unban_player(account_id: str):
                                         "banExpireTimestamp": "", "banCategory": "",
                                         "shadowBanned": 0, "shouldForceRefresh": 1}})
     from services.device_bans import unban_devices
-    _ud = await accounts.find_one({"accountID": account_id}, {"_id": 0, "deviceKeys": 1})
-    await unban_devices((_ud or {}).get("deviceKeys") or [])
+    await unban_devices(doc.get("deviceKeys") or [])
     await _discord_notify(f"**{who}** unbanned **{doc.get('displayName') or account_id}** (`{account_id}`)")
     return JSONResponse(content={"ok": True})
 
