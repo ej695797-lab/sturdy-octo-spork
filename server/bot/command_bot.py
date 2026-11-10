@@ -2202,9 +2202,9 @@ async def cmd_run(a):
         pixels = "\n".join("".join("_" if (x, y) in lit else "#" for x in range(w)) for y in range(h))
         return f"<size=10>{pixels}</size>"
 
-    async def sign_say(cell, text):
+    async def sign_say(cell, text, owner):
         x, y, z = cell
-        await bot.rpc(bot.view_id, "RpcSimpleCustomMapObjectMessage", [SIGN, x, y, z, f"{account}|{text}"],
+        await bot.rpc(bot.view_id, "RpcSimpleCustomMapObjectMessage", [SIGN, x, y, z, f"{owner}|{text}"],
                       receivers=pun.RECV_OTHERS)
 
     def on_sign_pick(code, sender, data):
@@ -2243,7 +2243,10 @@ async def cmd_run(a):
             return
         if asg["signs"]:
             return
-        asg["signs"][cell] = {"original_text": ""}
+        owner = str(a_[7]) if len(a_) > 7 and str(a_[7]).startswith("o_") else acct_of(sender)
+        if not owner:
+            owner = aid
+        asg["signs"][cell] = {"original_text": "", "owner": owner}
         asyncio.get_running_loop().create_task(start_sign_play())
 
     bot.handlers.append(on_sign_pick)
@@ -2290,7 +2293,7 @@ async def cmd_run(a):
                         break
                     txt = sign_text(lit, w, h, asg["plain"])
                     for c in list(asg["signs"]):
-                        await sign_say(c, txt)
+                        await sign_say(c, txt, asg["signs"][c]["owner"])
                     delay = start + (i + 1) / fps - time.monotonic()
                     if delay > 0:
                         await asyncio.sleep(delay)
@@ -2315,7 +2318,7 @@ async def cmd_run(a):
                 ensure_avatar(t0)
             for c, entry in list(asg["signs"].items()):
                 try:
-                    await sign_say(c, entry["original_text"])
+                    await sign_say(c, entry["original_text"], entry["owner"])
                 except Exception as e:
                     print(f"applesign: couldn't restore sign at {c} ({e!r})")
             asg["task"] = None
