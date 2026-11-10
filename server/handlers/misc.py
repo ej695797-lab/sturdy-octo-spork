@@ -16,6 +16,8 @@ from services.property_defaults import default_for_property
 from services.build_gate import current_status, outdated_message
 from services.kick import DEFAULT_KICK_REASON
 
+CURRENCY_STASH_REWARD = 920
+
 
 async def handle_fetch_account_datas(body: dict) -> dict:
     """
@@ -330,20 +332,11 @@ async def handle_try_redeem_currency_stash(body: dict) -> dict:
     account_id = str(body.get("accountID") or body.get("accountId") or "")
     stash_id = str(body.get("stashID") or body.get("stashId") or body.get("currencyStashID")
                     or body.get("currencyStashId") or body.get("stashKey") or "").strip()
-    raw_amount = next((body[key] for key in
-                       ("currencyAmount", "currencyValue", "stashAmount", "rewardAmount", "amount")
-                       if body.get(key) is not None), 0)
-    try:
-        amount = int(raw_amount)
-    except (TypeError, ValueError):
-        amount = 0
     invalid = []
     if not account_id.startswith("o_") or len(account_id) > 80:
         invalid.append("account_id")
     if not stash_id or len(stash_id) > 120:
         invalid.append("stash_id")
-    if amount <= 0 or amount > 100_000:
-        invalid.append("amount")
     if invalid:
         fields = {str(key): type(value).__name__ for key, value in body.items()
                   if not str(key).startswith("_")}
@@ -353,12 +346,13 @@ async def handle_try_redeem_currency_stash(body: dict) -> dict:
     from pymongo import ReturnDocument
     updated = await accounts.find_one_and_update(
         {"accountID": account_id, "redeemedStashIDs": {"$ne": stash_id}},
-        {"$inc": {"currency": amount}, "$addToSet": {"redeemedStashIDs": stash_id}},
+        {"$inc": {"currency": CURRENCY_STASH_REWARD}, "$addToSet": {"redeemedStashIDs": stash_id}},
         projection={"_id": 0, "currency": 1},
         return_document=ReturnDocument.AFTER,
     )
     if updated:
-        return {"success": 1, "newCurrency": int(updated.get("currency") or 0), "currencyAmount": amount}
+        return {"success": 1, "newCurrency": int(updated.get("currency") or 0),
+                "currencyAmount": CURRENCY_STASH_REWARD}
 
     account = await accounts.find_one({"accountID": account_id},
                                        {"_id": 0, "currency": 1, "redeemedStashIDs": 1})
