@@ -18,7 +18,6 @@ import time
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 
-from bot.actions import ITEM_CATALOG
 from photon import pun
 from photon.client import (NAME_SERVER, OP_AUTHENTICATE, OP_JOIN_ROOM, OP_RAISE_EVENT,
                            P_ACTOR_LIST, P_ACTOR_NR, P_ADDRESS, P_BROADCAST, P_CODE, P_DATA,
@@ -712,8 +711,6 @@ is enough). Leave NAME out and it means you.
   rain clean                remove every block the rain left
   fingergun [NAME]          finger gun + pull the trigger = explosive shot
   fingergun off [NAME]      take it from everyone / from one player
-  itemgun ITEM_ID           tracked player's finger gun shoots that confirmed item
-  itemgun off               stop the item-spawner gun
   fly [NAME] / fly off      hold the right trigger and point the right controller to fly
   lightning [NAME]          the finger gun shoots LIGHTNING (storm cloud, jagged bolt, blast)
   freeze [NAME]             the finger gun shoots an ICE shard: a 3x3x3 outline cage + freeze grenades for 15 s
@@ -744,6 +741,10 @@ is enough). Leave NAME out and it means you.
   screen [small]            then place a 1x1 pillow: that block is the bottom-middle
                             of the screen, which grows up and sideways, facing into the room
   screen off                remove the screen
+  pixelart                  place uploaded image as a pillow mosaic; place a 1x1 marker
+  pixelart off              remove the pixel-art mosaic
+  soundkey                  play uploaded audio through the bot's Photon voice connection
+  soundkey off              stop SoundKey playback
   tetris [big] / snake [big]  place a 1x1 pillow for the board (bottom-middle), then
                             another for the controller; grab the coloured blocks to play
                             tetris: a row (left, rotate, right, drop)
@@ -1580,8 +1581,6 @@ async def cmd_run(a):
     # --- buttcoins: real game items, orbiting a player / a planet in the sky ----
     co = {"items": {}, "orbit": None, "orbit_n": 3, "orbit_r": 1.3, "planet": None, "t0": time.monotonic(),
           "tick": 0}
-    item_gun = {"actor": None, "item_key": None, "items": {}}
-    track(item_gun, "actor")
     track(co, "orbit")
     ZERO, IDENT = pun.Vector3(), pun.Quaternion(1, 0, 0, 0)
 
@@ -1597,35 +1596,6 @@ async def cmd_run(a):
                       receivers=pun.RECV_OTHERS)
         co["items"][iid] = {"key": key, "pos": pos, "kind": kind}
         return iid
-
-    async def itemgun_spawn(key, pos, direction):
-        now = time.monotonic()
-        for old_id, entry in list(item_gun["items"].items()):
-            if now - entry["created"] >= 45:
-                try:
-                    await bot.rpc(bot.view_id, "RpcDestroyItem", [old_id], receivers=pun.RECV_OTHERS)
-                except Exception as exc:
-                    print(f"item gun: couldn't clean up {old_id}: {exc!r}")
-                item_gun["items"].pop(old_id, None)
-        if key not in ITEM_CATALOG:
-            print(f"item gun: refused unknown item ID {key!r}")
-            return
-        if len(item_gun["items"]) >= 24:
-            print("item gun: 24 active items; wait for older items to expire")
-            return
-        iid = rand_id()
-        velocity = direction * 7.0
-        try:
-            await bot.rpc(bot.view_id, "RpcCreateItem",
-                          [iid, key, 0, None, pos, IDENT, velocity, ZERO,
-                           TypedArray(ord("s"), []), Byte(1), Byte(1)], receivers=pun.RECV_OTHERS)
-            await bot.rpc(bot.view_id, "RpcItemTransformation",
-                          [user_id, iid, 1, None, pos, IDENT, velocity, ZERO], receivers=pun.RECV_OTHERS)
-        except Exception as exc:
-            print(f"item gun: failed to spawn {key}: {exc!r}")
-            return
-        item_gun["items"][iid] = {"key": key, "created": now}
-        print(f"item gun: spawned {key} ({iid})")
 
     async def item_move(iid, pos, rot):
         await bot.rpc(bot.view_id, "RpcItemTransformation", [user_id, iid, 1, None, pos, rot, ZERO, ZERO],
@@ -1644,8 +1614,6 @@ async def cmd_run(a):
             r = pun.decode_rpc(data)
             if r and r["method"] == "RpcDestroyItem" and r["args"] and r["args"][0] in co["items"]:
                 co["items"].pop(r["args"][0], None)
-            if r and r["method"] == "RpcDestroyItem" and r["args"]:
-                item_gun["items"].pop(r["args"][0], None)
 
     bot.handlers.append(on_item_gone)
 
@@ -2034,6 +2002,160 @@ async def cmd_run(a):
                 ap["screen"] = None
             return
         print("screen ready - type apple to play on it, 'screen off' to remove it\nbot> ", end="", flush=True)
+
+    pixel_art = {"pick": None, "lay": None, "shown": set()}
+    pixel_palette = {
+        "black": (10, 10, 10), "gray_dark": (65, 65, 65), "gray": (135, 135, 135),
+        "white": (245, 245, 245), "red_dark": (125, 35, 40), "red": (220, 55, 60),
+        "orange": (245, 125, 40), "yellow": (245, 220, 55), "green_dark": (45, 105, 55),
+        "green": (55, 170, 75), "cyan": (45, 175, 190), "blue_dark": (45, 70, 145),
+        "blue": (65, 115, 220), "purple": (135, 70, 190), "pink": (230, 115, 175),
+        "brown": (130, 85, 55),
+    }
+
+    def marker_layout(marker, size):
+        DX, DY, DZ = bot.room_dims
+        mx, my, mz = marker
+        walls = [(DZ - 1 - mz, "z", 1), (mz, "z", -1), (DX - 1 - mx, "x", 1), (mx, "x", -1)]
+        _, axis, s = min(walls)
+        cu = mx if axis == "z" else mz
+        plane = mz if axis == "z" else mx
+        return make_layout(axis, s, cu, my, plane, size)
+
+    def pixel_art_colors(path, max_w, max_h):
+        from PIL import Image
+        with Image.open(path) as source:
+            source = source.convert("RGB")
+            scale = min(max_w / source.width, max_h / source.height, 1.0)
+            width = max(1, round(source.width * scale))
+            height = max(1, round(source.height * scale))
+            source = source.resize((width, height), Image.Resampling.LANCZOS)
+            pixels = list(source.getdata())
+        palette = list(pixel_palette.items())
+        return width, height, [
+            min(palette, key=lambda entry: sum((pixel[i] - entry[1][i]) ** 2 for i in range(3)))[0]
+            for pixel in pixels
+        ]
+
+    async def remove_pixel_art():
+        lay = pixel_art["lay"]
+        if not lay:
+            pixel_art["shown"].clear()
+            return
+        for cell in list(pixel_art["shown"]):
+            await take(cell, lay["pattern"])
+            pixel_art["shown"].discard(cell)
+            await asyncio.sleep(0.004)
+        await remove_screen(lay)
+        pixel_art["lay"] = None
+
+    async def pixel_art_at(marker, marker_pattern):
+        await asyncio.sleep(0.3)
+        if marker_pattern:
+            await take(marker, marker_pattern)
+        live.cells.discard(marker)
+        if pixel_art["lay"]:
+            await remove_pixel_art()
+        DX, DY, DZ = bot.room_dims
+        path = os.getenv("YEEPS_PIXEL_ART_IMAGE", "")
+        if not path or not os.path.isfile(path):
+            print("pixel art: uploaded image is no longer available")
+            return
+        max_w = max(1, min(32, DX - 4, DZ - 4))
+        max_h = max(1, min(24, DY - 4))
+        try:
+            width, height, colors = pixel_art_colors(path, max_w, max_h)
+        except Exception as exc:
+            print(f"pixel art: couldn't read the uploaded image ({exc!r})")
+            return
+        lay = marker_layout(marker, (1, width, height, 0))
+        pixel_art["lay"] = lay
+        print(f"\npixel art: building {width}x{height} pillow image...")
+        try:
+            await build_board(lay)
+            cells = lay["pix"]
+            for index, color in enumerate(colors):
+                if color == "black":
+                    continue
+                cell = cells[(index % width, index // width)]
+                await put(cell, color, lay["pattern"])
+                pixel_art["shown"].add(cell)
+                if len(pixel_art["shown"]) % 40 == 0:
+                    await asyncio.sleep(0.15)
+        except Exception as exc:
+            print(f"pixel art: construction failed ({exc!r}); removing partial image")
+            await remove_pixel_art()
+            return
+        print("pixel art ready - use 'pixelart off' to remove it")
+
+    def on_pixel_art_pick(code, sender, data):
+        pk = pixel_art["pick"]
+        if not pk or code != pun.EV_RPC or sender != pk["actor"]:
+            return
+        r = pun.decode_rpc(data)
+        if not r or r["method"] != "RpcMapObjectCreated" or len(r["args"]) < 4 \
+                or not str(r["args"][0]).startswith("1x1_"):
+            return
+        pixel_art["pick"] = None
+        marker = (int(r["args"][1]), int(r["args"][2]), int(r["args"][3]))
+        asyncio.get_running_loop().create_task(pixel_art_at(marker, str(r["args"][0])))
+
+    bot.handlers.append(on_pixel_art_pick)
+
+    soundkey = {"task": None, "stop": False, "voice": None}
+
+    async def soundkey_play(target):
+        voice = None
+        try:
+            path = os.getenv("YEEPS_SOUNDKEY_AUDIO", "")
+            if not path or not os.path.isfile(path) or not os.path.getsize(path):
+                print("soundkey: uploaded audio is not available")
+                return
+            print("soundkey: preparing uploaded audio...")
+            from photon.voice import opus_packets, VoiceSender
+            packets = await asyncio.to_thread(opus_packets, path, os.path.join(HERE, "media"))
+            if not packets:
+                print("soundkey: audio contains no playable packets")
+                return
+            await bot.spawn_speaker()
+            await strip_cosmetics()
+            pose = bot.pose_of(target)
+            spot = pose[0] + pun.Vector3(0, 0.6, 0) if pose else pun.Vector3(0, -2, 0)
+            park_avatar(spot)
+            state["speaker"] = spot
+            voice = VoiceSender(cur["room"], bot.actor * 1000 + 2, a.name)
+            soundkey["voice"] = voice
+            await voice.connect()
+            await asyncio.sleep(1.0)
+            print("soundkey: playing uploaded audio")
+            await voice.play(packets, time.monotonic() + 0.3, stop=lambda: soundkey["stop"])
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            print(f"soundkey: playback failed ({exc!r})")
+        finally:
+            if voice:
+                try:
+                    await voice.close()
+                except Exception as exc:
+                    print(f"soundkey: voice disconnect failed ({exc!r})")
+            soundkey["voice"] = None
+            soundkey["task"] = None
+            soundkey["stop"] = False
+            state["speaker"] = None
+            state["last"] = None
+            tracked = bot.actor_by_name(who)
+            if tracked is not None:
+                ensure_avatar(tracked)
+
+    async def soundkey_stop():
+        soundkey["stop"] = True
+        task = soundkey["task"]
+        if task:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+        soundkey["task"] = None
+        soundkey["stop"] = False
 
     # --- Bad Apple text animation on the first sign the followed player places ---
     # The sign drops messages longer than about 60 characters. Keep the 5-line
@@ -4289,11 +4411,7 @@ async def cmd_run(a):
                 n = math.sqrt(d.x * d.x + d.y * d.y + d.z * d.z) or 1.0
                 d = d * (1 / n)
                 mode = st.get("mode", "gun")
-                if mode == "item":
-                    key = st.get("item_key")
-                    if key and sender == item_gun["actor"] and key == item_gun["item_key"]:
-                        asyncio.get_running_loop().create_task(itemgun_spawn(key, hand_p + d * 1.0, d))
-                elif mode in ("lightning", "freeze", "scare"):
+                if mode in ("lightning", "freeze", "scare"):
                     if time.monotonic() < st["cd"]:
                         continue                           # still recharging
                     st["cd"] = time.monotonic() + {"lightning": 1.2, "freeze": 1.6, "scare": 3.0}[mode]
@@ -7533,23 +7651,6 @@ async def cmd_run(a):
                                       for a_ in fg["accts"] for x in [next((k for k, pr in bot.actors.items()
                                       if isinstance(pr, dict) and str(pr.get(253, "")).startswith(a_ + "$")), None)])
                     print(f"finger gun ON for {pname(t)} (has it now: {names})")
-                elif cmd == "itemgun":
-                    if off:
-                        if item_gun["actor"] is not None:
-                            fg["accts"].pop(acct_of(item_gun["actor"]), None)
-                        item_gun.update(actor=None, item_key=None)
-                        print("item spawner gun off")
-                        continue
-                    key = args[0] if args else ""
-                    if key not in ITEM_CATALOG:
-                        print("choose one of the confirmed item IDs from the editor's item list"); continue
-                    t = bot.actor_by_name(who)
-                    if t is None:
-                        print("can't find the tracked player in this room"); continue
-                    item_gun.update(actor=t, item_key=key)
-                    fg["accts"][acct_of(t)] = fg_state("item")
-                    fg["accts"][acct_of(t)]["item_key"] = key
-                    print(f"item spawner gun ON for {pname(t)}: {key}")
                 elif cmd in ("coins", "coin", "buttcoin", "buttcoins"):
                     sub = args[0].lower() if args else ""
                     if sub == "off":
@@ -7725,6 +7826,35 @@ async def cmd_run(a):
                     if tk["on"]:
                         print("talk is already on"); continue
                     await talk_start()
+                elif cmd == "pixelart":
+                    if off:
+                        pixel_art["pick"] = None
+                        await remove_pixel_art()
+                        print("pixel art removed"); continue
+                    path = os.getenv("YEEPS_PIXEL_ART_IMAGE", "")
+                    if not path or not os.path.isfile(path):
+                        print("upload an image in the editor's Bot tab first"); continue
+                    t0, _ = hooked(args)
+                    if t0 is None:
+                        print("no player to place the marker for"); continue
+                    pixel_art["pick"] = {"actor": t0}
+                    print("place a 1x1 pillow where the BOTTOM-MIDDLE of the pixel art should go")
+                elif cmd == "soundkey":
+                    if off:
+                        await soundkey_stop()
+                        print("soundkey stopped"); continue
+                    if soundkey["task"]:
+                        print("soundkey is already playing - use 'soundkey off' first"); continue
+                    if ap["task"]:
+                        print("stop Bad Apple before starting SoundKey audio"); continue
+                    path = os.getenv("YEEPS_SOUNDKEY_AUDIO", "")
+                    if not path or not os.path.isfile(path):
+                        print("upload audio in the editor's Bot tab first"); continue
+                    t0, _ = hooked(args)
+                    if t0 is None or not bot.pose_of(t0):
+                        print("no player to play SoundKey for"); continue
+                    soundkey["stop"] = False
+                    soundkey["task"] = asyncio.create_task(soundkey_play(t0))
                 elif cmd == "screen":
                     if off:
                         ap["pick"] = None
@@ -7908,11 +8038,18 @@ async def cmd_run(a):
         rain_task.cancel()
         fx_task.cancel()
         coin_task.cancel()
+        soundkey["stop"] = True
+        if soundkey["task"]:
+            soundkey["task"].cancel()
+            await asyncio.gather(soundkey["task"], return_exceptions=True)
         if ap["task"]:
             ap["task"].cancel()
         try:
+            if soundkey["voice"]:
+                await soundkey["voice"].close()
             if ap["voice"]:
                 await ap["voice"].close()
+            await remove_pixel_art()
             if ap.get("playing"):
                 await remove_screen(ap["playing"])
             if ap["screen"]:

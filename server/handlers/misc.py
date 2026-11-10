@@ -39,6 +39,9 @@ async def handle_fetch_account_datas(body: dict) -> dict:
     for tid in target_ids:
         from services.account_privacy import public_view
         doc = public_view(await accounts.find_one({"accountID": tid}, {"_id": 0}) or {})
+        if "roleKeys" in doc:
+            from services.moderator_roles import client_role_keys
+            doc["roleKeys"] = client_role_keys(tid, doc.get("roleKeys"))
         if not doc and _V2:
             # Unknown account (e.g. a community-world builder): resolve the real
             # name straight from Yeeps (fetchAccountDatas, same as 1.31's
@@ -324,11 +327,37 @@ async def handle_refresh_account_online(body: dict) -> dict:
 
 
 async def handle_try_redeem_currency_stash(body: dict) -> dict:
-    return {
-        "success": 1,
-        "newCurrency": 0,
-        "currencyAmount": 0,
-    }
+    account_id = str(body.get("accountID") or body.get("accountId") or "")
+    stash_id = str(body.get("stashID") or body.get("stashId") or body.get("currencyStashID")
+                    or body.get("currencyStashId") or body.get("stashKey") or "").strip()
+    raw_amount = next((body[key] for key in
+                       ("currencyAmount", "currencyValue", "stashAmount", "rewardAmount", "amount")
+                       if body.get(key) is not None), 0)
+    try:
+        amount = int(raw_amount)
+    except (TypeError, ValueError):
+        amount = 0
+    if not account_id.startswith("o_") or len(account_id) > 80 or not stash_id or len(stash_id) > 120 \
+            or amount <= 0 or amount > 100_000:
+        return {"success": 0, "newCurrency": 0, "currencyAmount": 0}
+
+    from pymongo import ReturnDocument
+    updated = await accounts.find_one_and_update(
+        {"accountID": account_id, "redeemedStashIDs": {"$ne": stash_id}},
+        {"$inc": {"currency": amount}, "$addToSet": {"redeemedStashIDs": stash_id}},
+        projection={"_id": 0, "currency": 1},
+        return_document=ReturnDocument.AFTER,
+    )
+    if updated:
+        return {"success": 1, "newCurrency": int(updated.get("currency") or 0), "currencyAmount": amount}
+
+    account = await accounts.find_one({"accountID": account_id},
+                                       {"_id": 0, "currency": 1, "redeemedStashIDs": 1})
+    if not account:
+        return {"success": 0, "newCurrency": 0, "currencyAmount": 0}
+    if stash_id in (account.get("redeemedStashIDs") or []):
+        return {"success": 1, "newCurrency": int(account.get("currency") or 0), "currencyAmount": 0}
+    return {"success": 0, "newCurrency": int(account.get("currency") or 0), "currencyAmount": 0}
 
 
 async def handle_put_player_status(body: dict) -> dict:

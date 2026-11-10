@@ -12,7 +12,8 @@ import threading
 import time
 from pathlib import Path
 
-from bot.actions import ACTION_COMMANDS, ITEM_ACTIONS, MEDIA_ACTIONS, command_for
+from bot.actions import (ACTION_COMMANDS, MEDIA_ACTIONS, PIXEL_ART_ACTIONS, SOUNDKEY_ACTIONS,
+                         command_for)
 from config import BOT_KEY
 
 SERVER_DIR = Path(__file__).resolve().parent.parent
@@ -37,6 +38,10 @@ class BotManager:
         self.log: list[str] = []
         self._audio_path = ""
         self._audio_ready = False
+        self._pixel_art_path = ""
+        self._pixel_art_ready = False
+        self._soundkey_path = ""
+        self._soundkey_ready = False
 
     def available(self) -> tuple[bool, str]:
         if not BOT_KEY:
@@ -88,9 +93,9 @@ class BotManager:
                 with self._lock:
                     self.error = self.log[-1].split(" ", 1)[-1] if self.log else f"bot exited ({code})"
 
-    def _new_media_file(self, data: bytes = b"", ext: str = "mp3") -> str:
-        suffix = ".mp4" if ext == "mp4" else ".mp3"
-        with tempfile.NamedTemporaryFile(prefix="yeeper-bad-apple-", suffix=suffix, delete=False) as audio:
+    def _new_media_file(self, data: bytes = b"", ext: str = "mp3", prefix: str = "yeeper-bad-apple-") -> str:
+        suffix = "." + ext if ext in {"mp3", "mp4", "wav", "ogg", "m4a", "png"} else ".bin"
+        with tempfile.NamedTemporaryFile(prefix=prefix, suffix=suffix, delete=False) as audio:
             audio.write(data)
             return audio.name
 
@@ -105,6 +110,28 @@ class BotManager:
             except OSError as exc:
                 self._note(f"couldn't remove temporary Bad Apple audio: {exc}")
 
+    def _remove_pixel_art_file(self) -> None:
+        path, self._pixel_art_path = self._pixel_art_path, ""
+        self._pixel_art_ready = False
+        if path:
+            try:
+                os.unlink(path)
+            except FileNotFoundError:
+                pass
+            except OSError as exc:
+                self._note(f"couldn't remove temporary pixel-art image: {exc}")
+
+    def _remove_soundkey_file(self) -> None:
+        path, self._soundkey_path = self._soundkey_path, ""
+        self._soundkey_ready = False
+        if path:
+            try:
+                os.unlink(path)
+            except FileNotFoundError:
+                pass
+            except OSError as exc:
+                self._note(f"couldn't remove temporary SoundKey audio: {exc}")
+
     def set_media(self, data: bytes, ext: str = "mp3") -> bool:
         with self._lock:
             if self._audio_path:
@@ -117,8 +144,29 @@ class BotManager:
                     audio.write(data)
         return False
 
+    def set_pixel_art(self, data: bytes) -> None:
+        with self._lock:
+            if self._pixel_art_path:
+                with open(self._pixel_art_path, "wb") as image:
+                    image.write(data)
+            self._pixel_art_ready = bool(data)
+
+    def set_soundkey(self, data: bytes, ext: str = "mp3") -> bool:
+        with self._lock:
+            if self._soundkey_path:
+                expected_suffix = "." + ext
+                if Path(self._soundkey_path).suffix != expected_suffix:
+                    self._note("uploaded SoundKey audio type changed; stop and restart the bot to load it")
+                    return True
+                with open(self._soundkey_path, "wb") as audio:
+                    audio.write(data)
+            self._soundkey_ready = bool(data)
+        return False
+
     def start(self, *, target: str, target_name: str, room: str,
-              media_data: bytes = b"", media_ext: str = "mp3") -> dict:
+              media_data: bytes = b"", media_ext: str = "mp3",
+              pixel_art_data: bytes = b"", soundkey_data: bytes = b"",
+              soundkey_ext: str = "mp3") -> dict:
         available, reason = self.available()
         if not available:
             with self._lock:
@@ -138,12 +186,23 @@ class BotManager:
             if old_process is not None and old_process.poll() is None:
                 self._stop_process(old_process)
             self._remove_audio_file()
+            self._remove_pixel_art_file()
+            self._remove_soundkey_file()
             try:
                 self._audio_path = self._new_media_file(media_data, media_ext)
                 self._audio_ready = bool(media_data)
+                self._pixel_art_path = (self._new_media_file(pixel_art_data, "png", "yeeper-pixel-art-")
+                                        if pixel_art_data else "")
+                self._pixel_art_ready = bool(pixel_art_data)
+                self._soundkey_path = (self._new_media_file(soundkey_data, soundkey_ext, "yeeper-soundkey-")
+                                       if soundkey_data else "")
+                self._soundkey_ready = bool(soundkey_data)
             except OSError as exc:
+                self._remove_audio_file()
+                self._remove_pixel_art_file()
+                self._remove_soundkey_file()
                 with self._lock:
-                    self.error = f"couldn't prepare Bad Apple audio: {exc}"
+                    self.error = f"couldn't prepare bot media: {exc}"
                 return {"ok": False, **self.status()}
 
             env = os.environ.copy()
@@ -155,6 +214,8 @@ class BotManager:
             env["PYTHONPATH"] = str(SERVER_DIR) + os.pathsep + env.get("PYTHONPATH", "")
             env["PYTHONUNBUFFERED"] = "1"
             env["YEEPS_BAD_APPLE_MEDIA"] = self._audio_path
+            env["YEEPS_PIXEL_ART_IMAGE"] = self._pixel_art_path
+            env["YEEPS_SOUNDKEY_AUDIO"] = self._soundkey_path
             command = [
                 sys.executable, "-u", "-m", "bot.command_bot",
                 "--name", "YeeperBot", "--bot-id", str(BOT_ID),
@@ -176,6 +237,8 @@ class BotManager:
                 )
             except OSError as exc:
                 self._remove_audio_file()
+                self._remove_pixel_art_file()
+                self._remove_soundkey_file()
                 with self._lock:
                     self.error = f"couldn't start the bot: {exc}"
                 return {"ok": False, **self.status()}
@@ -227,6 +290,8 @@ class BotManager:
                 self.target_name = ""
                 self.room = ""
                 self._remove_audio_file()
+                self._remove_pixel_art_file()
+                self._remove_soundkey_file()
             return {"ok": True, **self.status()}
 
     def action(self, action: str, target_name: str = "", item_id: str = "") -> dict:
@@ -234,11 +299,13 @@ class BotManager:
             return {"ok": False, "error": "Unknown bot action"}
         if action in MEDIA_ACTIONS and not (self._audio_ready or BAD_APPLE_VIDEO.is_file()):
             return {"ok": False, "error": "Upload an MP3 or MP4 in the Bot tab to enable Bad Apple"}
-        command = command_for(action, target_name, item_id)
+        if action in PIXEL_ART_ACTIONS and not self._pixel_art_ready:
+            return {"ok": False, "error": "Upload an image in the Bot tab to enable pixel art"}
+        if action in SOUNDKEY_ACTIONS and not self._soundkey_ready:
+            return {"ok": False, "error": "Upload audio in the Bot tab to enable SoundKey playback"}
+        command = command_for(action, target_name)
         if command is None:
-            message = "Choose an item from the confirmed item list" if action in ITEM_ACTIONS \
-                else "Choose a player for this action"
-            return {"ok": False, "error": message}
+            return {"ok": False, "error": "Choose a player for this action"}
         with self._lock:
             process = self._process
             if process is None or process.poll() is not None:
@@ -270,6 +337,9 @@ class BotManager:
                 "room": self.room,
                 "badAppleAvailable": self._audio_ready or BAD_APPLE_VIDEO.is_file(),
                 "badAppleType": Path(self._audio_path).suffix.lstrip(".") if self._audio_ready else "",
+                "pixelArtAvailable": self._pixel_art_ready,
+                "soundKeyAvailable": self._soundkey_ready,
+                "soundKeyType": Path(self._soundkey_path).suffix.lstrip(".") if self._soundkey_ready else "",
                 "log": list(self.log[-60:]),
             }
 

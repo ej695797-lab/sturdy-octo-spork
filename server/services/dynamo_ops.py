@@ -375,6 +375,19 @@ async def _get_fallback_doc(table_name: str, query: dict, attrs=None) -> dict:
     return None
 
 
+async def _room_item_restrictions(table_name: str, doc: dict | None) -> dict | None:
+    if table_name != "G2_Rooms" or not isinstance(doc, dict):
+        return doc
+    from services.db import globals_col
+    setting = await globals_col.find_one({"key": "unrestricted_gameplay"}, {"_id": 0, "value": 1})
+    if not (setting or {}).get("value"):
+        return doc
+    doc = dict(doc)
+    doc["itemRestrictionsGroupKeys"] = []
+    doc["itemRestrictionsIsWhiteList"] = 0
+    return doc
+
+
 # shouldForceRefresh stickiness: the client polls this single attr every ~30s
 # and only reloads on a *persistent* 1 (serving 1 once then clearing let it
 # re-read a 0 mid-refresh and abort). We keep serving 1 until the client
@@ -415,6 +428,9 @@ def _role_locked_view(doc: dict) -> dict:
     if "ownedPatterns" not in doc and "roleKeys" not in doc:
         return doc
     doc = dict(doc)
+    if "roleKeys" in doc:
+        from services.moderator_roles import client_role_keys
+        doc["roleKeys"] = client_role_keys(doc.get("accountID", ""), doc.get("roleKeys"))
     owned, roles = role_locks.apply(doc.get("ownedPatterns"), doc.get("roleKeys"), doc.get("accountID", ""))
     if "ownedPatterns" in doc:
         doc["ownedPatterns"] = owned
@@ -485,6 +501,7 @@ async def handle_get_item(body: dict) -> tuple[str, dict]:
     # 2. Fallback logic
     if doc is None:
         doc = await _get_fallback_doc(table_name, query, requested_attrs)
+    doc = await _room_item_restrictions(table_name, doc)
     live_account = False
 
     # 3. Build item and post-process
@@ -582,6 +599,7 @@ async def handle_batch_get_item(body: dict) -> tuple[str, dict]:
             # Fallback logic
             if doc is None:
                 doc = await _get_fallback_doc(table_name, query, attrs_to_get)
+            doc = await _room_item_restrictions(table_name, doc)
             live = False
 
             if table_name == "G2_Globals" and query.get("key") in PRIVATE_GLOBAL_KEYS:

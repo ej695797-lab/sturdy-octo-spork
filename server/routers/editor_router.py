@@ -1468,25 +1468,37 @@ async def download_clear(request: Request):
 
 
 @router.get("/api/settings")
-async def get_settings():
+async def get_settings(request: Request):
+    if not _authed_name(request):
+        raise HTTPException(status_code=401, detail="unauthorized")
     from services.db import globals_col
     fe = await globals_col.find_one({"key": "friends_everyone"}, {"_id": 0, "value": 1})
     fatal = await globals_col.find_one({"key": "fatalError"}, {"_id": 0, "data": 1})
+    unrestricted = await globals_col.find_one({"key": "unrestricted_gameplay"}, {"_id": 0, "value": 1})
     return JSONResponse(content={"ok": True,
                                  "friends_everyone": bool((fe or {}).get("value", False)),
+                                 "unrestricted_gameplay": bool((unrestricted or {}).get("value", False)),
                                  "maintenance": (fatal or {}).get("data") or ""})
 
 
 @router.post("/api/settings")
 async def set_settings(request: Request):
-    """Body: {"friends_everyone": bool} and/or {"maintenance": "message" | ""}.
+    """Body: friends_everyone, unrestricted_gameplay and/or maintenance.
     A maintenance message is served as the game's global fatal error, so every
     client shows it instead of playing; "" turns it off."""
+    if not _authed_name(request):
+        raise HTTPException(status_code=401, detail="unauthorized")
     from services.db import globals_col
     try:
         body = await request.json()
     except Exception:
-        body = {}
+        raise HTTPException(status_code=400, detail="request body must be JSON")
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="request body must be an object")
+    if "friends_everyone" in body and not isinstance(body["friends_everyone"], bool):
+        raise HTTPException(status_code=400, detail="friends_everyone must be true or false")
+    if "unrestricted_gameplay" in body and not isinstance(body["unrestricted_gameplay"], bool):
+        raise HTTPException(status_code=400, detail="unrestricted_gameplay must be true or false")
     who = _authed_name(request) or "?"
     if "friends_everyone" in body:
         on = bool(body["friends_everyone"])
@@ -1498,6 +1510,14 @@ async def set_settings(request: Request):
         await globals_col.update_one({"key": "fatalError"},
                                      {"$set": {"key": "fatalError", "data": msg}}, upsert=True)
         await _discord_notify(f"**{who}** " + (f"turned ON maintenance: {msg}" if msg else "turned OFF maintenance"))
+    if "unrestricted_gameplay" in body:
+        on = body["unrestricted_gameplay"]
+        await globals_col.update_one(
+            {"key": "unrestricted_gameplay"},
+            {"$set": {"key": "unrestricted_gameplay", "value": on}},
+            upsert=True,
+        )
+        await _discord_notify(f"**{who}** turned unrestricted game-object permissions {'ON' if on else 'OFF'}")
     return JSONResponse(content={"ok": True})
 
 
@@ -1790,7 +1810,7 @@ _LOGIN_HTML = r"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Yeeps Editor — Sign in</title>
 <style>
-:root{color-scheme:dark}
+:root{color-scheme:dark;--accent:#8b5cf6;--accent-hover:#a78bfa}
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
   font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0d1117;color:#e6edf3}
@@ -1801,10 +1821,10 @@ p.sub{margin:0 0 20px;color:#8b949e;font-size:13px}
 label{display:block;font-size:12px;color:#8b949e;margin:14px 0 6px}
 input{width:100%;padding:11px 12px;border-radius:9px;border:1px solid #30363d;background:#0d1117;
   color:#e6edf3;font-size:15px}
-input:focus{outline:none;border-color:#2f81f7}
-button{width:100%;margin-top:20px;padding:12px;border:0;border-radius:9px;background:#238636;color:#fff;
+input:focus{outline:none;border-color:var(--accent)}
+button{width:100%;margin-top:20px;padding:12px;border:0;border-radius:9px;background:var(--accent);color:#fff;
   font-size:15px;font-weight:600;cursor:pointer}
-button:hover{background:#2ea043}
+button:hover{background:var(--accent-hover)}
 button:disabled{opacity:.6;cursor:default}
 .err{margin-top:14px;color:#f85149;font-size:13px;min-height:18px}
 </style></head><body>
@@ -1861,19 +1881,26 @@ async def _bot_target(account_id: str) -> dict:
 async def bot_status(request: Request):
     if not _authed_name(request):
         raise HTTPException(status_code=401, detail="unauthorized")
-    from bot.actions import ITEM_CATALOG
     from services.remote import bot_media
     from services.bot_manager import manager
     from services.discord_profile_bot import discord_profile_bot_status
-    media = await bot_media.find_one({"key": "bad_apple"}, {"_id": 0, "size": 1, "ext": 1})
+    media_docs = await bot_media.find(
+        {"key": {"$in": ["bad_apple", "pixel_art", "soundkey_audio"]}},
+        {"_id": 0, "key": 1, "size": 1, "ext": 1},
+    ).to_list(length=3)
+    media = {str(item.get("key")): item for item in media_docs}
     status = manager.status()
     return JSONResponse(content={
         "ok": True, **status,
-        "badAppleAvailable": bool(media) or status["badAppleAvailable"],
-        "badAppleSize": int((media or {}).get("size", 0)),
-        "badAppleType": (media or {}).get("ext", "mp3"),
+        "badAppleAvailable": bool(media.get("bad_apple")) or status["badAppleAvailable"],
+        "badAppleSize": int((media.get("bad_apple") or {}).get("size", 0)),
+        "badAppleType": (media.get("bad_apple") or {}).get("ext", "mp3"),
+        "pixelArtAvailable": bool(media.get("pixel_art")) or status["pixelArtAvailable"],
+        "pixelArtSize": int((media.get("pixel_art") or {}).get("size", 0)),
+        "soundKeyAvailable": bool(media.get("soundkey_audio")) or status["soundKeyAvailable"],
+        "soundKeySize": int((media.get("soundkey_audio") or {}).get("size", 0)),
+        "soundKeyType": (media.get("soundkey_audio") or {}).get("ext", ""),
         "discordBot": discord_profile_bot_status(),
-        "itemCatalog": [{"id": key, "name": label} for key, label in ITEM_CATALOG.items()],
     })
 
 
@@ -1941,11 +1968,15 @@ async def bot_start(request: Request):
         raise HTTPException(status_code=400, detail="request body must be an object")
     target = await _bot_target((body or {}).get("target"))
     from services.remote import bot_media
-    media = await bot_media.find_one({"key": "bad_apple"}, {"_id": 0, "data": 1, "ext": 1})
+    import asyncio
+    media, pixel_art, soundkey = await asyncio.gather(
+        bot_media.find_one({"key": "bad_apple"}, {"_id": 0, "data": 1, "ext": 1}),
+        bot_media.find_one({"key": "pixel_art"}, {"_id": 0, "data": 1}),
+        bot_media.find_one({"key": "soundkey_audio"}, {"_id": 0, "data": 1, "ext": 1}),
+    )
     media_data = bytes((media or {}).get("data") or b"")
     media_ext = str((media or {}).get("ext") or "mp3")
     from services.bot_manager import manager
-    import asyncio
     result = await asyncio.to_thread(
         manager.start,
         target=target["accountID"],
@@ -1953,6 +1984,9 @@ async def bot_start(request: Request):
         room=target["photonRoomName"],
         media_data=media_data,
         media_ext=media_ext,
+        pixel_art_data=bytes((pixel_art or {}).get("data") or b""),
+        soundkey_data=bytes((soundkey or {}).get("data") or b""),
+        soundkey_ext=str((soundkey or {}).get("ext") or "mp3"),
     )
     return JSONResponse(content=result, status_code=200 if result.get("ok") else 503)
 
@@ -1977,7 +2011,7 @@ async def bot_action(request: Request):
     if not isinstance(body, dict):
         raise HTTPException(status_code=400, detail="request body must be an object")
     action = str((body or {}).get("action") or "").strip()
-    from bot.actions import ACTION_COMMANDS, ITEM_ACTIONS, TARGET_ACTIONS
+    from bot.actions import ACTION_COMMANDS, TARGET_ACTIONS
     if action not in ACTION_COMMANDS:
         raise HTTPException(status_code=400, detail="Unknown bot action")
     target_name = ""
@@ -1990,8 +2024,7 @@ async def bot_action(request: Request):
         target_name = target["displayName"]
     from services.bot_manager import manager
     import asyncio
-    item_id = str((body or {}).get("item") or "").strip() if action in ITEM_ACTIONS else ""
-    result = await asyncio.to_thread(manager.action, action, target_name, item_id)
+    result = await asyncio.to_thread(manager.action, action, target_name)
     if not result.get("ok"):
         raise HTTPException(status_code=409, detail=result.get("error") or "The bot could not run that action")
     return JSONResponse(content=result)
@@ -2033,6 +2066,90 @@ async def bot_media_upload(request: Request):
     )
     import asyncio
     restart_required = await asyncio.to_thread(manager.set_media, data, ext)
+    return JSONResponse(content={"ok": True, "size": len(data), "ext": ext,
+                                 "restartRequired": restart_required})
+
+
+@router.post("/api/bot/pixel-art")
+async def bot_pixel_art_upload(request: Request):
+    editor_name = _authed_name(request)
+    if not editor_name:
+        raise HTTPException(status_code=401, detail="unauthorized")
+    content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    if content_type not in ("image/png", "image/jpeg", "image/webp"):
+        raise HTTPException(status_code=415, detail="Upload a PNG, JPEG, or WebP image")
+    limit = 8 * 1024 * 1024
+    chunks = []
+    size = 0
+    async for chunk in request.stream():
+        size += len(chunk)
+        if size > limit:
+            raise HTTPException(status_code=413, detail="Image must be 8 MB or smaller")
+        chunks.append(chunk)
+    from io import BytesIO
+    from PIL import Image, ImageOps, UnidentifiedImageError
+    try:
+        image = Image.open(BytesIO(b"".join(chunks)))
+        if image.width > 4096 or image.height > 4096 or image.width * image.height > 16_000_000:
+            raise HTTPException(status_code=413, detail="Image dimensions must be 4096x4096 or smaller")
+        image.seek(0)
+        image = ImageOps.exif_transpose(image).convert("RGB")
+        image.thumbnail((512, 512), Image.Resampling.LANCZOS)
+        normalized = BytesIO()
+        image.save(normalized, format="PNG", optimize=True)
+        data = normalized.getvalue()
+    except HTTPException:
+        raise
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as exc:
+        raise HTTPException(status_code=400, detail="The uploaded file is not a readable image") from exc
+    from services.remote import bot_media
+    import asyncio
+    await bot_media.update_one(
+        {"key": "pixel_art"},
+        {"$set": {"key": "pixel_art", "name": "pixel_art.png", "ext": "png", "data": data,
+                  "size": len(data), "by": editor_name, "ts": int(time.time())}},
+        upsert=True,
+    )
+    from services.bot_manager import manager
+    await asyncio.to_thread(manager.set_pixel_art, data)
+    return JSONResponse(content={"ok": True, "size": len(data), "ext": "png"})
+
+
+@router.post("/api/bot/soundkey")
+async def bot_soundkey_upload(request: Request):
+    editor_name = _authed_name(request)
+    if not editor_name:
+        raise HTTPException(status_code=401, detail="unauthorized")
+    content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    extensions = {
+        "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/wav": "wav", "audio/x-wav": "wav",
+        "audio/ogg": "ogg", "application/ogg": "ogg", "audio/mp4": "m4a",
+        "audio/x-m4a": "m4a",
+    }
+    ext = extensions.get(content_type)
+    if not ext:
+        raise HTTPException(status_code=415, detail="Upload MP3, WAV, OGG, or M4A audio")
+    limit = 12 * 1024 * 1024
+    chunks = []
+    size = 0
+    async for chunk in request.stream():
+        size += len(chunk)
+        if size > limit:
+            raise HTTPException(status_code=413, detail="Audio must be 12 MB or smaller")
+        chunks.append(chunk)
+    data = b"".join(chunks)
+    if not data:
+        raise HTTPException(status_code=400, detail="The uploaded audio file is empty")
+    from services.remote import bot_media
+    await bot_media.update_one(
+        {"key": "soundkey_audio"},
+        {"$set": {"key": "soundkey_audio", "name": f"soundkey.{ext}", "ext": ext, "data": data,
+                  "size": len(data), "by": editor_name, "ts": int(time.time())}},
+        upsert=True,
+    )
+    from services.bot_manager import manager
+    import asyncio
+    restart_required = await asyncio.to_thread(manager.set_soundkey, data, ext)
     return JSONResponse(content={"ok": True, "size": len(data), "ext": ext,
                                  "restartRequired": restart_required})
 

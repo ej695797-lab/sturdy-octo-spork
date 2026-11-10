@@ -12,15 +12,13 @@ auto-clears it when it passes). A warn sets `hasPendingWarning` + `warnReason`,
 which login serves once then clears.
 """
 
-import os
 from datetime import datetime, timedelta, timezone
 
 from services.db import accounts
+from services.moderator_roles import OWNER_MODERATOR_ID
 
-# Who can actually ban/warn in game. ONLY these accounts (env MOD_STAFF,
-# comma-separated account IDs); every other player's ban/warn is a silent no-op
-# (everyone has the moderator role from the default loadout).
-MOD_STAFF = set(filter(None, (os.getenv("MOD_STAFF") or "").replace(" ", "").split(",")))
+# In-game ban/warn access is deliberately fixed to the owner's account.
+MOD_STAFF = {OWNER_MODERATOR_ID}
 
 
 async def _staff_check(body: dict) -> str:

@@ -881,6 +881,10 @@ const tabs = {
       <details open><summary>Everyone is a friend</summary><div style="padding:10px">
         <p class="note">APK 131b6+: everyone online counts as a friend, so friends-only private worlds can be joined.</p>
         <label><input type="checkbox" id="setfe"> on</label> <button class="go" id="savefe">Save</button></div></details>
+      <details open><summary>Unrestricted game objects</summary><div style="padding:10px">
+        <p class="note">When enabled, room item restrictions are removed, including restrictions used by dispensers and receivers. Login, account privacy, room boundaries, and server safety checks stay on.</p>
+        <label><input type="checkbox" id="setunrestricted"> Remove game-object item restrictions</label>
+        <button class="go" id="saveunrestricted">Save</button></div></details>
       <details open><summary>Maintenance mode</summary><div style="padding:10px">
         <p class="note">Anything typed here is shown to every player as a fatal error and stops them playing. Leave it empty and save to turn it off.</p>
         <textarea id="setmaint" style="height:80px" maxlength="300" placeholder="e.g. Server maintenance, back in 10 minutes"></textarea>
@@ -902,9 +906,17 @@ const tabs = {
         <p class="note">With a link set, /download redirects there instead of using the uploaded file. Clear the box and save to go back to the uploaded file.</p>
       </div></details>`;
     const post = b => api("/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) });
-    try { const r = await api("/settings"); document.getElementById("setfe").checked = r.friends_everyone; document.getElementById("setmaint").value = r.maintenance; }
+    try { const r = await api("/settings"); document.getElementById("setfe").checked = r.friends_everyone;
+      document.getElementById("setunrestricted").checked = r.unrestricted_gameplay;
+      document.getElementById("setmaint").value = r.maintenance; }
     catch (e) { toast(e.message, true); }
     document.getElementById("savefe").onclick = async () => { try { await post({ friends_everyone: document.getElementById("setfe").checked }); toast("Saved"); } catch (e) { toast(e.message, true); } };
+    document.getElementById("saveunrestricted").onclick = async () => {
+      const on = document.getElementById("setunrestricted").checked;
+      if (on && !confirm("Remove item restrictions for game objects in every room?")) return;
+      try { await post({ unrestricted_gameplay: on }); toast(on ? "Game-object restrictions removed" : "Game-object restrictions restored"); }
+      catch (e) { toast(e.message, true); }
+    };
     document.getElementById("savemaint").onclick = async () => {
       const m = document.getElementById("setmaint").value.trim();
       if (m && !confirm("Turn ON maintenance? Every player will be blocked from playing.")) return;
@@ -1047,6 +1059,10 @@ const tabs = {
         ["Bad Apple no sound", "apple-mute", 0, 1], ["Stop Bad Apple", "apple-stop", 1, 1],
         ["Bad Apple on first sign", "applesign", 0, 1], ["Stop sign playback", "applesign-stop", 1, 1]
       ]],
+      ["Pixel art and SoundKey", [
+        ["Place uploaded pixel art", "pixel-art"], ["Remove pixel art", "pixel-art-off", 1],
+        ["Play uploaded SoundKey audio", "soundkey-play"], ["Stop SoundKey audio", "soundkey-stop", 1]
+      ]],
       ["Cleanup", [["Clean up firebox spam", "cleanup"]]],
       ["Guns", [
         ["Explosive finger gun", "finger-gun"], ["Explosive gun off", "powers-off", 1],
@@ -1093,42 +1109,39 @@ const tabs = {
       </div>
       <p class="note">MP4 shows its video; MP3 provides only an audio waveform. Media is kept in MongoDB, not in the repository.</p>
       <div class="row">
+        <label for="bpixelimage">Pixel-art image (PNG, JPEG, or WebP; 8 MB max)</label>
+        <input type="file" id="bpixelimage" accept="image/png,image/jpeg,image/webp">
+        <button class="go" id="bpixelupload">Upload or replace</button>
+        <span class="muted" id="bpixelstatus"></span>
+      </div>
+      <p class="note">After uploading, choose “Place uploaded pixel art” and place a 1x1 pillow to mark the bottom center. The image is resized to fit a pillow grid.</p>
+      <div class="row">
+        <label for="bsoundkeyaudio">SoundKey audio (MP3, WAV, OGG, or M4A; 12 MB max)</label>
+        <input type="file" id="bsoundkeyaudio" accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4,.mp3,.wav,.ogg,.m4a">
+        <button class="go" id="bsoundkeyupload">Upload or replace</button>
+        <span class="muted" id="bsoundkeystatus"></span>
+      </div>
+      <p class="note">SoundKey plays through the bot’s Photon voice connection. The server must have a valid Photon Voice App ID configured.</p>
+      <div class="row">
         <label for="bdusername">Yeeps username to link:</label>
         <input type="text" id="bdusername" maxlength="80" placeholder="Exact in-game username">
         <button class="go" id="bdlinkcode">Generate pairing code</button>
         <code id="bdcode"></code>
       </div>
       <p class="note">Verify the player before issuing a code, then share it privately. It is one-use, account-specific, and expires in 10 minutes.</p>
-      <div class="row">
-        <label for="bitemsearch">Search confirmed spawnable items:</label>
-        <input type="search" id="bitemsearch" placeholder="Search by name or ID">
-        <select id="bitem" style="min-width:260px"></select>
-        <button class="go" id="bitemgun">Equip item-spawner gun</button>
-        <button class="blk" id="bitemoff">Item gun off</button>
-      </div>
-      <p class="note">This list contains only item IDs confirmed in the current bot/game data, not a complete game catalog.</p>
       <div id="bactions"></div>
       <div class="muted">Log</div>
       <pre id="blog" class="smp" style="max-height:160px;overflow:auto"></pre>`;
     const $ = id => document.getElementById(id);
-    function renderActions(mediaAvailable) {
+    function renderActions(state) {
       $("bactions").innerHTML = GROUPS.map(([title, buttons]) =>
         `<div class="pgrp"><span class="muted">${esc(title)}</span>${buttons.map(([label, action, off, media, needsTarget]) =>
           `<button data-action="${esc(action)}" data-target="${needsTarget ? "1" : "0"}"${off ? ' class="off"' : ""}` +
-          `${media && !mediaAvailable ? " disabled" : ""}>${esc(label)}</button>`).join("")}</div>`
+          `${(media && !state.badAppleAvailable) || (action === "pixel-art" && !state.pixelArtAvailable) ||
+            (action === "soundkey-play" && !state.soundKeyAvailable) ? " disabled" : ""}>${esc(label)}</button>`).join("")}</div>`
       ).join("");
       $("bactions").querySelectorAll("button[data-action]").forEach(b => b.onclick = () =>
         sendAction(b.dataset.action, b.dataset.target === "1"));
-    }
-    let itemCatalog = [];
-    function renderItems(search = "") {
-      const selected = $("bitem").value;
-      const query = search.trim().toLowerCase();
-      const matches = itemCatalog.filter(item =>
-        !query || item.id.toLowerCase().includes(query) || item.name.toLowerCase().includes(query));
-      $("bitem").innerHTML = matches.map(item =>
-        `<option value="${esc(item.id)}">${esc(item.name)} (${esc(item.id)})</option>`).join("");
-      if (matches.some(item => item.id === selected)) $("bitem").value = selected;
     }
     async function players() {
       for (const id of ["bhook", "btarget"]) {
@@ -1158,16 +1171,19 @@ const tabs = {
         (!s.available ? ` · <span style="color:#f85149">${esc(s.reason || "")}</span>` : "");
       $("blog").textContent = (s.log || []).join("\n");
       $("blog").scrollTop = $("blog").scrollHeight;
-      renderActions(!!s.badAppleAvailable);
-      itemCatalog = s.itemCatalog || [];
-      renderItems($("bitemsearch").value);
+      renderActions(s);
       $("bapplestatus").textContent = s.badAppleSize
         ? `Uploaded ${String(s.badAppleType || "MP3").toUpperCase()} (${(s.badAppleSize / 1024 / 1024).toFixed(1)} MB)`
         : (s.badAppleAvailable ? "Media available" : "No media uploaded");
+      $("bpixelstatus").textContent = s.pixelArtSize
+        ? `Uploaded image (${(s.pixelArtSize / 1024 / 1024).toFixed(1)} MB)`
+        : (s.pixelArtAvailable ? "Image available" : "No image uploaded");
+      $("bsoundkeystatus").textContent = s.soundKeySize
+        ? `Uploaded ${String(s.soundKeyType || "audio").toUpperCase()} (${(s.soundKeySize / 1024 / 1024).toFixed(1)} MB)`
+        : (s.soundKeyAvailable ? "Audio available" : "No audio uploaded");
     }
-    async function sendAction(action, needsTarget, itemId = "") {
+    async function sendAction(action, needsTarget) {
       const body = { action };
-      if (itemId) body.item = itemId;
       if (needsTarget) {
         body.target = $("btarget").value;
         if (!body.target) { toast("Pick a player first", true); return; }
@@ -1180,13 +1196,6 @@ const tabs = {
       setTimeout(refresh, 900);
     }
     $("bref").onclick = refresh;
-    $("bitemsearch").oninput = () => renderItems($("bitemsearch").value);
-    $("bitemgun").onclick = () => {
-      const itemId = $("bitem").value;
-      if (!itemId) { toast("No confirmed item matches that search", true); return; }
-      sendAction("item-gun", false, itemId);
-    };
-    $("bitemoff").onclick = () => sendAction("item-gun-off", false);
     $("bappleupload").onclick = async () => {
       const file = $("bappleaudio").files[0];
       if (!file) { toast("Choose an MP3 or MP4 file first", true); return; }
@@ -1195,6 +1204,34 @@ const tabs = {
         const result = await api("/bot/media", { method: "POST",
           headers: { "Content-Type": file.type || (file.name.toLowerCase().endsWith(".mp4") ? "video/mp4" : "audio/mpeg") }, body: file });
         toast(result.restartRequired ? "Uploaded; stop and restart the bot to load it" : "Bad Apple media uploaded");
+        refresh();
+      } catch (e) { toast(e.message, true); }
+    };
+    $("bpixelupload").onclick = async () => {
+      const file = $("bpixelimage").files[0];
+      if (!file) { toast("Choose a PNG, JPEG, or WebP image first", true); return; }
+      if (file.size > 8 * 1024 * 1024) { toast("Image must be 8 MB or smaller", true); return; }
+      const contentType = file.type || ({
+        png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp"
+      }[file.name.split(".").pop().toLowerCase()] || "");
+      if (!contentType) { toast("Upload a PNG, JPEG, or WebP image", true); return; }
+      try {
+        await api("/bot/pixel-art", { method: "POST", headers: { "Content-Type": contentType }, body: file });
+        toast("Pixel-art image uploaded");
+        refresh();
+      } catch (e) { toast(e.message, true); }
+    };
+    $("bsoundkeyupload").onclick = async () => {
+      const file = $("bsoundkeyaudio").files[0];
+      if (!file) { toast("Choose an audio file first", true); return; }
+      if (file.size > 12 * 1024 * 1024) { toast("Audio must be 12 MB or smaller", true); return; }
+      const contentType = file.type || ({
+        mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg", m4a: "audio/mp4"
+      }[file.name.split(".").pop().toLowerCase()] || "");
+      if (!contentType) { toast("Upload an MP3, WAV, OGG, or M4A audio file", true); return; }
+      try {
+        const result = await api("/bot/soundkey", { method: "POST", headers: { "Content-Type": contentType }, body: file });
+        toast(result.restartRequired ? "Uploaded; stop and restart the bot to load this audio type" : "SoundKey audio uploaded");
         refresh();
       } catch (e) { toast(e.message, true); }
     };

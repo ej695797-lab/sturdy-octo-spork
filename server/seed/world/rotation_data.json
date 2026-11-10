@@ -1,0 +1,6644 @@
+[
+  {
+    "key": "techWeb",
+    "data": {
+      "itemKeys": {
+        "techWeb": [
+          {
+            "value": 300,
+            "key": "prop_radio"
+          },
+          {
+            "value": 300,
+            "key": "pumaShoeLauncher"
+          },
+          {
+            "value": 300,
+            "key": "decoration_beach_coral2"
+          },
+          {
+            "value": 300,
+            "key": "prop_colorfulFlower"
+          },
+          {
+            "value": 100,
+            "key": "techWeb_prop"
+          },
+          {
+            "value": 100,
+            "key": "terrainDecoration_suburb_house2"
+          },
+          {
+            "value": 100,
+            "key": "1x1_trappedWood"
+          },
+          {
+            "value": 100,
+            "key": "1x1_superpowerSpawner_SelfPotionSpeed"
+          },
+          {
+            "value": 300,
+            "key": "prop_1x1x1_surveillanceCamera"
+          },
+          {
+            "value": 300,
+            "key": "1x1_5way_pipeFat"
+          },
+          {
+            "value": 100,
+            "key": "16x16x4_fantasyRock"
+          },
+          {
+            "value": 800,
+            "key": "gameModeSign_arenaTeams"
+          },
+          {
+            "value": 300,
+            "key": "prop_comicArrow45"
+          },
+          {
+            "value": 300,
+            "key": "prop_rubberDuck"
+          },
+          {
+            "value": 100,
+            "key": "4x4_playerGate_joinTeam"
+          },
+          {
+            "value": 50,
+            "key": "2x2_magnetizedBlock"
+          },
+          {
+            "value": 800,
+            "key": "potion_slowFalling"
+          },
+          {
+            "value": 800,
+            "key": "fishingRod_intermediate"
+          },
+          {
+            "value": 1200,
+            "key": "itemCannon"
+          },
+          {
+            "value": 300,
+            "key": "prop_footprintLeft"
+          },
+          {
+            "value": 300,
+            "key": "potion_haste"
+          },
+          {
+            "value": 20,
+            "key": "decoration_halloween_jackOLantern0"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_TrailGreen"
+          },
+          {
+            "value": 100,
+            "key": "snowball"
+          },
+          {
+            "value": 800,
+            "key": "throwingPillowBomb"
+          },
+          {
+            "value": 50,
+            "key": "1x1_itemDecorationSpawner_StyrofoamHemisphere"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_guac"
+          },
+          {
+            "value": 800,
+            "key": "smashGlove"
+          },
+          {
+            "value": 300,
+            "key": "baseball"
+          },
+          {
+            "value": 800,
+            "key": "weatherBlock_fog"
+          },
+          {
+            "value": 100,
+            "key": "decoration_fantasy_mushroom2"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeMusic"
+          },
+          {
+            "value": 50,
+            "key": "roomPassageway_grassRock"
+          },
+          {
+            "value": 300,
+            "key": "2x2_glassOneWay"
+          },
+          {
+            "value": 100,
+            "key": "2x2_playerGate_leaveTeam"
+          },
+          {
+            "value": 300,
+            "key": "blankHelmet"
+          },
+          {
+            "value": 100,
+            "key": "terrainDecoration_suburb_tree2"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_teleporterExit_powered"
+          },
+          {
+            "value": 300,
+            "key": "2x1x8_conveyor_belt"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_block_2x2x2"
+          },
+          {
+            "value": 800,
+            "key": "fishDisplay"
+          },
+          {
+            "value": 1200,
+            "key": "freezeGlove"
+          },
+          {
+            "value": 300,
+            "key": "crewTasksControlBlock"
+          },
+          {
+            "value": 300,
+            "key": "1x4_straight_railStuffed"
+          },
+          {
+            "value": 300,
+            "key": "2x4x2_beachBush"
+          },
+          {
+            "value": 300,
+            "key": "prop_bookshelf1"
+          },
+          {
+            "value": 300,
+            "key": "fireArrow"
+          },
+          {
+            "value": 800,
+            "key": "1x1_superpowerSpawner_VFXRadiation"
+          },
+          {
+            "value": 800,
+            "key": "2x2x2_slope_boostPad"
+          },
+          {
+            "value": 300,
+            "key": "spear"
+          },
+          {
+            "value": 800,
+            "key": "gameModeSign_outlaw"
+          },
+          {
+            "value": 800,
+            "key": "wristVacuum"
+          },
+          {
+            "value": 1200,
+            "key": "stuffedAutoTurret"
+          },
+          {
+            "value": 300,
+            "key": "1x1x2_barbedWire"
+          },
+          {
+            "value": 300,
+            "key": "warHorn"
+          },
+          {
+            "value": 300,
+            "key": "npcSpawner_gnome_beach_0"
+          },
+          {
+            "value": 300,
+            "key": "bannerDisplay"
+          },
+          {
+            "value": 300,
+            "key": "decoration_beach_arch0"
+          },
+          {
+            "value": 300,
+            "key": "2x2x1_slopeReverse_flowingWater"
+          },
+          {
+            "value": 300,
+            "key": "1x1_handhold_chain"
+          },
+          {
+            "value": 100,
+            "key": "4x4_trampoline"
+          },
+          {
+            "value": 300,
+            "key": "raceFinish"
+          },
+          {
+            "value": 800,
+            "key": "flareGun"
+          },
+          {
+            "value": 300,
+            "key": "microphonePitchUp"
+          },
+          {
+            "value": 300,
+            "key": "16x16_teamBarrier"
+          },
+          {
+            "value": 800,
+            "key": "asteroidSpawner_large"
+          },
+          {
+            "value": 300,
+            "key": "2x8x2_smokestack"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_ShootSnowball"
+          },
+          {
+            "value": 1200,
+            "key": "1x1_ziplinePylon_lightsYellow"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_Edible"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_slope_ice"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_teleporter"
+          },
+          {
+            "value": 100,
+            "key": "1x1x2_slope_cornerOut_wooden"
+          },
+          {
+            "value": 300,
+            "key": "laserGun"
+          },
+          {
+            "value": 100,
+            "key": "decoration_fantasy_frog1"
+          },
+          {
+            "value": 300,
+            "key": "1x1x2_arrowSign_up"
+          },
+          {
+            "value": 100,
+            "key": "2x2x2_moonRock"
+          },
+          {
+            "value": 300,
+            "key": "record_desertTheme"
+          },
+          {
+            "value": 300,
+            "key": "prop_1x4x1_wireAntennae1"
+          },
+          {
+            "value": 300,
+            "key": "techWeb_snow"
+          },
+          {
+            "value": 50,
+            "key": "2x2x1_grassRock"
+          },
+          {
+            "value": 300,
+            "key": "npcSpawner_gnome_city_2"
+          },
+          {
+            "value": 800,
+            "key": "eliminationTable"
+          },
+          {
+            "value": 100,
+            "key": "2x2x2_bush"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_space_module1"
+          },
+          {
+            "value": 300,
+            "key": "mobileAppConsole"
+          },
+          {
+            "value": 100,
+            "key": "1x1_stair2_cornerIn_wooden"
+          },
+          {
+            "value": 300,
+            "key": "1x1_3way_corner_pipeFat"
+          },
+          {
+            "value": 800,
+            "key": "potionTeamInfuser"
+          },
+          {
+            "value": 100,
+            "key": "1x2_bush"
+          },
+          {
+            "value": 800,
+            "key": "damageMultiplierSign"
+          },
+          {
+            "value": 300,
+            "key": "2x2_door_sliding"
+          },
+          {
+            "value": 300,
+            "key": "decoration_beach_kelp1"
+          },
+          {
+            "value": 300,
+            "key": "1x1_ingredientSpawner_leaf"
+          },
+          {
+            "value": 300,
+            "key": "lighter"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_white"
+          },
+          {
+            "value": 300,
+            "key": "task_pullCord"
+          },
+          {
+            "value": 100,
+            "key": "1x1_ingredientSpawner_mushroom"
+          },
+          {
+            "value": 300,
+            "key": "baseballBat"
+          },
+          {
+            "value": 100,
+            "key": "2x2x1_snowRockUncovered"
+          },
+          {
+            "value": 800,
+            "key": "1x1_ingredientSpawner_tail"
+          },
+          {
+            "value": 300,
+            "key": "missile"
+          },
+          {
+            "value": 50,
+            "key": "8x8x4_grassRock"
+          },
+          {
+            "value": 300,
+            "key": "prop_4x4x1_spaceWindow"
+          },
+          {
+            "value": 800,
+            "key": "pulseButton_stuffingCost"
+          },
+          {
+            "value": 300,
+            "key": "4x4_cloudBlock"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_desert_cactus2"
+          },
+          {
+            "value": 300,
+            "key": "prop_microwave"
+          },
+          {
+            "value": 300,
+            "key": "4x4_glass"
+          },
+          {
+            "value": 100,
+            "key": "4x4x4_sand"
+          },
+          {
+            "value": 300,
+            "key": "groundLevelShifter"
+          },
+          {
+            "value": 100,
+            "key": "4x8_concrete"
+          },
+          {
+            "value": 300,
+            "key": "terrainRandomizer"
+          },
+          {
+            "value": 100,
+            "key": "1x4_slab4_wooden"
+          },
+          {
+            "value": 100,
+            "key": "roomPassageway_wooden"
+          },
+          {
+            "value": 300,
+            "key": "2x2_breakable_metal"
+          },
+          {
+            "value": 300,
+            "key": "iconBlock_wiring"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_ShortNozzle3"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_beige"
+          },
+          {
+            "value": 300,
+            "key": "prop_1x2_lightStrip"
+          },
+          {
+            "value": 300,
+            "key": "logicGate_not"
+          },
+          {
+            "value": 50,
+            "key": "itemCustomizationBench"
+          },
+          {
+            "value": 300,
+            "key": "1x1_itemDecorationSpawner_Glasses"
+          },
+          {
+            "value": 300,
+            "key": "lootCrate_suburb"
+          },
+          {
+            "value": 300,
+            "key": "variableCompareEqualTo"
+          },
+          {
+            "value": 300,
+            "key": "4x6_teamBarrier"
+          },
+          {
+            "value": 300,
+            "key": "2x2_danceFloor"
+          },
+          {
+            "value": 300,
+            "key": "prop_dragonRib1"
+          },
+          {
+            "value": 800,
+            "key": "tokenTrigger_playerDeath"
+          },
+          {
+            "value": 50,
+            "key": "4x8_wooden"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_ShootPaintBall"
+          },
+          {
+            "value": 100,
+            "key": "8x8x4_snowRock"
+          },
+          {
+            "value": 800,
+            "key": "2x2_cakeBlock"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_space_launchpad"
+          },
+          {
+            "value": 100,
+            "key": "2x2x1_snowRock"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_midnight"
+          },
+          {
+            "value": 800,
+            "key": "gameModeSign_laserTag"
+          },
+          {
+            "value": 300,
+            "key": "2x1x2_sloped_conveyor_belt"
+          },
+          {
+            "value": 100,
+            "key": "4x4_playerGate_worldTokenSet"
+          },
+          {
+            "value": 300,
+            "key": "8x8_door_portcullis"
+          },
+          {
+            "value": 50,
+            "key": "1x1_magnetizedBlock"
+          },
+          {
+            "value": 50,
+            "key": "1x1_4way_pipe"
+          },
+          {
+            "value": 300,
+            "key": "blankGun"
+          },
+          {
+            "value": 300,
+            "key": "playerListBlock"
+          },
+          {
+            "value": 300,
+            "key": "techWeb_fantasy"
+          },
+          {
+            "value": 100,
+            "key": "itemRecolorer"
+          },
+          {
+            "value": 300,
+            "key": "noKnockbackProtectionSign"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_StraightShortStraw"
+          },
+          {
+            "value": 800,
+            "key": "pet_puma_blue_light_pink"
+          },
+          {
+            "value": 800,
+            "key": "wristWebShooter"
+          },
+          {
+            "value": 300,
+            "key": "prop_cashRegister"
+          },
+          {
+            "value": 300,
+            "key": "lootCrate_beach"
+          },
+          {
+            "value": 800,
+            "key": "confettiGun"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_blurple"
+          },
+          {
+            "value": 300,
+            "key": "prop_whippedCream"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_green_emissive"
+          },
+          {
+            "value": 1200,
+            "key": "jetpack"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_space_module0"
+          },
+          {
+            "value": 1200,
+            "key": "sled"
+          },
+          {
+            "value": 100,
+            "key": "decoration_fantasy_pillar0"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_mobSpawner_singleton"
+          },
+          {
+            "value": 300,
+            "key": "1x1_audioEchoEffect"
+          },
+          {
+            "value": 800,
+            "key": "mobSpawnEgg_alienHopper"
+          },
+          {
+            "value": 300,
+            "key": "2x2_slab43_wooden"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_PieceOfTape"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_maroon"
+          },
+          {
+            "value": 300,
+            "key": "8x8_glass"
+          },
+          {
+            "value": 50,
+            "key": "1x1_3way_pipe"
+          },
+          {
+            "value": 300,
+            "key": "blankWrist"
+          },
+          {
+            "value": 300,
+            "key": "lootCrate_fantasy"
+          },
+          {
+            "value": 100,
+            "key": "terrainMaterialPaintBrush_sand"
+          },
+          {
+            "value": 50,
+            "key": "1x1_5way_pipe"
+          },
+          {
+            "value": 800,
+            "key": "potion_blindness"
+          },
+          {
+            "value": 100,
+            "key": "16x4x16_concrete"
+          },
+          {
+            "value": 300,
+            "key": "4x4_mobBarrier"
+          },
+          {
+            "value": 800,
+            "key": "gameModeSign_survival"
+          },
+          {
+            "value": 300,
+            "key": "1x1_corner_pipeFat"
+          },
+          {
+            "value": 800,
+            "key": "2x2x2_mobLure"
+          },
+          {
+            "value": 800,
+            "key": "pulseButton_staff"
+          },
+          {
+            "value": 300,
+            "key": "resultsConsole_paintWars"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_cyan_light"
+          },
+          {
+            "value": 800,
+            "key": "pumaBucketHat_red"
+          },
+          {
+            "value": 1200,
+            "key": "mobSpawnEgg_yeti"
+          },
+          {
+            "value": 800,
+            "key": "1x1_itemSpawner"
+          },
+          {
+            "value": 100,
+            "key": "1x1_stair2_cornerOut_wooden"
+          },
+          {
+            "value": 100,
+            "key": "techWeb_world"
+          },
+          {
+            "value": 50,
+            "key": "1x1_itemDecorationSpawner_CardboardRightTriangle"
+          },
+          {
+            "value": 300,
+            "key": "4x2_variableTimeDisplay"
+          },
+          {
+            "value": 300,
+            "key": "1x1_itemDecorationSpawner_JetEngine"
+          },
+          {
+            "value": 800,
+            "key": "1x1_freezeBomb"
+          },
+          {
+            "value": 300,
+            "key": "noStuffingRefundsSign"
+          },
+          {
+            "value": 800,
+            "key": "autoPitcher"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_blue_turquoise"
+          },
+          {
+            "value": 300,
+            "key": "npcSpawner_gnome_desert_0"
+          },
+          {
+            "value": 300,
+            "key": "1x4_handhold_chain"
+          },
+          {
+            "value": 300,
+            "key": "4x4_door_sliding"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_EyelashEye"
+          },
+          {
+            "value": 300,
+            "key": "prop_dragonTalon"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_periwinkle"
+          },
+          {
+            "value": 100,
+            "key": "2x2x2_snowRockUncovered"
+          },
+          {
+            "value": 100,
+            "key": "roomPassageway_beachRock"
+          },
+          {
+            "value": 800,
+            "key": "transformerGun"
+          },
+          {
+            "value": 300,
+            "key": "1x1_ingredientSpawner_tentacle"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_beach_rock0"
+          },
+          {
+            "value": 300,
+            "key": "radio"
+          },
+          {
+            "value": 300,
+            "key": "4x4_tokenBarrier"
+          },
+          {
+            "value": 800,
+            "key": "fireburst"
+          },
+          {
+            "value": 300,
+            "key": "terrainMaterialPaintBrush_buildingBrown"
+          },
+          {
+            "value": 300,
+            "key": "1x1x4_barbedWire"
+          },
+          {
+            "value": 300,
+            "key": "4x4_glassBrittle"
+          },
+          {
+            "value": 50,
+            "key": "techWeb_superpowers"
+          },
+          {
+            "value": 300,
+            "key": "record_oceanTheme"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeFive"
+          },
+          {
+            "value": 100,
+            "key": "darkBlueConcreteTerrainPaint"
+          },
+          {
+            "value": 100,
+            "key": "2x2x1_fantasyRock"
+          },
+          {
+            "value": 100,
+            "key": "4x4x4_snowRockUncovered"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeNine"
+          },
+          {
+            "value": 300,
+            "key": "1x8_handhold_pole"
+          },
+          {
+            "value": 100,
+            "key": "2x2_door_hidden"
+          },
+          {
+            "value": 300,
+            "key": "terrainMaterialPaintBrush_buildingYellow"
+          },
+          {
+            "value": 300,
+            "key": "mobSpawnEgg_bitingBat"
+          },
+          {
+            "value": 100,
+            "key": "4x4x4_snowRock"
+          },
+          {
+            "value": 1200,
+            "key": "autoTurretTargeter"
+          },
+          {
+            "value": 800,
+            "key": "resetItemBlock"
+          },
+          {
+            "value": 100,
+            "key": "8x2x2_slope_wooden"
+          },
+          {
+            "value": 300,
+            "key": "1x1_ingredientSpawner_mushroomLong"
+          },
+          {
+            "value": 300,
+            "key": "fishingRod_basic"
+          },
+          {
+            "value": 800,
+            "key": "proximityChatSign"
+          },
+          {
+            "value": 800,
+            "key": "boomerang"
+          },
+          {
+            "value": 300,
+            "key": "prop_3x5x3_cellTower"
+          },
+          {
+            "value": 100,
+            "key": "prop_trafficCone"
+          },
+          {
+            "value": 100,
+            "key": "decoration_suburb_flower2"
+          },
+          {
+            "value": 300,
+            "key": "prop_popcorn"
+          },
+          {
+            "value": 800,
+            "key": "pulseKeyhole"
+          },
+          {
+            "value": 300,
+            "key": "explosiveGrenade"
+          },
+          {
+            "value": 800,
+            "key": "1x2_icicleTrap"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_Fork"
+          },
+          {
+            "value": 300,
+            "key": "1x1_corner_handhold_pole"
+          },
+          {
+            "value": 100,
+            "key": "16x16x4_snowRockUncovered"
+          },
+          {
+            "value": 300,
+            "key": "techWeb_researchFacility"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_PUMAText"
+          },
+          {
+            "value": 800,
+            "key": "ghostsSign"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_block_2x2x8"
+          },
+          {
+            "value": 100,
+            "key": "8x8x4_fantasyRockUncovered"
+          },
+          {
+            "value": 300,
+            "key": "1x8_handhold_chain"
+          },
+          {
+            "value": 100,
+            "key": "pulseButton_worldTokenCost"
+          },
+          {
+            "value": 1200,
+            "key": "lightningHammer"
+          },
+          {
+            "value": 100,
+            "key": "terrainMaterialPaintBrush_sandstone"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_beach_coralRock2"
+          },
+          {
+            "value": 300,
+            "key": "prop_teaCup"
+          },
+          {
+            "value": 300,
+            "key": "wearableBackpack_medium"
+          },
+          {
+            "value": 100,
+            "key": "1x1_superpowerSpawner_ShootCannonball"
+          },
+          {
+            "value": 300,
+            "key": "VIPConsole"
+          },
+          {
+            "value": 100,
+            "key": "decoration_researchFacility_radioactiveSymbol0"
+          },
+          {
+            "value": 300,
+            "key": "1x1x2_recordPlayer"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_plush_peach"
+          },
+          {
+            "value": 1200,
+            "key": "laserSword_curved"
+          },
+          {
+            "value": 100,
+            "key": "2x1x2_concrete"
+          },
+          {
+            "value": 50,
+            "key": "1x1_itemDecorationSpawner_CardboardSquare"
+          },
+          {
+            "value": 300,
+            "key": "task_pushButton_small"
+          },
+          {
+            "value": 300,
+            "key": "cardChallengeBoard"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_Paperclip"
+          },
+          {
+            "value": 800,
+            "key": "1x1_ingredientSpawner_feather"
+          },
+          {
+            "value": 800,
+            "key": "pumaShoeBola"
+          },
+          {
+            "value": 100,
+            "key": "16x16x4_fantasyRockUncovered"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_lavender"
+          },
+          {
+            "value": 100,
+            "key": "prop_2x2_moonRocks"
+          },
+          {
+            "value": 300,
+            "key": "pinGrenade"
+          },
+          {
+            "value": 300,
+            "key": "prop_2x2x2_oxygenTanks"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_space_satelliteDish"
+          },
+          {
+            "value": 800,
+            "key": "6x6_boostRing_directional"
+          },
+          {
+            "value": 300,
+            "key": "1x1_itemDecorationSpawner_SniperScope"
+          },
+          {
+            "value": 300,
+            "key": "worldTokenDisplay"
+          },
+          {
+            "value": 300,
+            "key": "tokenExchanger"
+          },
+          {
+            "value": 100,
+            "key": "knightHelmet"
+          },
+          {
+            "value": 800,
+            "key": "flail"
+          },
+          {
+            "value": 300,
+            "key": "hideStuffingSign"
+          },
+          {
+            "value": 300,
+            "key": "worldFuelConsoleBlock"
+          },
+          {
+            "value": 300,
+            "key": "1x1_slope_railStuffed"
+          },
+          {
+            "value": 300,
+            "key": "1x1_slope_pyramid_wooden"
+          },
+          {
+            "value": 800,
+            "key": "paintBomb"
+          },
+          {
+            "value": 800,
+            "key": "harpoonGun"
+          },
+          {
+            "value": 300,
+            "key": "1x1x1_ladder"
+          },
+          {
+            "value": 300,
+            "key": "stuffedTradingTable"
+          },
+          {
+            "value": 800,
+            "key": "liquidPainter"
+          },
+          {
+            "value": 100,
+            "key": "prop_2x2x1_crater"
+          },
+          {
+            "value": 300,
+            "key": "8x8_ice"
+          },
+          {
+            "value": 300,
+            "key": "1x2_setSpeed_rail"
+          },
+          {
+            "value": 300,
+            "key": "prop_woodenLamp"
+          },
+          {
+            "value": 1200,
+            "key": "portalGun"
+          },
+          {
+            "value": 300,
+            "key": "prop_sock"
+          },
+          {
+            "value": 100,
+            "key": "decoration_suburb_flower1"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_sloped_conveyor_belt"
+          },
+          {
+            "value": 300,
+            "key": "graffiti_2"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_yellow"
+          },
+          {
+            "value": 300,
+            "key": "gameModeSign_paintWars"
+          },
+          {
+            "value": 300,
+            "key": "4x4_clock"
+          },
+          {
+            "value": 800,
+            "key": "4x4_teamBuildPlate"
+          },
+          {
+            "value": 300,
+            "key": "8x8_tokenBarrier"
+          },
+          {
+            "value": 300,
+            "key": "decoration_snow_pillar1"
+          },
+          {
+            "value": 800,
+            "key": "anchor"
+          },
+          {
+            "value": 300,
+            "key": "1x1_woodenFireBomb"
+          },
+          {
+            "value": 1200,
+            "key": "gatlingGunMagazine"
+          },
+          {
+            "value": 300,
+            "key": "4x8_raceCheckpoint"
+          },
+          {
+            "value": 300,
+            "key": "pumaTracksuit[red]"
+          },
+          {
+            "value": 300,
+            "key": "copyPaster"
+          },
+          {
+            "value": 100,
+            "key": "16x16x4_snowRock"
+          },
+          {
+            "value": 800,
+            "key": "6x6_stuffingRing"
+          },
+          {
+            "value": 300,
+            "key": "1x1x0.5_slope_pyramid_wooden"
+          },
+          {
+            "value": 300,
+            "key": "sprayCan"
+          },
+          {
+            "value": 300,
+            "key": "potion_speed"
+          },
+          {
+            "value": 800,
+            "key": "closeServerBlock"
+          },
+          {
+            "value": 1200,
+            "key": "bullet"
+          },
+          {
+            "value": 800,
+            "key": "stuffedFishCatalog"
+          },
+          {
+            "value": 0,
+            "key": "2x2x2_stuffed"
+          },
+          {
+            "value": 800,
+            "key": "mobSpawnEgg_wasp"
+          },
+          {
+            "value": 100,
+            "key": "teamDefinitionSign_ghost"
+          },
+          {
+            "value": 300,
+            "key": "noRandomSeekerSelectionSign"
+          },
+          {
+            "value": 300,
+            "key": "mobSpawnEgg_frogling"
+          },
+          {
+            "value": 300,
+            "key": "mapRotator"
+          },
+          {
+            "value": 300,
+            "key": "prop_cog2"
+          },
+          {
+            "value": 300,
+            "key": "prop_toyCar"
+          },
+          {
+            "value": 100,
+            "key": "pumaHoodie_white"
+          },
+          {
+            "value": 1200,
+            "key": "revolver"
+          },
+          {
+            "value": 100,
+            "key": "recordStore"
+          },
+          {
+            "value": 300,
+            "key": "4x6_glass"
+          },
+          {
+            "value": 300,
+            "key": "prop_3x2x1_screenMonitor"
+          },
+          {
+            "value": 300,
+            "key": "2x2x1_slope_pyramid_wooden"
+          },
+          {
+            "value": 300,
+            "key": "2x2_scaffolding"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_GiftBow"
+          },
+          {
+            "value": 300,
+            "key": "1x1_itemDecorationSpawner_Tube"
+          },
+          {
+            "value": 300,
+            "key": "4x4_door_portcullis"
+          },
+          {
+            "value": 800,
+            "key": "woodenAsteroidCannon"
+          },
+          {
+            "value": 100,
+            "key": "2x2x1_sand"
+          },
+          {
+            "value": 800,
+            "key": "mobSpawnEgg_spittingFrog"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_green"
+          },
+          {
+            "value": 300,
+            "key": "decoration_beach_pillar0"
+          },
+          {
+            "value": 100,
+            "key": "paintBrush_purple"
+          },
+          {
+            "value": 300,
+            "key": "2x2_spikes"
+          },
+          {
+            "value": 100,
+            "key": "decoration_researchFacility_hazmat"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_TrailBlue"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_Cannister4"
+          },
+          {
+            "value": 800,
+            "key": "minionCapsule_laser"
+          },
+          {
+            "value": 50,
+            "key": "1x1_superpowerSpawner_StuffingCostMultiplier"
+          },
+          {
+            "value": 800,
+            "key": "fireAxe"
+          },
+          {
+            "value": 300,
+            "key": "1x1_fireBomb"
+          },
+          {
+            "value": 300,
+            "key": "prop_wallClock"
+          },
+          {
+            "value": 100,
+            "key": "decoration_fantasy_lilypad0"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeSeven"
+          },
+          {
+            "value": 300,
+            "key": "2x4_glass"
+          },
+          {
+            "value": 800,
+            "key": "tokenTrigger_mobDeath"
+          },
+          {
+            "value": 300,
+            "key": "prop_woodenChair"
+          },
+          {
+            "value": 100,
+            "key": "1x1_ingredientSpawner_egg"
+          },
+          {
+            "value": 300,
+            "key": "decoration_desert_cactus3"
+          },
+          {
+            "value": 300,
+            "key": "iconBlock_pet"
+          },
+          {
+            "value": 100,
+            "key": "1x4_concrete"
+          },
+          {
+            "value": 20,
+            "key": "1x1_5way_wire"
+          },
+          {
+            "value": 100,
+            "key": "terrainDecoration_suburb_log0"
+          },
+          {
+            "value": 300,
+            "key": "pulseButton_team"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_olive_light"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_TrailPurple"
+          },
+          {
+            "value": 800,
+            "key": "1x1x2_textSign"
+          },
+          {
+            "value": 300,
+            "key": "logicGate_or"
+          },
+          {
+            "value": 300,
+            "key": "1x1x1_ammoBoxes"
+          },
+          {
+            "value": 100,
+            "key": "1x1_ingredientSpawner_bacon"
+          },
+          {
+            "value": 300,
+            "key": "2x2_breakable_server"
+          },
+          {
+            "value": 1200,
+            "key": "pumaClaw"
+          },
+          {
+            "value": 50,
+            "key": "1x1_straight_hiddenWire"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_beach_rock1"
+          },
+          {
+            "value": 800,
+            "key": "textBroadcaster_team"
+          },
+          {
+            "value": 100,
+            "key": "paintBrush_brown_light"
+          },
+          {
+            "value": 300,
+            "key": "2x2x1_slope_ice"
+          },
+          {
+            "value": 300,
+            "key": "prop_bookshelf2"
+          },
+          {
+            "value": 300,
+            "key": "paintJar"
+          },
+          {
+            "value": 100,
+            "key": "2x2x2_sandstone"
+          },
+          {
+            "value": 800,
+            "key": "npcSpawner_gnome_city_3"
+          },
+          {
+            "value": 800,
+            "key": "1x1_superpowerSpawner_HoldLaser"
+          },
+          {
+            "value": 300,
+            "key": "1x2x1_slope_railEmbedded"
+          },
+          {
+            "value": 800,
+            "key": "1x1x2_confettiCannon"
+          },
+          {
+            "value": 800,
+            "key": "laserSword_crossGuard"
+          },
+          {
+            "value": 300,
+            "key": "1x1_slopeInversionDown_railEmbedded"
+          },
+          {
+            "value": 300,
+            "key": "2x2_mobSpawner_zone"
+          },
+          {
+            "value": 300,
+            "key": "1x4_straight_rail"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_TrailOrange"
+          },
+          {
+            "value": 300,
+            "key": "boxingGlove"
+          },
+          {
+            "value": 300,
+            "key": "6x6_raceCheckpoint"
+          },
+          {
+            "value": 300,
+            "key": "ballotBox"
+          },
+          {
+            "value": 300,
+            "key": "1x8_straight_rail"
+          },
+          {
+            "value": 100,
+            "key": "prop_stool"
+          },
+          {
+            "value": 300,
+            "key": "mobSpawnEgg_insectTank"
+          },
+          {
+            "value": 300,
+            "key": "1x1x2_workoutBench"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_Cannister2"
+          },
+          {
+            "value": 300,
+            "key": "1x1x2_wirelessReceiver"
+          },
+          {
+            "value": 300,
+            "key": "4x4_door_verticalLines"
+          },
+          {
+            "value": 800,
+            "key": "stuffedSawbladeTurret"
+          },
+          {
+            "value": 800,
+            "key": "1x1_stealableSpawner_chalice"
+          },
+          {
+            "value": 300,
+            "key": "throwingImpulseBomb"
+          },
+          {
+            "value": 50,
+            "key": "4x4_magnetizedBlock"
+          },
+          {
+            "value": 300,
+            "key": "1x1_impulseBomb"
+          },
+          {
+            "value": 50,
+            "key": "1x1_superpowerSpawner_ButtonCooldown"
+          },
+          {
+            "value": 100,
+            "key": "terrainMaterialPaintBrush_sandDune"
+          },
+          {
+            "value": 300,
+            "key": "1x1_noteBlockBass"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_SimpleShoe"
+          },
+          {
+            "value": 1200,
+            "key": "gatlingGun"
+          },
+          {
+            "value": 800,
+            "key": "targetDummy"
+          },
+          {
+            "value": 300,
+            "key": "prop_1x2_moonGeode"
+          },
+          {
+            "value": 1200,
+            "key": "mobSpawnEgg_insectQueen"
+          },
+          {
+            "value": 300,
+            "key": "prop_1x1x2_controlPanel"
+          },
+          {
+            "value": 800,
+            "key": "safeZone"
+          },
+          {
+            "value": 100,
+            "key": "terrainDecoration_suburb_house0"
+          },
+          {
+            "value": 50,
+            "key": "1x2_wooden"
+          },
+          {
+            "value": 100,
+            "key": "terrainDecoration_fantasy_tree2"
+          },
+          {
+            "value": 0,
+            "key": "2x4_stuffed"
+          },
+          {
+            "value": 300,
+            "key": "prop_bolt"
+          },
+          {
+            "value": 300,
+            "key": "1x1_audioIncreaseGainEffect"
+          },
+          {
+            "value": 300,
+            "key": "2x2x1_slope_cornerPyramid_wooden"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_snow_log0"
+          },
+          {
+            "value": 100,
+            "key": "1x1_superpowerSpawner_ShootCookingSlop"
+          },
+          {
+            "value": 800,
+            "key": "customGravitySelector"
+          },
+          {
+            "value": 300,
+            "key": "1x1_screen"
+          },
+          {
+            "value": 100,
+            "key": "1x1_ingredientSpawner_noodle"
+          },
+          {
+            "value": 300,
+            "key": "npcSpawner_gnome_suburb_0"
+          },
+          {
+            "value": 100,
+            "key": "4x4x4_sandDune"
+          },
+          {
+            "value": 300,
+            "key": "2x4_sideStep_rail"
+          },
+          {
+            "value": 800,
+            "key": "textBroadcaster_fullscreen_team"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_MeleeComboFreeze"
+          },
+          {
+            "value": 800,
+            "key": "saddle"
+          },
+          {
+            "value": 800,
+            "key": "woodenLaserTurret"
+          },
+          {
+            "value": 300,
+            "key": "headImaginationSign"
+          },
+          {
+            "value": 1200,
+            "key": "1x1_ziplinePylon_flags"
+          },
+          {
+            "value": 100,
+            "key": "1x4_slab2_wooden"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeTwo"
+          },
+          {
+            "value": 300,
+            "key": "prop_rocketShip"
+          },
+          {
+            "value": 100,
+            "key": "1x1_ingredientSpawner_flowerGood"
+          },
+          {
+            "value": 800,
+            "key": "ninjaHelmetUpgrade"
+          },
+          {
+            "value": 800,
+            "key": "textBroadcaster"
+          },
+          {
+            "value": 300,
+            "key": "prop_schoolDesk"
+          },
+          {
+            "value": 800,
+            "key": "paintBrush_blue_emissive"
+          },
+          {
+            "value": 300,
+            "key": "2x2_playerGate_revive"
+          },
+          {
+            "value": 300,
+            "key": "4x4_springPad_powered"
+          },
+          {
+            "value": 800,
+            "key": "gameModeSign_hangout"
+          },
+          {
+            "value": 100,
+            "key": "1x1_superpowerSpawner_ShootFireburst"
+          },
+          {
+            "value": 800,
+            "key": "woodenFishCatalog"
+          },
+          {
+            "value": 50,
+            "key": "4x4x4_grassRockUncovered"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_sniper"
+          },
+          {
+            "value": 50,
+            "key": "1x1_itemDecorationSpawner_CardboardEquilateralTriangle"
+          },
+          {
+            "value": 800,
+            "key": "4x6_oneWayBarrier"
+          },
+          {
+            "value": 800,
+            "key": "itemDisplay_pedestalShort"
+          },
+          {
+            "value": 300,
+            "key": "8x8_vipBarrier"
+          },
+          {
+            "value": 300,
+            "key": "gameModeSign_hideAndSeek"
+          },
+          {
+            "value": 1200,
+            "key": "2x2_rift"
+          },
+          {
+            "value": 300,
+            "key": "1x1_drum"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_block_8x2x8"
+          },
+          {
+            "value": 800,
+            "key": "asteroidSpawner_small"
+          },
+          {
+            "value": 800,
+            "key": "mobSpawnEgg_alienEye"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeOne"
+          },
+          {
+            "value": 100,
+            "key": "2x2x1_fantasyRockUncovered"
+          },
+          {
+            "value": 300,
+            "key": "iconBlock_spectate"
+          },
+          {
+            "value": 300,
+            "key": "prop_locker"
+          },
+          {
+            "value": 300,
+            "key": "1x1_bell"
+          },
+          {
+            "value": 20,
+            "key": "1x1_3way_wire"
+          },
+          {
+            "value": 300,
+            "key": "worldTokenPickup"
+          },
+          {
+            "value": 100,
+            "key": "prop_wetFloorSign"
+          },
+          {
+            "value": 100,
+            "key": "prop_4x4x1_crater"
+          },
+          {
+            "value": 800,
+            "key": "woodenExplosiveFireBarrel"
+          },
+          {
+            "value": 300,
+            "key": "meleePaintBrush"
+          },
+          {
+            "value": 300,
+            "key": "throwingDecoy"
+          },
+          {
+            "value": 100,
+            "key": "1x8_slab2_wooden"
+          },
+          {
+            "value": 300,
+            "key": "2x2_tokenBarrier"
+          },
+          {
+            "value": 300,
+            "key": "featuredArch"
+          },
+          {
+            "value": 800,
+            "key": "2x2x2_teleporter_staff"
+          },
+          {
+            "value": 300,
+            "key": "prop_dragonNest"
+          },
+          {
+            "value": 300,
+            "key": "1x1_basicBomb"
+          },
+          {
+            "value": 300,
+            "key": "2x2_stuffedNavalMine"
+          },
+          {
+            "value": 100,
+            "key": "banner"
+          },
+          {
+            "value": 100,
+            "key": "8x8x4_sandDune"
+          },
+          {
+            "value": 800,
+            "key": "woodenSawbladeTrap"
+          },
+          {
+            "value": 300,
+            "key": "noCopySign"
+          },
+          {
+            "value": 100,
+            "key": "1x1_whoopeeCushionMine"
+          },
+          {
+            "value": 800,
+            "key": "bulkColorChange_terrain"
+          },
+          {
+            "value": 800,
+            "key": "1x1_superpowerSpawner_ChargeLaserTag"
+          },
+          {
+            "value": 800,
+            "key": "firework"
+          },
+          {
+            "value": 300,
+            "key": "lootCrate_space"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_Spring"
+          },
+          {
+            "value": 0,
+            "key": "1x1_stuffed"
+          },
+          {
+            "value": 300,
+            "key": "fireGrenade"
+          },
+          {
+            "value": 300,
+            "key": "1x1x2_slope_cornerPyramid_wooden"
+          },
+          {
+            "value": 300,
+            "key": "DLatch"
+          },
+          {
+            "value": 300,
+            "key": "4x4_vipBarrier"
+          },
+          {
+            "value": 100,
+            "key": "4x4_reinforced"
+          },
+          {
+            "value": 300,
+            "key": "1x1x0.5_slope_cornerPyramid_wooden"
+          },
+          {
+            "value": 300,
+            "key": "record_spaceTheme"
+          },
+          {
+            "value": 20,
+            "key": "1x2_straight_wire"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_orange_light"
+          },
+          {
+            "value": 50,
+            "key": "2x2_wooden"
+          },
+          {
+            "value": 50,
+            "key": "1x1_superpowerSpawner_UsageLimit"
+          },
+          {
+            "value": 100,
+            "key": "2x2_playerGate_joinLeastPopulatedTeam"
+          },
+          {
+            "value": 300,
+            "key": "microphoneCursed"
+          },
+          {
+            "value": 1200,
+            "key": "pelletSniper"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_Dash"
+          },
+          {
+            "value": 300,
+            "key": "decoration_space_bush1"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_Lightning"
+          },
+          {
+            "value": 100,
+            "key": "decoration_fantasy_mushroom1"
+          },
+          {
+            "value": 50,
+            "key": "8x8_wooden"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_ShootHarpoon"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_maroon_dark"
+          },
+          {
+            "value": 100,
+            "key": "pulseExtender"
+          },
+          {
+            "value": 300,
+            "key": "record_fantasyTheme"
+          },
+          {
+            "value": 50,
+            "key": "1x1_itemDecorationSpawner_Cardboard3DSpike"
+          },
+          {
+            "value": 300,
+            "key": "variableSetRandom"
+          },
+          {
+            "value": 100,
+            "key": "decoration_suburb_mushroom0"
+          },
+          {
+            "value": 800,
+            "key": "terrainShaper"
+          },
+          {
+            "value": 300,
+            "key": "1x1_slopeInversionDown_rail"
+          },
+          {
+            "value": 300,
+            "key": "throwingMegaphone"
+          },
+          {
+            "value": 300,
+            "key": "noEatingItemsSign"
+          },
+          {
+            "value": 800,
+            "key": "hungryHippo"
+          },
+          {
+            "value": 300,
+            "key": "publicWorldCodeBlock"
+          },
+          {
+            "value": 300,
+            "key": "8x8_teamBarrier"
+          },
+          {
+            "value": 300,
+            "key": "8x8_mobBarrier"
+          },
+          {
+            "value": 100,
+            "key": "1x1_superpowerSpawner_SelfPotionRegen"
+          },
+          {
+            "value": 300,
+            "key": "microphonePitchDown"
+          },
+          {
+            "value": 100,
+            "key": "2x2_drumBass"
+          },
+          {
+            "value": 300,
+            "key": "noItemsSign"
+          },
+          {
+            "value": 800,
+            "key": "itemAccepter"
+          },
+          {
+            "value": 300,
+            "key": "1x1x2_wirelessTransmitter"
+          },
+          {
+            "value": 300,
+            "key": "1x1_3way_pipeFat"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_desert_rock3"
+          },
+          {
+            "value": 800,
+            "key": "itemDisplay_pedestal"
+          },
+          {
+            "value": 300,
+            "key": "decoration_space_goop0"
+          },
+          {
+            "value": 800,
+            "key": "stageSmokeCannon"
+          },
+          {
+            "value": 100,
+            "key": "4x8x4_bush"
+          },
+          {
+            "value": 100,
+            "key": "prop_mailbox"
+          },
+          {
+            "value": 300,
+            "key": "1x1_woodenBasicBomb"
+          },
+          {
+            "value": 300,
+            "key": "prop_ceilingLight"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeClub"
+          },
+          {
+            "value": 800,
+            "key": "worldTokenLeaderboard"
+          },
+          {
+            "value": 300,
+            "key": "1x1_ingredientSpawner_berries"
+          },
+          {
+            "value": 800,
+            "key": "weatherBlock_thunderstorm"
+          },
+          {
+            "value": 300,
+            "key": "1x1x1_stuffedClaymore"
+          },
+          {
+            "value": 800,
+            "key": "4x4_oneWayBarrier"
+          },
+          {
+            "value": 300,
+            "key": "decoration_desert_rock1"
+          },
+          {
+            "value": 100,
+            "key": "1x1x0.5_slope_cornerIn_wooden"
+          },
+          {
+            "value": 50,
+            "key": "1x1_wooden"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_plush_purple"
+          },
+          {
+            "value": 800,
+            "key": "6x6_door_space"
+          },
+          {
+            "value": 100,
+            "key": "1x1x2_slope_cornerIn_wooden"
+          },
+          {
+            "value": 300,
+            "key": "ceilingCollisionSign"
+          },
+          {
+            "value": 50,
+            "key": "1x1_itemDecorationSpawner_CardboardCurvedRectangle"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_gray_cool"
+          },
+          {
+            "value": 100,
+            "key": "2x2x1_beachRock"
+          },
+          {
+            "value": 800,
+            "key": "2x2x1_slopeReverse_boostPad"
+          },
+          {
+            "value": 800,
+            "key": "1x1_superpowerSpawner_ShootWebBall"
+          },
+          {
+            "value": 300,
+            "key": "basketball"
+          },
+          {
+            "value": 300,
+            "key": "tokenDailyReward"
+          },
+          {
+            "value": 800,
+            "key": "gameModeSign_sheriff"
+          },
+          {
+            "value": 300,
+            "key": "4x4_door_barred"
+          },
+          {
+            "value": 100,
+            "key": "2x2x1_slope_cornerOut_wooden"
+          },
+          {
+            "value": 100,
+            "key": "drumstick"
+          },
+          {
+            "value": 100,
+            "key": "decoration_fantasy_rock0"
+          },
+          {
+            "value": 300,
+            "key": "cosmeticsStore"
+          },
+          {
+            "value": 300,
+            "key": "techWeb"
+          },
+          {
+            "value": 300,
+            "key": "1x1x2_dangerSign"
+          },
+          {
+            "value": 300,
+            "key": "decoration_beach_coral1"
+          },
+          {
+            "value": 300,
+            "key": "1x1_itemDecorationSpawner_CarWheel"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_desert_rock2"
+          },
+          {
+            "value": 50,
+            "key": "2x2x2_slope_stuffed"
+          },
+          {
+            "value": 800,
+            "key": "crabCage"
+          },
+          {
+            "value": 300,
+            "key": "2x2_breakable_rock"
+          },
+          {
+            "value": 300,
+            "key": "4x4x1_prisonBar_climbable"
+          },
+          {
+            "value": 50,
+            "key": "2x2x2_grassRock"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_cadet"
+          },
+          {
+            "value": 300,
+            "key": "1x1_itemDecorationSpawner_TeslaCoil"
+          },
+          {
+            "value": 100,
+            "key": "pulseDelay_small"
+          },
+          {
+            "value": 300,
+            "key": "prop_trafficLight"
+          },
+          {
+            "value": 800,
+            "key": "minionCapsule_lightning"
+          },
+          {
+            "value": 800,
+            "key": "1x1_stealableSpawner_moneyBag"
+          },
+          {
+            "value": 300,
+            "key": "1x1_smokeBomb"
+          },
+          {
+            "value": 100,
+            "key": "2x1x2_canvas_slope"
+          },
+          {
+            "value": 50,
+            "key": "magnet"
+          },
+          {
+            "value": 300,
+            "key": "task_scanPlate"
+          },
+          {
+            "value": 800,
+            "key": "stuffedMiniTurret"
+          },
+          {
+            "value": 300,
+            "key": "decoration_space_eyeball"
+          },
+          {
+            "value": 100,
+            "key": "4x4x4_sandstone"
+          },
+          {
+            "value": 100,
+            "key": "terrainMaterialPaintBrush_sandstoneDark"
+          },
+          {
+            "value": 800,
+            "key": "stuffedPlayingCard"
+          },
+          {
+            "value": 800,
+            "key": "1x1_textSign"
+          },
+          {
+            "value": 800,
+            "key": "1x1_ingredientSpawner_eyeball"
+          },
+          {
+            "value": 20,
+            "key": "1x1_4way_corner_wire"
+          },
+          {
+            "value": 100,
+            "key": "teamDefinitionSign"
+          },
+          {
+            "value": 300,
+            "key": "throwingTeleporter"
+          },
+          {
+            "value": 300,
+            "key": "tokenBroadcasterTeam_worldTokenAdd"
+          },
+          {
+            "value": 300,
+            "key": "1x1_itemDecorationSpawner_Gauge"
+          },
+          {
+            "value": 800,
+            "key": "customLightingSelector"
+          },
+          {
+            "value": 800,
+            "key": "2x2_disintegratingBlock"
+          },
+          {
+            "value": 20,
+            "key": "1x1_corner_wire"
+          },
+          {
+            "value": 1200,
+            "key": "1x1_superpowerSpawner_OrbitalLaser"
+          },
+          {
+            "value": 300,
+            "key": "basketballHoop"
+          },
+          {
+            "value": 300,
+            "key": "2x2_door_grate"
+          },
+          {
+            "value": 100,
+            "key": "2x2x2_snowRock"
+          },
+          {
+            "value": 100,
+            "key": "8x8x4_sand"
+          },
+          {
+            "value": 800,
+            "key": "textBroadcaster_fullscreen"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_stove"
+          },
+          {
+            "value": 800,
+            "key": "hotCoco"
+          },
+          {
+            "value": 800,
+            "key": "chainsaw"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_SphereEye"
+          },
+          {
+            "value": 300,
+            "key": "iconBlock_cosmeticsStore"
+          },
+          {
+            "value": 0,
+            "key": "2x2x2_wooden"
+          },
+          {
+            "value": 800,
+            "key": "rose"
+          },
+          {
+            "value": 800,
+            "key": "woodenFireJet"
+          },
+          {
+            "value": 300,
+            "key": "1x1x1_barbedWire"
+          },
+          {
+            "value": 800,
+            "key": "tokenTrigger_playerKill"
+          },
+          {
+            "value": 300,
+            "key": "2x2_slab2_wooden"
+          },
+          {
+            "value": 100,
+            "key": "pulseButton_worldTokenSet"
+          },
+          {
+            "value": 300,
+            "key": "2x2_navalMine"
+          },
+          {
+            "value": 300,
+            "key": "holster_small"
+          },
+          {
+            "value": 300,
+            "key": "itemCustomizationEarningsConsole"
+          },
+          {
+            "value": 300,
+            "key": "logicGate_xor"
+          },
+          {
+            "value": 100,
+            "key": "techWeb_gameModes"
+          },
+          {
+            "value": 300,
+            "key": "4x4_breakable_metal"
+          },
+          {
+            "value": 100,
+            "key": "decoration_fantasy_gnome0"
+          },
+          {
+            "value": 800,
+            "key": "2x2x2_teleporterDeath_powered"
+          },
+          {
+            "value": 800,
+            "key": "liquidLevelShifter"
+          },
+          {
+            "value": 300,
+            "key": "prop_1x1_moonGeode"
+          },
+          {
+            "value": 1200,
+            "key": "woodenMissileTurret"
+          },
+          {
+            "value": 300,
+            "key": "stuffedDomino45"
+          },
+          {
+            "value": 300,
+            "key": "roundDurationSign"
+          },
+          {
+            "value": 300,
+            "key": "iconBlock_creativeMode"
+          },
+          {
+            "value": 100,
+            "key": "teamDefinitionSign_seeker"
+          },
+          {
+            "value": 50,
+            "key": "itemSupercharger"
+          },
+          {
+            "value": 300,
+            "key": "prop_sodaCan"
+          },
+          {
+            "value": 100,
+            "key": "terrainMaterialPaintBrush_snow"
+          },
+          {
+            "value": 800,
+            "key": "8x8_teamBuildPlate"
+          },
+          {
+            "value": 300,
+            "key": "balloon"
+          },
+          {
+            "value": 100,
+            "key": "pulseButton_leaveTeam"
+          },
+          {
+            "value": 100,
+            "key": "wiringClockPulse"
+          },
+          {
+            "value": 300,
+            "key": "prop_statueDragon"
+          },
+          {
+            "value": 100,
+            "key": "2x2x2_cauldron"
+          },
+          {
+            "value": 800,
+            "key": "paintBrush_purple_dark_emissive"
+          },
+          {
+            "value": 300,
+            "key": "letter"
+          },
+          {
+            "value": 50,
+            "key": "pulseButton_large"
+          },
+          {
+            "value": 300,
+            "key": "worldTokenNamer"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_gray"
+          },
+          {
+            "value": 300,
+            "key": "prop_shoppingCart"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_AmmoCannister1"
+          },
+          {
+            "value": 1200,
+            "key": "1x1x2_ziplinePylon"
+          },
+          {
+            "value": 800,
+            "key": "1x1_superpowerSpawner_ChargeFireBall"
+          },
+          {
+            "value": 800,
+            "key": "maxStuffingCountSign"
+          },
+          {
+            "value": 300,
+            "key": "decoration_beach_coral0"
+          },
+          {
+            "value": 300,
+            "key": "2x2_flowingWater"
+          },
+          {
+            "value": 1200,
+            "key": "wristCape"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_Bandaid"
+          },
+          {
+            "value": 300,
+            "key": "terrainMaterialPaintBrush_moonRockOrange"
+          },
+          {
+            "value": 100,
+            "key": "techWeb_music"
+          },
+          {
+            "value": 300,
+            "key": "iconBlock_staff"
+          },
+          {
+            "value": 800,
+            "key": "1x1_forbidden_frog"
+          },
+          {
+            "value": 100,
+            "key": "16x16x4_sandDune"
+          },
+          {
+            "value": 100,
+            "key": "paintBrush_red"
+          },
+          {
+            "value": 300,
+            "key": "2x2_flammableCarpet"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_oven"
+          },
+          {
+            "value": 100,
+            "key": "paintBrush_blue_dark"
+          },
+          {
+            "value": 100,
+            "key": "terrainMaterialPaintBrush_concrete"
+          },
+          {
+            "value": 800,
+            "key": "itemRestrictionsConsole_team"
+          },
+          {
+            "value": 100,
+            "key": "roomPassageway_snowRock"
+          },
+          {
+            "value": 300,
+            "key": "prop_cog"
+          },
+          {
+            "value": 800,
+            "key": "1x1_partyButton"
+          },
+          {
+            "value": 100,
+            "key": "prop_parkingMeter"
+          },
+          {
+            "value": 50,
+            "key": "1x2_straight_pipe"
+          },
+          {
+            "value": 100,
+            "key": "1x1_superpowerSpawner_SelfPotionPoison"
+          },
+          {
+            "value": 800,
+            "key": "stuffedMortarTurret"
+          },
+          {
+            "value": 300,
+            "key": "1x2_textSign_speechBubble"
+          },
+          {
+            "value": 1200,
+            "key": "crossbow"
+          },
+          {
+            "value": 300,
+            "key": "decoration_space_arch0"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_SewingButton"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_AmmoCannister2"
+          },
+          {
+            "value": 800,
+            "key": "holster_medium"
+          },
+          {
+            "value": 800,
+            "key": "wristLaserTagGun"
+          },
+          {
+            "value": 800,
+            "key": "4x4_warpPortal"
+          },
+          {
+            "value": 300,
+            "key": "4x4_teamBarrier"
+          },
+          {
+            "value": 100,
+            "key": "1x1x0.5_slope_cornerOut_wooden"
+          },
+          {
+            "value": 800,
+            "key": "paintBrush_red_emissive"
+          },
+          {
+            "value": 800,
+            "key": "pumaCatEars"
+          },
+          {
+            "value": 300,
+            "key": "decoration_beach_starfish0"
+          },
+          {
+            "value": 300,
+            "key": "noResetMapSign"
+          },
+          {
+            "value": 100,
+            "key": "balanceTeamsButton"
+          },
+          {
+            "value": 100,
+            "key": "2x2x2_beachRock"
+          },
+          {
+            "value": 100,
+            "key": "pulseDelay"
+          },
+          {
+            "value": 300,
+            "key": "prop_laundryBasket"
+          },
+          {
+            "value": 300,
+            "key": "1x2_handhold"
+          },
+          {
+            "value": 800,
+            "key": "wristTradingCardDisplay"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_gray_cool_light"
+          },
+          {
+            "value": 300,
+            "key": "prop_teaPlate"
+          },
+          {
+            "value": 800,
+            "key": "surfboard"
+          },
+          {
+            "value": 300,
+            "key": "arrow"
+          },
+          {
+            "value": 800,
+            "key": "woodenExplosiveBarrel"
+          },
+          {
+            "value": 800,
+            "key": "weatherBlock_snow"
+          },
+          {
+            "value": 300,
+            "key": "prop_laptop"
+          },
+          {
+            "value": 800,
+            "key": "4x4_door_slidingGlass"
+          },
+          {
+            "value": 300,
+            "key": "onRoundTimeReached"
+          },
+          {
+            "value": 300,
+            "key": "terrainMaterialPaintBrush_buildingRed"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_ShootFlare"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_ShootHealingDart"
+          },
+          {
+            "value": 100,
+            "key": "paintBrush_green_dark"
+          },
+          {
+            "value": 300,
+            "key": "1x2_textSign_explosion"
+          },
+          {
+            "value": 300,
+            "key": "fireExtinguisher"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_Feather"
+          },
+          {
+            "value": 100,
+            "key": "1x2x2_slope_wooden"
+          },
+          {
+            "value": 300,
+            "key": "navigationSignpostBlock"
+          },
+          {
+            "value": 300,
+            "key": "4x4_danceFloor"
+          },
+          {
+            "value": 300,
+            "key": "task_pushButton_small_horizontal"
+          },
+          {
+            "value": 800,
+            "key": "soundboard"
+          },
+          {
+            "value": 50,
+            "key": "1x1_4way_corner_pipe"
+          },
+          {
+            "value": 300,
+            "key": "prop_sprayCans"
+          },
+          {
+            "value": 300,
+            "key": "2x2_springPad_powered"
+          },
+          {
+            "value": 100,
+            "key": "terrainMaterialPaintBrush_concrete_blue_dark"
+          },
+          {
+            "value": 100,
+            "key": "4x4_breakable_wood"
+          },
+          {
+            "value": 100,
+            "key": "footballHelmet"
+          },
+          {
+            "value": 300,
+            "key": "2x2_playerGate_maxStuffing"
+          },
+          {
+            "value": 300,
+            "key": "noPropsDrainStuffingSign"
+          },
+          {
+            "value": 300,
+            "key": "football"
+          },
+          {
+            "value": 800,
+            "key": "pelletShotgun"
+          },
+          {
+            "value": 100,
+            "key": "8x8x4_moonRock"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_mocha_light"
+          },
+          {
+            "value": 800,
+            "key": "grapplingArrow"
+          },
+          {
+            "value": 300,
+            "key": "1x1_itemDecorationSpawner_Propeller"
+          },
+          {
+            "value": 300,
+            "key": "RSLatch"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_diverter"
+          },
+          {
+            "value": 300,
+            "key": "numberTwoArch"
+          },
+          {
+            "value": 100,
+            "key": "8x8_door_hidden"
+          },
+          {
+            "value": 50,
+            "key": "8x8x4_grassRockUncovered"
+          },
+          {
+            "value": 1200,
+            "key": "mace"
+          },
+          {
+            "value": 300,
+            "key": "remotePaintDispenser_teamsOnly"
+          },
+          {
+            "value": 50,
+            "key": "1x1_itemDecorationSpawner_StyrofoamCube"
+          },
+          {
+            "value": 100,
+            "key": "1x1_speaker"
+          },
+          {
+            "value": 300,
+            "key": "tokenBroadcasterTeam_worldTokenSet"
+          },
+          {
+            "value": 300,
+            "key": "decoration_space_spore0"
+          },
+          {
+            "value": 300,
+            "key": "4x8x4_beachBush"
+          },
+          {
+            "value": 300,
+            "key": "1x1_stuffedLandmine"
+          },
+          {
+            "value": 100,
+            "key": "maxTokensSign"
+          },
+          {
+            "value": 300,
+            "key": "prop_trashCan"
+          },
+          {
+            "value": 300,
+            "key": "stuffedDomino"
+          },
+          {
+            "value": 300,
+            "key": "2x4_sideStepReversed_railEmbedded"
+          },
+          {
+            "value": 100,
+            "key": "4x8_door_hidden"
+          },
+          {
+            "value": 300,
+            "key": "8x4_variableTimeDisplay"
+          },
+          {
+            "value": 50,
+            "key": "1x2_straight_hiddenWire"
+          },
+          {
+            "value": 100,
+            "key": "roomPassageway_moonRock"
+          },
+          {
+            "value": 300,
+            "key": "lootCrateLoadingConsole"
+          },
+          {
+            "value": 800,
+            "key": "paintBrush_cyan_emissive"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_beach_coral0"
+          },
+          {
+            "value": 100,
+            "key": "match"
+          },
+          {
+            "value": 300,
+            "key": "mobSpawnEgg_grazingYak"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_AngryEye"
+          },
+          {
+            "value": 300,
+            "key": "1x1_noteBlockSynth"
+          },
+          {
+            "value": 300,
+            "key": "mobSpawnEgg_grazingSheep"
+          },
+          {
+            "value": 300,
+            "key": "prop_dragonSpine"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_blue_light"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_PopsicleStick"
+          },
+          {
+            "value": 300,
+            "key": "terrainMaterialPaintBrush_buildingGray"
+          },
+          {
+            "value": 300,
+            "key": "lootSack"
+          },
+          {
+            "value": 50,
+            "key": "1x1_superpowerSpawner_SpecialDamageMultiplier"
+          },
+          {
+            "value": 300,
+            "key": "tokenTimeBoundReward"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_green_light"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_PaintUsageCost"
+          },
+          {
+            "value": 300,
+            "key": "task_target"
+          },
+          {
+            "value": 300,
+            "key": "touchKillsPlayersSign"
+          },
+          {
+            "value": 800,
+            "key": "roomPassageway_rocket"
+          },
+          {
+            "value": 300,
+            "key": "techWeb_beach"
+          },
+          {
+            "value": 300,
+            "key": "noMobRaidsSign"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_desert_rockAnvil"
+          },
+          {
+            "value": 800,
+            "key": "2x2x2_quicksand"
+          },
+          {
+            "value": 300,
+            "key": "iconBlock_techWeb"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_beachBush"
+          },
+          {
+            "value": 300,
+            "key": "1x1_tapePlayerBroadcaster"
+          },
+          {
+            "value": 300,
+            "key": "resetSupplyDropBlock"
+          },
+          {
+            "value": 1200,
+            "key": "bowAndArrow"
+          },
+          {
+            "value": 300,
+            "key": "1x1_corner_railStuffed"
+          },
+          {
+            "value": 800,
+            "key": "1x1_ingredientSpawner_frogLeg"
+          },
+          {
+            "value": 50,
+            "key": "2x2x2_grassRockUncovered"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_beach_rock2"
+          },
+          {
+            "value": 100,
+            "key": "terrainDecoration_fantasy_tree1"
+          },
+          {
+            "value": 100,
+            "key": "1x1x0.5_slope_wooden"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeClover"
+          },
+          {
+            "value": 800,
+            "key": "propSelector"
+          },
+          {
+            "value": 100,
+            "key": "1x2x1_slope_wooden"
+          },
+          {
+            "value": 100,
+            "key": "1x1_stair2_wooden"
+          },
+          {
+            "value": 100,
+            "key": "1x1_ingredientSpawner_lettuce"
+          },
+          {
+            "value": 20,
+            "key": "decoration_halloween_pumpkin0"
+          },
+          {
+            "value": 300,
+            "key": "terrainMaterialPaintBrush_buildingBlue"
+          },
+          {
+            "value": 300,
+            "key": "1x1_itemDecorationSpawner_BowTie"
+          },
+          {
+            "value": 800,
+            "key": "1x1_superpowerSpawner_HoldThruster"
+          },
+          {
+            "value": 20,
+            "key": "1x1_3way_corner_wire"
+          },
+          {
+            "value": 300,
+            "key": "2x1x2_conveyor_belt"
+          },
+          {
+            "value": 100,
+            "key": "1x1_drumSnare"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_LongNozzleOrnamental"
+          },
+          {
+            "value": 800,
+            "key": "2x2_boostPad"
+          },
+          {
+            "value": 50,
+            "key": "4x4_stuffed"
+          },
+          {
+            "value": 800,
+            "key": "teamPlayerLimitSign"
+          },
+          {
+            "value": 300,
+            "key": "fieldGoal"
+          },
+          {
+            "value": 300,
+            "key": "prop_comicQuestion"
+          },
+          {
+            "value": 800,
+            "key": "2x2_spikes_powered"
+          },
+          {
+            "value": 300,
+            "key": "handBell"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_mocha"
+          },
+          {
+            "value": 300,
+            "key": "1x1_audioSpeedUpEffect"
+          },
+          {
+            "value": 800,
+            "key": "1x1_superpowerSpawner_ShootLaserTagRay"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeDiamond"
+          },
+          {
+            "value": 1200,
+            "key": "mobSpawnEgg_shark"
+          },
+          {
+            "value": 1200,
+            "key": "wristAirBlaster"
+          },
+          {
+            "value": 300,
+            "key": "decoration_snow_snowman0"
+          },
+          {
+            "value": 300,
+            "key": "prop_officeChair"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_teleporter_canvas"
+          },
+          {
+            "value": 300,
+            "key": "prop_waterCooler"
+          },
+          {
+            "value": 800,
+            "key": "gameModeSign_propHunt"
+          },
+          {
+            "value": 300,
+            "key": "iconBlock_record"
+          },
+          {
+            "value": 100,
+            "key": "decoration_suburb_flower0"
+          },
+          {
+            "value": 300,
+            "key": "prop_vendingMachine"
+          },
+          {
+            "value": 800,
+            "key": "16x16_teamBuildPlate"
+          },
+          {
+            "value": 800,
+            "key": "2x2x2_teleporterDeath"
+          },
+          {
+            "value": 300,
+            "key": "1x1_healthPackSmall"
+          },
+          {
+            "value": 300,
+            "key": "iconBlock_dressingRoom"
+          },
+          {
+            "value": 800,
+            "key": "minionController"
+          },
+          {
+            "value": 300,
+            "key": "numberOneArch"
+          },
+          {
+            "value": 100,
+            "key": "1x1_forbidden_steeringWheel"
+          },
+          {
+            "value": 100,
+            "key": "pulseDelay_big"
+          },
+          {
+            "value": 100,
+            "key": "1x8_slab4_wooden"
+          },
+          {
+            "value": 300,
+            "key": "prop_dragonHead"
+          },
+          {
+            "value": 50,
+            "key": "1x1_6way_pipe"
+          },
+          {
+            "value": 300,
+            "key": "8x4_variableDisplay"
+          },
+          {
+            "value": 300,
+            "key": "decoration_desert_pillar1"
+          },
+          {
+            "value": 100,
+            "key": "4x4_bouncePad"
+          },
+          {
+            "value": 1200,
+            "key": "paintRollerSled"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_CardboardBugWing"
+          },
+          {
+            "value": 300,
+            "key": "techWeb_desert"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_ShootSawblade"
+          },
+          {
+            "value": 800,
+            "key": "sawbladeLauncher"
+          },
+          {
+            "value": 300,
+            "key": "1x8_straight_railEmbedded"
+          },
+          {
+            "value": 300,
+            "key": "taser"
+          },
+          {
+            "value": 300,
+            "key": "variableCompareGreaterThan"
+          },
+          {
+            "value": 300,
+            "key": "prop_controlPanel"
+          },
+          {
+            "value": 300,
+            "key": "potion_poison"
+          },
+          {
+            "value": 300,
+            "key": "1x1_slope_rail"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeSmiley"
+          },
+          {
+            "value": 800,
+            "key": "1x1x2_confettiCannon_powered"
+          },
+          {
+            "value": 300,
+            "key": "prop_crateOpen"
+          },
+          {
+            "value": 100,
+            "key": "pulseButton_worldTokenThreshold"
+          },
+          {
+            "value": 800,
+            "key": "throwingFreezeBomb"
+          },
+          {
+            "value": 800,
+            "key": "mobSpawnEgg_spittingSnail"
+          },
+          {
+            "value": 800,
+            "key": "1x1_ingredientSpawner_bone"
+          },
+          {
+            "value": 100,
+            "key": "1x1_ingredientSpawner_fruit"
+          },
+          {
+            "value": 800,
+            "key": "woodenCannon"
+          },
+          {
+            "value": 100,
+            "key": "2x2_trappedWood"
+          },
+          {
+            "value": 100,
+            "key": "terrainDecoration_suburb_bush1"
+          },
+          {
+            "value": 300,
+            "key": "8x8_glassOneWay"
+          },
+          {
+            "value": 100,
+            "key": "4x4_trappedWood"
+          },
+          {
+            "value": 800,
+            "key": "stuffedPlayingCard45"
+          },
+          {
+            "value": 300,
+            "key": "lootCrate_military"
+          },
+          {
+            "value": 300,
+            "key": "machete"
+          },
+          {
+            "value": 300,
+            "key": "prop_1x2x1_captainChair"
+          },
+          {
+            "value": 300,
+            "key": "1x1_audioLowPassEffect"
+          },
+          {
+            "value": 300,
+            "key": "noTimeLimitSign"
+          },
+          {
+            "value": 800,
+            "key": "gameModeSign_impostor"
+          },
+          {
+            "value": 300,
+            "key": "flag"
+          },
+          {
+            "value": 800,
+            "key": "gameModeSign_infection"
+          },
+          {
+            "value": 300,
+            "key": "crewTaskList"
+          },
+          {
+            "value": 300,
+            "key": "terrainMaterialPaintBrush_moonRock"
+          },
+          {
+            "value": 1200,
+            "key": "headTurret"
+          },
+          {
+            "value": 100,
+            "key": "decoration_fantasy_mushroom3"
+          },
+          {
+            "value": 300,
+            "key": "prop_cowSkull"
+          },
+          {
+            "value": 100,
+            "key": "16x16x4_sandstone"
+          },
+          {
+            "value": 20,
+            "key": "1x1_straight_wire"
+          },
+          {
+            "value": 100,
+            "key": "rubberChicken"
+          },
+          {
+            "value": 800,
+            "key": "woodenMortarTurret"
+          },
+          {
+            "value": 100,
+            "key": "1x1_slab2_half_wooden"
+          },
+          {
+            "value": 100,
+            "key": "1x4_slab43_wooden"
+          },
+          {
+            "value": 100,
+            "key": "roomPassageway_fantasyRock"
+          },
+          {
+            "value": 1200,
+            "key": "flameThrower"
+          },
+          {
+            "value": 300,
+            "key": "itemRestrictionsConsole"
+          },
+          {
+            "value": 100,
+            "key": "paintGun"
+          },
+          {
+            "value": 300,
+            "key": "prop_toilet"
+          },
+          {
+            "value": 800,
+            "key": "1x1_stuffingStorage"
+          },
+          {
+            "value": 100,
+            "key": "paintBrush_brown"
+          },
+          {
+            "value": 300,
+            "key": "decoration_snow_arch0"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_ShortNozzleBasic"
+          },
+          {
+            "value": 300,
+            "key": "2x1x2_reverse_sloped_conveyor_belt"
+          },
+          {
+            "value": 300,
+            "key": "variableIsGreatest"
+          },
+          {
+            "value": 800,
+            "key": "variableSetPlayerCount_team"
+          },
+          {
+            "value": 300,
+            "key": "lockPaintableCanvases"
+          },
+          {
+            "value": 300,
+            "key": "1x1_3way_pipeJunction"
+          },
+          {
+            "value": 300,
+            "key": "decoration_desert_rock2"
+          },
+          {
+            "value": 300,
+            "key": "raceStart"
+          },
+          {
+            "value": 300,
+            "key": "randomizer"
+          },
+          {
+            "value": 300,
+            "key": "1x1_propeller"
+          },
+          {
+            "value": 300,
+            "key": "decoration_space_flower0"
+          },
+          {
+            "value": 800,
+            "key": "stuffedCannon"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_Cannister1"
+          },
+          {
+            "value": 300,
+            "key": "4x4_worldMap"
+          },
+          {
+            "value": 300,
+            "key": "1x2_handhold_pole"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeFour"
+          },
+          {
+            "value": 50,
+            "key": "potion"
+          },
+          {
+            "value": 300,
+            "key": "dagger"
+          },
+          {
+            "value": 300,
+            "key": "1x1_itemDecorationSpawner_Flame"
+          },
+          {
+            "value": 100,
+            "key": "2x2x1_sandDune"
+          },
+          {
+            "value": 100,
+            "key": "2x2_breakable_wood"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_PriceTag"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_cyan"
+          },
+          {
+            "value": 300,
+            "key": "mobSpawnEgg_armadillo"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_space_controlTower"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_snow_rock0"
+          },
+          {
+            "value": 300,
+            "key": "8x8_flowingWater"
+          },
+          {
+            "value": 300,
+            "key": "1x1x1_prisonSink"
+          },
+          {
+            "value": 800,
+            "key": "8x8_spikes_powered"
+          },
+          {
+            "value": 300,
+            "key": "4x4_playerGate_maxStuffing"
+          },
+          {
+            "value": 100,
+            "key": "decoration_researchFacility_radioactiveSymbol1"
+          },
+          {
+            "value": 50,
+            "key": "1x8_wooden"
+          },
+          {
+            "value": 800,
+            "key": "gameModeSign_custom"
+          },
+          {
+            "value": 300,
+            "key": "prop_pumaShoeBox"
+          },
+          {
+            "value": 300,
+            "key": "1x1_slab4_wooden"
+          },
+          {
+            "value": 300,
+            "key": "4x4_screen"
+          },
+          {
+            "value": 300,
+            "key": "1x1_4way_pipeJunction"
+          },
+          {
+            "value": 800,
+            "key": "4x8_door_keyhole"
+          },
+          {
+            "value": 300,
+            "key": "4x4_springPad"
+          },
+          {
+            "value": 800,
+            "key": "4x4_fan"
+          },
+          {
+            "value": 300,
+            "key": "npcSpawner_gnome_snow_0"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BottleCap"
+          },
+          {
+            "value": 300,
+            "key": "decoration_snow_icicle2"
+          },
+          {
+            "value": 300,
+            "key": "mobSpawnEgg_crab"
+          },
+          {
+            "value": 800,
+            "key": "paintBrush_purple_emissive"
+          },
+          {
+            "value": 300,
+            "key": "2x2_glassBrittle"
+          },
+          {
+            "value": 800,
+            "key": "laserSword_basic"
+          },
+          {
+            "value": 300,
+            "key": "1x2_glass"
+          },
+          {
+            "value": 300,
+            "key": "4x4_glassOneWay"
+          },
+          {
+            "value": 800,
+            "key": "gameModeSign_goblin"
+          },
+          {
+            "value": 300,
+            "key": "8x8_spikesFull"
+          },
+          {
+            "value": 100,
+            "key": "2x2x2_sand"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_rose"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_TrailYellow"
+          },
+          {
+            "value": 800,
+            "key": "decoration_suburb_gnomeBouncer"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_LongNozzleBarrel"
+          },
+          {
+            "value": 300,
+            "key": "4x2_variableDisplay"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_beach_coral2"
+          },
+          {
+            "value": 100,
+            "key": "innerTube"
+          },
+          {
+            "value": 100,
+            "key": "2x2_playerGate_worldTokenSet"
+          },
+          {
+            "value": 100,
+            "key": "decoration_fantasy_lilypad1"
+          },
+          {
+            "value": 100,
+            "key": "pumaHoodie_black"
+          },
+          {
+            "value": 300,
+            "key": "paintCostsModeSign"
+          },
+          {
+            "value": 300,
+            "key": "freezeArrow"
+          },
+          {
+            "value": 300,
+            "key": "mobSpawnEgg_grazingHog"
+          },
+          {
+            "value": 100,
+            "key": "4x4_concrete"
+          },
+          {
+            "value": 300,
+            "key": "graffiti_0"
+          },
+          {
+            "value": 0,
+            "key": "2x4_wooden"
+          },
+          {
+            "value": 50,
+            "key": "2x2_straight_hiddenWire"
+          },
+          {
+            "value": 50,
+            "key": "16x16x4_grassRockUncovered"
+          },
+          {
+            "value": 300,
+            "key": "fishBucket"
+          },
+          {
+            "value": 100,
+            "key": "pulseExtender_big"
+          },
+          {
+            "value": 800,
+            "key": "harpoon"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_olive"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeSix"
+          },
+          {
+            "value": 800,
+            "key": "minionCapsule_energyBall"
+          },
+          {
+            "value": 300,
+            "key": "decoration_desert_cactus2"
+          },
+          {
+            "value": 800,
+            "key": "1x1_superpowerSpawner_HoldLightning"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_teal"
+          },
+          {
+            "value": 300,
+            "key": "1x1_corner_rail"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_slope_pyramid_wooden"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_Multishot"
+          },
+          {
+            "value": 800,
+            "key": "paintBrush_blackhole"
+          },
+          {
+            "value": 300,
+            "key": "1x1_corner_railEmbedded"
+          },
+          {
+            "value": 100,
+            "key": "1x1_slope_cornerIn_wooden"
+          },
+          {
+            "value": 300,
+            "key": "prop_comicArrow"
+          },
+          {
+            "value": 300,
+            "key": "prop_paintBucket"
+          },
+          {
+            "value": 800,
+            "key": "bulkColorChange"
+          },
+          {
+            "value": 300,
+            "key": "1x1_handhold"
+          },
+          {
+            "value": 50,
+            "key": "1x1_corner_hiddenWire"
+          },
+          {
+            "value": 300,
+            "key": "decoration_desert_gnome0"
+          },
+          {
+            "value": 800,
+            "key": "1x1_superpowerSpawner_VFXFreeze"
+          },
+          {
+            "value": 300,
+            "key": "2x2_teamBarrier"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_DoubleJump"
+          },
+          {
+            "value": 300,
+            "key": "1x1_6way_pipeFat"
+          },
+          {
+            "value": 300,
+            "key": "prop_space_tunnel"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_amber"
+          },
+          {
+            "value": 300,
+            "key": "prop_teaCupPlate"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_PaintRefundCost"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_ShortNozzle1"
+          },
+          {
+            "value": 100,
+            "key": "paintBrush_black"
+          },
+          {
+            "value": 300,
+            "key": "graffiti_1"
+          },
+          {
+            "value": 800,
+            "key": "discLauncher"
+          },
+          {
+            "value": 100,
+            "key": "4x4x4_moonRock"
+          },
+          {
+            "value": 800,
+            "key": "4x4x4_remoteStuffingDispenser_teamOnly"
+          },
+          {
+            "value": 300,
+            "key": "2x2_grate"
+          },
+          {
+            "value": 300,
+            "key": "record_suburbTheme"
+          },
+          {
+            "value": 300,
+            "key": "prop_1x4x1_wireAntennae0"
+          },
+          {
+            "value": 50,
+            "key": "pulseButton_small"
+          },
+          {
+            "value": 300,
+            "key": "iconBlock_mob"
+          },
+          {
+            "value": 300,
+            "key": "daylightSensor"
+          },
+          {
+            "value": 300,
+            "key": "mobSpawnEgg_insectExploder"
+          },
+          {
+            "value": 300,
+            "key": "prop_2x2x2_statelliteDish"
+          },
+          {
+            "value": 300,
+            "key": "prop_wetPaint"
+          },
+          {
+            "value": 300,
+            "key": "4x4_door_horizontalLines"
+          },
+          {
+            "value": 100,
+            "key": "2x2x2_slope_cornerOut_wooden"
+          },
+          {
+            "value": 300,
+            "key": "8x8x1_prisonBar_climbable"
+          },
+          {
+            "value": 300,
+            "key": "1x2x1_slope_rail"
+          },
+          {
+            "value": 800,
+            "key": "shoeRack"
+          },
+          {
+            "value": 50,
+            "key": "1x1_superpowerSpawner_DamageMultiplier"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_blue"
+          },
+          {
+            "value": 0,
+            "key": "4x4_wooden"
+          },
+          {
+            "value": 300,
+            "key": "mobDamageMultiplierSign"
+          },
+          {
+            "value": 300,
+            "key": "friendlyFireSign"
+          },
+          {
+            "value": 50,
+            "key": "1x1_corner_pipe"
+          },
+          {
+            "value": 100,
+            "key": "terrainDecoration_suburb_tree1"
+          },
+          {
+            "value": 800,
+            "key": "mobSpawnEgg_hermitCrab"
+          },
+          {
+            "value": 300,
+            "key": "task_swipeCard"
+          },
+          {
+            "value": 300,
+            "key": "1x4x1_ladder"
+          },
+          {
+            "value": 800,
+            "key": "2x2_ventOneWay"
+          },
+          {
+            "value": 100,
+            "key": "1x1_slope_wooden"
+          },
+          {
+            "value": 300,
+            "key": "1x1_detector_rail"
+          },
+          {
+            "value": 100,
+            "key": "1x1_superpowerSpawner_SelfPotionSlowFalling"
+          },
+          {
+            "value": 300,
+            "key": "impulseGrenade"
+          },
+          {
+            "value": 300,
+            "key": "1x4_straight_railEmbedded"
+          },
+          {
+            "value": 100,
+            "key": "prop_1x1_moonRocks"
+          },
+          {
+            "value": 300,
+            "key": "decoration_snow_icicle1"
+          },
+          {
+            "value": 300,
+            "key": "2x2_springPad"
+          },
+          {
+            "value": 100,
+            "key": "teamDefinitionSign_hider"
+          },
+          {
+            "value": 300,
+            "key": "npcSpawner_gnome_hazmat_0"
+          },
+          {
+            "value": 300,
+            "key": "1x1_tapePlayer"
+          },
+          {
+            "value": 800,
+            "key": "2x2x2_campfire"
+          },
+          {
+            "value": 50,
+            "key": "1x1_superpowerSpawner_RefundCost"
+          },
+          {
+            "value": 300,
+            "key": "dumbbell"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_teleporter_team"
+          },
+          {
+            "value": 300,
+            "key": "minecart"
+          },
+          {
+            "value": 100,
+            "key": "1x1_ingredientSpawner_flour"
+          },
+          {
+            "value": 300,
+            "key": "prop_observationCap"
+          },
+          {
+            "value": 800,
+            "key": "mobSpawnEgg_wolf"
+          },
+          {
+            "value": 1200,
+            "key": "grapplingHook"
+          },
+          {
+            "value": 100,
+            "key": "8x8x4_snowRockUncovered"
+          },
+          {
+            "value": 100,
+            "key": "decoration_fantasy_mushroom0"
+          },
+          {
+            "value": 300,
+            "key": "1x1_audioReverbEffect"
+          },
+          {
+            "value": 300,
+            "key": "prop_wagonWheel"
+          },
+          {
+            "value": 300,
+            "key": "buildingArch"
+          },
+          {
+            "value": 800,
+            "key": "stuffedLaserTurret"
+          },
+          {
+            "value": 300,
+            "key": "explosiveArrow"
+          },
+          {
+            "value": 300,
+            "key": "4x4x2_acidVat"
+          },
+          {
+            "value": 50,
+            "key": "1x1_itemDecorationSpawner_CardboardStar"
+          },
+          {
+            "value": 800,
+            "key": "keyDispenser"
+          },
+          {
+            "value": 300,
+            "key": "prop_powerOutlet"
+          },
+          {
+            "value": 300,
+            "key": "1x1_alarmSpeaker"
+          },
+          {
+            "value": 1200,
+            "key": "wristWing"
+          },
+          {
+            "value": 800,
+            "key": "2x2_biggieBatSpawner"
+          },
+          {
+            "value": 100,
+            "key": "terrainDecoration_suburb_tree0"
+          },
+          {
+            "value": 100,
+            "key": "8x2x1_slope_wooden"
+          },
+          {
+            "value": 100,
+            "key": "1x1_ingredientSpawner_chicken"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_SakuraFlower"
+          },
+          {
+            "value": 100,
+            "key": "1x1_ingredientSpawner_flowerEvil"
+          },
+          {
+            "value": 100,
+            "key": "1x1_ingredientSpawner_beef"
+          },
+          {
+            "value": 800,
+            "key": "asteroidSpawner_medium"
+          },
+          {
+            "value": 300,
+            "key": "dressingRoom"
+          },
+          {
+            "value": 100,
+            "key": "paintBrush_brown_dark"
+          },
+          {
+            "value": 800,
+            "key": "1x1_stealableSpawner_banana"
+          },
+          {
+            "value": 800,
+            "key": "4x4x4_remoteStuffingDispenser"
+          },
+          {
+            "value": 300,
+            "key": "4x6_glassBrittle"
+          },
+          {
+            "value": 300,
+            "key": "2x2_mobBarrier"
+          },
+          {
+            "value": 100,
+            "key": "2x2x2_slope_cornerIn_wooden"
+          },
+          {
+            "value": 300,
+            "key": "2x4_glassOneWay"
+          },
+          {
+            "value": 800,
+            "key": "2x2x2_teleporterRecall_timedRelease"
+          },
+          {
+            "value": 800,
+            "key": "1x1_superpowerSpawner_VFXSparkle"
+          },
+          {
+            "value": 300,
+            "key": "throwingBasicBomb"
+          },
+          {
+            "value": 300,
+            "key": "4x8_door_verticalLines"
+          },
+          {
+            "value": 100,
+            "key": "terrainDecoration_suburb_bush0"
+          },
+          {
+            "value": 100,
+            "key": "2x4x2_bush"
+          },
+          {
+            "value": 300,
+            "key": "1x1_switch_rail"
+          },
+          {
+            "value": 800,
+            "key": "mobSpawnEgg_spittingLizard"
+          },
+          {
+            "value": 100,
+            "key": "paintBrush_red_dark"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_TrailWhite"
+          },
+          {
+            "value": 100,
+            "key": "1x1_ingredientSpawner_potato"
+          },
+          {
+            "value": 300,
+            "key": "1x1_straight_rail"
+          },
+          {
+            "value": 0,
+            "key": "pet_dog_mocha_light_brown_dark"
+          },
+          {
+            "value": 300,
+            "key": "prop_dragonRib0"
+          },
+          {
+            "value": 300,
+            "key": "blankWand"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_mobSpawner_multi"
+          },
+          {
+            "value": 300,
+            "key": "1x1_healthPackLarge_teamOnly"
+          },
+          {
+            "value": 100,
+            "key": "2x2x2_teleporter_worldTokenThreshold"
+          },
+          {
+            "value": 100,
+            "key": "1x1x2_drumCrash"
+          },
+          {
+            "value": 300,
+            "key": "mobDeathTracker"
+          },
+          {
+            "value": 800,
+            "key": "laserSword_short"
+          },
+          {
+            "value": 300,
+            "key": "prop_cushionChair"
+          },
+          {
+            "value": 800,
+            "key": "worldTokenLeaderboard_gameMode"
+          },
+          {
+            "value": 800,
+            "key": "8x8x2_quicksand"
+          },
+          {
+            "value": 300,
+            "key": "2x2_slab4_wooden"
+          },
+          {
+            "value": 100,
+            "key": "decoration_fantasy_pillar1"
+          },
+          {
+            "value": 800,
+            "key": "6x6_boostRing"
+          },
+          {
+            "value": 800,
+            "key": "resetMapBlock"
+          },
+          {
+            "value": 300,
+            "key": "tradingCardBinder"
+          },
+          {
+            "value": 300,
+            "key": "flagSpawner"
+          },
+          {
+            "value": 800,
+            "key": "tokenTrigger_playerWin"
+          },
+          {
+            "value": 300,
+            "key": "prop_nuggets"
+          },
+          {
+            "value": 1200,
+            "key": "flamethrower"
+          },
+          {
+            "value": 100,
+            "key": "1x1x2_drumHiHat"
+          },
+          {
+            "value": 300,
+            "key": "decoration_desert_cactus0"
+          },
+          {
+            "value": 100,
+            "key": "16x16x4_moonRock"
+          },
+          {
+            "value": 300,
+            "key": "decoration_snow_pillar0"
+          },
+          {
+            "value": 300,
+            "key": "2x4x2_smokestack"
+          },
+          {
+            "value": 300,
+            "key": "iconBlock_VIP"
+          },
+          {
+            "value": 300,
+            "key": "1x1_slopeInversion_rail"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_ShortNozzleAntenna"
+          },
+          {
+            "value": 800,
+            "key": "cardGun"
+          },
+          {
+            "value": 300,
+            "key": "2x4_glassBrittle"
+          },
+          {
+            "value": 800,
+            "key": "weatherBlock_blizzard"
+          },
+          {
+            "value": 300,
+            "key": "decoration_beach_pillar1"
+          },
+          {
+            "value": 300,
+            "key": "prop_2x2_controlPanel"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeSpade"
+          },
+          {
+            "value": 800,
+            "key": "1x1_lightBulb"
+          },
+          {
+            "value": 1200,
+            "key": "fishingRod_advanced"
+          },
+          {
+            "value": 20,
+            "key": "1x1_6way_wire"
+          },
+          {
+            "value": 300,
+            "key": "1x1_itemDecorationSpawner_Mustache"
+          },
+          {
+            "value": 800,
+            "key": "1x1_superpowerSpawner_Tornado"
+          },
+          {
+            "value": 800,
+            "key": "mobSpawnEgg_scorpion"
+          },
+          {
+            "value": 300,
+            "key": "1x1_slab2_wooden"
+          },
+          {
+            "value": 300,
+            "key": "recordDisplay"
+          },
+          {
+            "value": 800,
+            "key": "1x1x2_recordPlayerStuffed"
+          },
+          {
+            "value": 100,
+            "key": "2x1x2_canvas"
+          },
+          {
+            "value": 300,
+            "key": "1x1_audioDistortionEffect"
+          },
+          {
+            "value": 1200,
+            "key": "stuffedMissileTurret"
+          },
+          {
+            "value": 300,
+            "key": "variableCompareLessThan"
+          },
+          {
+            "value": 800,
+            "key": "loadoutSetter"
+          },
+          {
+            "value": 300,
+            "key": "4x4_playerGate_revive"
+          },
+          {
+            "value": 50,
+            "key": "terrainMaterialPaintBrush_grass"
+          },
+          {
+            "value": 800,
+            "key": "footballHelmetUpgrade"
+          },
+          {
+            "value": 800,
+            "key": "potion_love"
+          },
+          {
+            "value": 800,
+            "key": "pet_puma_blue_turquoise_yellow"
+          },
+          {
+            "value": 100,
+            "key": "1x1_drumTom"
+          },
+          {
+            "value": 800,
+            "key": "voteBroadcaster"
+          },
+          {
+            "value": 300,
+            "key": "maxLivesSign"
+          },
+          {
+            "value": 300,
+            "key": "2x4_sideStep_railEmbedded"
+          },
+          {
+            "value": 300,
+            "key": "1x1_4way_pipeFat"
+          },
+          {
+            "value": 300,
+            "key": "prop_chefHat"
+          },
+          {
+            "value": 300,
+            "key": "1x1_computer"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_TrailRed"
+          },
+          {
+            "value": 300,
+            "key": "1x1_straight_pipeFat"
+          },
+          {
+            "value": 300,
+            "key": "2x4_sideStepReversed_rail"
+          },
+          {
+            "value": 300,
+            "key": "variableDefinition"
+          },
+          {
+            "value": 100,
+            "key": "4x2_door_hidden"
+          },
+          {
+            "value": 100,
+            "key": "4x4_door_hidden"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_yellow_emissive"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_snow_rock1"
+          },
+          {
+            "value": 300,
+            "key": "prop_movingBoxOpen"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_LongNozzleDoubleBarrel"
+          },
+          {
+            "value": 300,
+            "key": "prop_footprintRight"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_Cannister3"
+          },
+          {
+            "value": 300,
+            "key": "decoration_desert_pillar0"
+          },
+          {
+            "value": 20,
+            "key": "1x8_straight_wire"
+          },
+          {
+            "value": 300,
+            "key": "1x1_itemDecorationSpawner_TopHat"
+          },
+          {
+            "value": 300,
+            "key": "achievementsConsole"
+          },
+          {
+            "value": 1200,
+            "key": "1x1_ziplinePylon_flagsAnniversary"
+          },
+          {
+            "value": 300,
+            "key": "2x2_lightHouseLight"
+          },
+          {
+            "value": 100,
+            "key": "prop_lawnChair"
+          },
+          {
+            "value": 300,
+            "key": "1x1_soundTap"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_pink"
+          },
+          {
+            "value": 300,
+            "key": "1x1_slopeInversion_railEmbedded"
+          },
+          {
+            "value": 300,
+            "key": "1x2x1_ladder"
+          },
+          {
+            "value": 300,
+            "key": "1x1x2_recordPlayerBroadcaster"
+          },
+          {
+            "value": 800,
+            "key": "pumaBucketHat_purple"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_orange_emissive"
+          },
+          {
+            "value": 100,
+            "key": "techWeb_decorations"
+          },
+          {
+            "value": 800,
+            "key": "2x2x1_slope_boostPad"
+          },
+          {
+            "value": 100,
+            "key": "1x1_superpowerSpawner_SelfPotionInvisibility"
+          },
+          {
+            "value": 100,
+            "key": "decoration_fantasy_arch0"
+          },
+          {
+            "value": 300,
+            "key": "pulseButton_vip"
+          },
+          {
+            "value": 300,
+            "key": "prop_teaPot"
+          },
+          {
+            "value": 800,
+            "key": "airGrabber"
+          },
+          {
+            "value": 300,
+            "key": "lootCrate_snow"
+          },
+          {
+            "value": 300,
+            "key": "2x2_target"
+          },
+          {
+            "value": 100,
+            "key": "2x2_playerGate_joinTeam"
+          },
+          {
+            "value": 800,
+            "key": "mobSpawnEgg_ratKing"
+          },
+          {
+            "value": 300,
+            "key": "flipFlop"
+          },
+          {
+            "value": 300,
+            "key": "prop_2x3x2_bigScreen"
+          },
+          {
+            "value": 100,
+            "key": "decoration_researchFacility_barrel"
+          },
+          {
+            "value": 300,
+            "key": "prop_comicExclamation"
+          },
+          {
+            "value": 300,
+            "key": "task_itemAccepter"
+          },
+          {
+            "value": 300,
+            "key": "frisbee"
+          },
+          {
+            "value": 800,
+            "key": "8x8_oneWayBarrier"
+          },
+          {
+            "value": 300,
+            "key": "endRoundEarlyButton"
+          },
+          {
+            "value": 300,
+            "key": "maxInitialSeekersSign"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_AlienAntenna"
+          },
+          {
+            "value": 50,
+            "key": "4x4x4_grassRock"
+          },
+          {
+            "value": 100,
+            "key": "1x1_superpowerSpawner_ShootMiniMissile"
+          },
+          {
+            "value": 300,
+            "key": "techWeb_space"
+          },
+          {
+            "value": 50,
+            "key": "1x1_itemDecorationSpawner_StyrofoamSphere"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_beach_coralRock0"
+          },
+          {
+            "value": 300,
+            "key": "npcSpawner_gnome_space_0"
+          },
+          {
+            "value": 100,
+            "key": "decoration_fantasy_frog0"
+          },
+          {
+            "value": 100,
+            "key": "terrainDecoration_suburb_house1"
+          },
+          {
+            "value": 300,
+            "key": "mapShifter"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_block_16x2x16"
+          },
+          {
+            "value": 100,
+            "key": "4x4_speaker"
+          },
+          {
+            "value": 300,
+            "key": "turretTerrainDecoration"
+          },
+          {
+            "value": 100,
+            "key": "decoration_suburb_pillar1"
+          },
+          {
+            "value": 300,
+            "key": "decoration_beach_kelp0"
+          },
+          {
+            "value": 100,
+            "key": "onStart"
+          },
+          {
+            "value": 300,
+            "key": "detonator"
+          },
+          {
+            "value": 300,
+            "key": "iconBlock_achievements"
+          },
+          {
+            "value": 100,
+            "key": "1x1_superpowerSpawner_SelfPotionSlowness"
+          },
+          {
+            "value": 1200,
+            "key": "itemDispenser"
+          },
+          {
+            "value": 300,
+            "key": "1x1x2_arrowSign_forward"
+          },
+          {
+            "value": 300,
+            "key": "variableSetCanvasCount"
+          },
+          {
+            "value": 50,
+            "key": "2x8_wooden"
+          },
+          {
+            "value": 300,
+            "key": "1x1_noteBlock"
+          },
+          {
+            "value": 100,
+            "key": "decoration_suburb_gnome0"
+          },
+          {
+            "value": 800,
+            "key": "npcSpawner_gnome_city_1"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_HoldPaintSpray"
+          },
+          {
+            "value": 300,
+            "key": "1x1_4way_corner_pipeJunction"
+          },
+          {
+            "value": 100,
+            "key": "4x4_playerGate_leaveTeam"
+          },
+          {
+            "value": 300,
+            "key": "1x1_audioSlowDownEffect"
+          },
+          {
+            "value": 800,
+            "key": "mobSpawnEgg_eggSack"
+          },
+          {
+            "value": 1200,
+            "key": "superPuma"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_PointedTooth"
+          },
+          {
+            "value": 300,
+            "key": "flySwatter"
+          },
+          {
+            "value": 100,
+            "key": "8x8x4_sandstone"
+          },
+          {
+            "value": 50,
+            "key": "alwaysPowering"
+          },
+          {
+            "value": 300,
+            "key": "decoration_space_spore1"
+          },
+          {
+            "value": 300,
+            "key": "decoration_space_bush0"
+          },
+          {
+            "value": 100,
+            "key": "2x2x2_sandDune"
+          },
+          {
+            "value": 50,
+            "key": "1x1_straight_pipe"
+          },
+          {
+            "value": 800,
+            "key": "gravityZone"
+          },
+          {
+            "value": 1200,
+            "key": "petPumaGoldChain"
+          },
+          {
+            "value": 300,
+            "key": "prop_tableLarge"
+          },
+          {
+            "value": 300,
+            "key": "decoration_snow_icicle0"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_purple_light"
+          },
+          {
+            "value": 300,
+            "key": "woodenTradingTable"
+          },
+          {
+            "value": 300,
+            "key": "pumaTracksuit[teal]"
+          },
+          {
+            "value": 100,
+            "key": "1x1_slope_cornerOut_wooden"
+          },
+          {
+            "value": 100,
+            "key": "4x4x4_fantasyRock"
+          },
+          {
+            "value": 300,
+            "key": "2x2_vipBarrier"
+          },
+          {
+            "value": 300,
+            "key": "decoration_beach_clam0"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_teleporter_powered"
+          },
+          {
+            "value": 300,
+            "key": "2x2x1_slope_flowingWater"
+          },
+          {
+            "value": 800,
+            "key": "shield"
+          },
+          {
+            "value": 50,
+            "key": "2x2x2_slope_wooden"
+          },
+          {
+            "value": 300,
+            "key": "1x1_worldTokenCrate"
+          },
+          {
+            "value": 300,
+            "key": "blankPalm"
+          },
+          {
+            "value": 100,
+            "key": "ninjaHelmet"
+          },
+          {
+            "value": 300,
+            "key": "logicGate_and"
+          },
+          {
+            "value": 50,
+            "key": "1x4_stuffed"
+          },
+          {
+            "value": 100,
+            "key": "prop_fireHydrant"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_snow_tree0"
+          },
+          {
+            "value": 800,
+            "key": "1x2_stuffingPlant"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_slope_cornerPyramid_wooden"
+          },
+          {
+            "value": 300,
+            "key": "1x1_landmine"
+          },
+          {
+            "value": 1200,
+            "key": "woodenAutoTurret"
+          },
+          {
+            "value": 800,
+            "key": "stormCenter"
+          },
+          {
+            "value": 300,
+            "key": "1x1_4way_corner_pipeFat"
+          },
+          {
+            "value": 800,
+            "key": "4x4_door_keyhole"
+          },
+          {
+            "value": 0,
+            "key": "1x2_stuffed"
+          },
+          {
+            "value": 300,
+            "key": "2x2_variableDisplay"
+          },
+          {
+            "value": 100,
+            "key": "8x4x8_concrete"
+          },
+          {
+            "value": 300,
+            "key": "prop_tableSmall"
+          },
+          {
+            "value": 50,
+            "key": "1x1_itemDecorationSpawner_CardboardLine"
+          },
+          {
+            "value": 100,
+            "key": "8x8x4_beachRock"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_space_asteroid0"
+          },
+          {
+            "value": 300,
+            "key": "4x4_playerGate_pulse"
+          },
+          {
+            "value": 300,
+            "key": "regionalCopyPaster"
+          },
+          {
+            "value": 800,
+            "key": "variableSetPlayerCount"
+          },
+          {
+            "value": 300,
+            "key": "decoration_desert_cactus1"
+          },
+          {
+            "value": 100,
+            "key": "2x2_reinforced"
+          },
+          {
+            "value": 300,
+            "key": "prop_desk"
+          },
+          {
+            "value": 100,
+            "key": "terrainMaterialPaintBrush_moss"
+          },
+          {
+            "value": 100,
+            "key": "16x16x4_sand"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_MeleeComboFire"
+          },
+          {
+            "value": 300,
+            "key": "2x2_ice"
+          },
+          {
+            "value": 300,
+            "key": "1x1_itemDecorationSpawner_LaserSight"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_Pin"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeEight"
+          },
+          {
+            "value": 300,
+            "key": "1x1_scaffolding"
+          },
+          {
+            "value": 100,
+            "key": "paintBrush_yellow_light"
+          },
+          {
+            "value": 300,
+            "key": "stuffedCopier"
+          },
+          {
+            "value": 800,
+            "key": "paintBrush_yellow_dark_emissive"
+          },
+          {
+            "value": 300,
+            "key": "1x2_beachBush"
+          },
+          {
+            "value": 800,
+            "key": "1x1_stealableSpawner_diamondNecklace"
+          },
+          {
+            "value": 300,
+            "key": "npcSpawner_gnome_city_0"
+          },
+          {
+            "value": 50,
+            "key": "1x1_superpowerSpawner_Fuse"
+          },
+          {
+            "value": 800,
+            "key": "wearableBackpack_large"
+          },
+          {
+            "value": 300,
+            "key": "decoration_beach_pillar2"
+          },
+          {
+            "value": 100,
+            "key": "4x4_playerGate_joinLeastPopulatedTeam"
+          },
+          {
+            "value": 300,
+            "key": "terrainMaterialPaintBrush_buildingOrange"
+          },
+          {
+            "value": 300,
+            "key": "iconBlock_music"
+          },
+          {
+            "value": 300,
+            "key": "1x1_slope_railEmbedded"
+          },
+          {
+            "value": 300,
+            "key": "decoration_desert_arch0"
+          },
+          {
+            "value": 1200,
+            "key": "wristPropellor"
+          },
+          {
+            "value": 300,
+            "key": "lootCrate_desert"
+          },
+          {
+            "value": 300,
+            "key": "breakDurationSign"
+          },
+          {
+            "value": 800,
+            "key": "inventoryAccessLocker"
+          },
+          {
+            "value": 100,
+            "key": "1x1_ingredientSpawner_milk"
+          },
+          {
+            "value": 800,
+            "key": "1x1_superpowerSpawner_ChargeEnergyBall"
+          },
+          {
+            "value": 300,
+            "key": "4x8_door_horizontalLines"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_desert_cactus1"
+          },
+          {
+            "value": 300,
+            "key": "8x8_spikes"
+          },
+          {
+            "value": 100,
+            "key": "8x8_trappedWood"
+          },
+          {
+            "value": 300,
+            "key": "prop_briefcase"
+          },
+          {
+            "value": 300,
+            "key": "2x2_cloudBlock"
+          },
+          {
+            "value": 300,
+            "key": "prop_astronautHelmet"
+          },
+          {
+            "value": 800,
+            "key": "baitTrader"
+          },
+          {
+            "value": 300,
+            "key": "1x1x2_arrowSign_up45"
+          },
+          {
+            "value": 800,
+            "key": "gameModeSign_tag"
+          },
+          {
+            "value": 100,
+            "key": "2x2x1_slope_cornerIn_wooden"
+          },
+          {
+            "value": 800,
+            "key": "4x4_tractorBeam"
+          },
+          {
+            "value": 300,
+            "key": "smokeGrenade"
+          },
+          {
+            "value": 800,
+            "key": "healthModeSign"
+          },
+          {
+            "value": 800,
+            "key": "buttjo"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_PUMACat"
+          },
+          {
+            "value": 300,
+            "key": "prop_crateClosed"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_plush_blue"
+          },
+          {
+            "value": 300,
+            "key": "1x2_slope_rail"
+          },
+          {
+            "value": 800,
+            "key": "weatherBlock_rain"
+          },
+          {
+            "value": 300,
+            "key": "prop_dresser"
+          },
+          {
+            "value": 100,
+            "key": "1x1_ingredientSpawner_tomato"
+          },
+          {
+            "value": 300,
+            "key": "throwingSmokeBomb"
+          },
+          {
+            "value": 300,
+            "key": "1x1_slope_cornerPyramid_wooden"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_LongNozzleMusket"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_space_satellite1"
+          },
+          {
+            "value": 800,
+            "key": "1x1_stealableSpawner_painting"
+          },
+          {
+            "value": 800,
+            "key": "tronDisc"
+          },
+          {
+            "value": 100,
+            "key": "2x2x2_canvas_slope"
+          },
+          {
+            "value": 800,
+            "key": "1x1_superpowerSpawner_ChargePiercingLaser"
+          },
+          {
+            "value": 300,
+            "key": "1x2_slope_railEmbedded"
+          },
+          {
+            "value": 50,
+            "key": "1x4_wooden"
+          },
+          {
+            "value": 100,
+            "key": "2x2x1_moonRock"
+          },
+          {
+            "value": 800,
+            "key": "1x1_superpowerSpawner_VFXFire"
+          },
+          {
+            "value": 300,
+            "key": "voteDefinition"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_purple_dark"
+          },
+          {
+            "value": 100,
+            "key": "terrainDecoration_fantasy_tree0"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_teleporter_vip"
+          },
+          {
+            "value": 300,
+            "key": "1x1_straight_railEmbedded"
+          },
+          {
+            "value": 300,
+            "key": "variableSetConstant"
+          },
+          {
+            "value": 300,
+            "key": "prop_milk"
+          },
+          {
+            "value": 300,
+            "key": "decoration_space_gnome0"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeZero"
+          },
+          {
+            "value": 20,
+            "key": "1x1_4way_wire"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_funnel"
+          },
+          {
+            "value": 100,
+            "key": "2x2x2_fantasyRock"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_beach_boat0"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_teleporterExit"
+          },
+          {
+            "value": 800,
+            "key": "healingGun"
+          },
+          {
+            "value": 50,
+            "key": "1x1_half_pipe"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_beach_coralRock1"
+          },
+          {
+            "value": 300,
+            "key": "2x2_door_verticalLines"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_desert_rock0"
+          },
+          {
+            "value": 300,
+            "key": "prop_oilLantern"
+          },
+          {
+            "value": 300,
+            "key": "noHiderHintsSign"
+          },
+          {
+            "value": 300,
+            "key": "1x1_target"
+          },
+          {
+            "value": 300,
+            "key": "2x2_worldMap"
+          },
+          {
+            "value": 300,
+            "key": "prop_tableLargeCloth"
+          },
+          {
+            "value": 100,
+            "key": "16x16x4_beachRock"
+          },
+          {
+            "value": 300,
+            "key": "prop_movingBoxClosed"
+          },
+          {
+            "value": 50,
+            "key": "16x16x4_grassRock"
+          },
+          {
+            "value": 800,
+            "key": "2x2_omniBoostPad"
+          },
+          {
+            "value": 300,
+            "key": "1x4_handhold_pole"
+          },
+          {
+            "value": 50,
+            "key": "2x16_wooden"
+          },
+          {
+            "value": 300,
+            "key": "prop_monitor"
+          },
+          {
+            "value": 300,
+            "key": "smokeDetector"
+          },
+          {
+            "value": 300,
+            "key": "decoration_beach_crab0"
+          },
+          {
+            "value": 800,
+            "key": "knightHelmetUpgrade"
+          },
+          {
+            "value": 300,
+            "key": "decoration_space_eggs0"
+          },
+          {
+            "value": 300,
+            "key": "record_snowTheme"
+          },
+          {
+            "value": 100,
+            "key": "1x1_hiderDetector"
+          },
+          {
+            "value": 50,
+            "key": "1x1_superpowerSpawner_KnockbackMultiplier"
+          },
+          {
+            "value": 300,
+            "key": "1x1_blackHoleBomb"
+          },
+          {
+            "value": 800,
+            "key": "1x2_textSign"
+          },
+          {
+            "value": 100,
+            "key": "1x1_superpowerSpawner_ShootPellet"
+          },
+          {
+            "value": 300,
+            "key": "npcSpawner_gnome_fantasy_0"
+          },
+          {
+            "value": 800,
+            "key": "paintVat"
+          },
+          {
+            "value": 100,
+            "key": "1x4_stair2_wooden"
+          },
+          {
+            "value": 50,
+            "key": "2x2x1_grassRockUncovered"
+          },
+          {
+            "value": 20,
+            "key": "candyExplosive"
+          },
+          {
+            "value": 300,
+            "key": "pumaTracksuit[blue]"
+          },
+          {
+            "value": 800,
+            "key": "metronomePulse"
+          },
+          {
+            "value": 300,
+            "key": "1x1_healthPackLarge"
+          },
+          {
+            "value": 100,
+            "key": "compass"
+          },
+          {
+            "value": 300,
+            "key": "prop_lantern"
+          },
+          {
+            "value": 300,
+            "key": "throwingBlackHoleBomb"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeThree"
+          },
+          {
+            "value": 300,
+            "key": "prop_1x1x4_obelisk"
+          },
+          {
+            "value": 300,
+            "key": "terrainMaterialPaintBrush_moonRockLight"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_desert_cactus0"
+          },
+          {
+            "value": 50,
+            "key": "2x2x1_slope_wooden"
+          },
+          {
+            "value": 100,
+            "key": "1x8_slab43_wooden"
+          },
+          {
+            "value": 300,
+            "key": "prop_4x6x1_solarPanel"
+          },
+          {
+            "value": 300,
+            "key": "2x2_playerGate_pulse"
+          },
+          {
+            "value": 800,
+            "key": "4x4_door_superhero"
+          },
+          {
+            "value": 300,
+            "key": "16x16_screen"
+          },
+          {
+            "value": 1200,
+            "key": "potionCannon"
+          },
+          {
+            "value": 50,
+            "key": "1x1_3way_hiddenWire"
+          },
+          {
+            "value": 300,
+            "key": "terrainCopyPaster"
+          },
+          {
+            "value": 800,
+            "key": "gameModeSign_arenaFFA"
+          },
+          {
+            "value": 300,
+            "key": "throwingRadiationBomb"
+          },
+          {
+            "value": 800,
+            "key": "2x2_oneWayBarrier"
+          },
+          {
+            "value": 800,
+            "key": "umbrellaGlider"
+          },
+          {
+            "value": 300,
+            "key": "prop_bookshelf0"
+          },
+          {
+            "value": 800,
+            "key": "paintRoomba"
+          },
+          {
+            "value": 800,
+            "key": "itemDisplay_wall"
+          },
+          {
+            "value": 100,
+            "key": "1x1_superpowerSpawner_ShootSniperBullet"
+          },
+          {
+            "value": 300,
+            "key": "2x2x2_slope_flowingWater"
+          },
+          {
+            "value": 100,
+            "key": "4x4x4_fantasyRockUncovered"
+          },
+          {
+            "value": 300,
+            "key": "4x4_breakable_server"
+          },
+          {
+            "value": 100,
+            "key": "8x8x4_fantasyRock"
+          },
+          {
+            "value": 300,
+            "key": "2x2_glass"
+          },
+          {
+            "value": 100,
+            "key": "2x2x2_fantasyRockUncovered"
+          },
+          {
+            "value": 300,
+            "key": "throwingFireBomb"
+          },
+          {
+            "value": 800,
+            "key": "1x1_woodenHiderDetector"
+          },
+          {
+            "value": 300,
+            "key": "1x1_alarmLight"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_RibbonBadge"
+          },
+          {
+            "value": 100,
+            "key": "techWeb_paint"
+          },
+          {
+            "value": 300,
+            "key": "prop_1x2x4_sleepingBag"
+          },
+          {
+            "value": 50,
+            "key": "1x1_itemDecorationSpawner_CardboardCircle"
+          },
+          {
+            "value": 100,
+            "key": "2x2_trampoline"
+          },
+          {
+            "value": 300,
+            "key": "1x1_radiationBomb"
+          },
+          {
+            "value": 300,
+            "key": "techWeb_suburb"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_ShortNozzleMissile"
+          },
+          {
+            "value": 100,
+            "key": "2x2x1_sandstone"
+          },
+          {
+            "value": 300,
+            "key": "paintBrush_gray_dark"
+          },
+          {
+            "value": 800,
+            "key": "1x1_superpowerSpawner_HoldFire"
+          },
+          {
+            "value": 300,
+            "key": "itemAccepter_worldTokenAdd"
+          },
+          {
+            "value": 300,
+            "key": "2x2x1_prisonBar_climbable"
+          },
+          {
+            "value": 300,
+            "key": "2x2_spikesFull"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_ShortNozzle2"
+          },
+          {
+            "value": 300,
+            "key": "4x4_variableDisplay"
+          },
+          {
+            "value": 300,
+            "key": "1x1x4_raceCheckpoint"
+          },
+          {
+            "value": 300,
+            "key": "2x2_screen"
+          },
+          {
+            "value": 300,
+            "key": "4x4_grate"
+          },
+          {
+            "value": 800,
+            "key": "npcSpawner_frog_suit"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeLips"
+          },
+          {
+            "value": 100,
+            "key": "pulseButton_joinTeam"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_CatEar"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_GoogleyEye"
+          },
+          {
+            "value": 300,
+            "key": "decoration_desert_rock0"
+          },
+          {
+            "value": 300,
+            "key": "4x4_scaffolding"
+          },
+          {
+            "value": 800,
+            "key": "1x1_forbidden_frogMusic"
+          },
+          {
+            "value": 800,
+            "key": "2x2x2_teleporterRecall"
+          },
+          {
+            "value": 100,
+            "key": "1x1x1_canvas"
+          },
+          {
+            "value": 300,
+            "key": "prop_2x2x2_spaceCrate"
+          },
+          {
+            "value": 100,
+            "key": "roomPassageway_sandstone"
+          },
+          {
+            "value": 100,
+            "key": "decoration_suburb_arch0"
+          },
+          {
+            "value": 800,
+            "key": "flipper"
+          },
+          {
+            "value": 300,
+            "key": "teamWinBlock"
+          },
+          {
+            "value": 50,
+            "key": "1x1_itemDecorationSpawner_CardboardDiamond"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_beach_coral1"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_space_moon"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_BadgeHeart"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_desert_rock1"
+          },
+          {
+            "value": 300,
+            "key": "4x4_breakable_rock"
+          },
+          {
+            "value": 100,
+            "key": "gameModeSign_hangoutTeams"
+          },
+          {
+            "value": 1200,
+            "key": "bazooka"
+          },
+          {
+            "value": 300,
+            "key": "prop_porthole_window_cover"
+          },
+          {
+            "value": 800,
+            "key": "pelletGun"
+          },
+          {
+            "value": 100,
+            "key": "2x2_speaker"
+          },
+          {
+            "value": 800,
+            "key": "stageBeam"
+          },
+          {
+            "value": 300,
+            "key": "16x16_mobBarrier"
+          },
+          {
+            "value": 300,
+            "key": "mobSpawnEgg_rat"
+          },
+          {
+            "value": 100,
+            "key": "1x1_itemDecorationSpawner_SingleChainLink"
+          },
+          {
+            "value": 300,
+            "key": "prop_standingLamp"
+          },
+          {
+            "value": 50,
+            "key": "1x1_3way_corner_pipe"
+          },
+          {
+            "value": 300,
+            "key": "adventureArch"
+          },
+          {
+            "value": 100,
+            "key": "mobSpawnEgg_insectSoldier"
+          },
+          {
+            "value": 300,
+            "key": "microphone"
+          },
+          {
+            "value": 300,
+            "key": "1x1_superpowerSpawner_ShootPaintBomb"
+          },
+          {
+            "value": 800,
+            "key": "teamBubbleSetter"
+          },
+          {
+            "value": 300,
+            "key": "1x1_fuse"
+          },
+          {
+            "value": 300,
+            "key": "1x2_straight_pipeFat"
+          },
+          {
+            "value": 300,
+            "key": "terrainMaterialPaintBrush_moonRockCadet"
+          },
+          {
+            "value": 300,
+            "key": "1x1_slab43_wooden"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_snow_tree1"
+          },
+          {
+            "value": 300,
+            "key": "1x1x2_slope_pyramid_wooden"
+          },
+          {
+            "value": 300,
+            "key": "1x1x2_arrowSign_forward45"
+          },
+          {
+            "value": 300,
+            "key": "numberThreeArch"
+          },
+          {
+            "value": 300,
+            "key": "prop_2x2_moonGeode"
+          },
+          {
+            "value": 100,
+            "key": "wearableBackpack_small"
+          },
+          {
+            "value": 100,
+            "key": "paintBrush_orange"
+          },
+          {
+            "value": 100,
+            "key": "decoration_suburb_pillar0"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_space_asteroid1"
+          },
+          {
+            "value": 100,
+            "key": "1x1_ingredientSpawner_sugar"
+          },
+          {
+            "value": 800,
+            "key": "laserSword_doubleSided"
+          },
+          {
+            "value": 300,
+            "key": "terrainDecoration_desert_cactus3"
+          },
+          {
+            "value": 300,
+            "key": "challengeBoard"
+          },
+          {
+            "value": 300,
+            "key": "newArch"
+          },
+          {
+            "value": 100,
+            "key": "4x4x4_beachRock"
+          }
+        ]
+      },
+      "startTime": "1970 01/01 00:00:00",
+      "expireTime": "2099 01/01 00:00:00"
+    }
+  },
+  {
+    "key": "recordStore",
+    "data": {
+      "itemKeys": {
+        "recordStore": [
+          {
+            "value": 300,
+            "key": "record_lightsOut"
+          },
+          {
+            "value": 300,
+            "key": "record_summerNights"
+          },
+          {
+            "value": 300,
+            "key": "record_breadBeats"
+          },
+          {
+            "value": 300,
+            "key": "record_theFinalHider"
+          },
+          {
+            "value": 300,
+            "key": "record_ribbit"
+          },
+          {
+            "value": 300,
+            "key": "record_snowAngels"
+          },
+          {
+            "value": 300,
+            "key": "record_guh"
+          },
+          {
+            "value": 300,
+            "key": "record_theYeepsteriousWaltz"
+          },
+          {
+            "value": 300,
+            "key": "record_rhodesImprov"
+          },
+          {
+            "value": 300,
+            "key": "record_twentyFourSeven"
+          }
+        ]
+      },
+      "startTime": "1970 01/01 00:00:00",
+      "expireTime": "2099 01/01 00:00:00"
+    }
+  },
+  {
+    "key": "tapeStore",
+    "data": {
+      "itemKeys": {
+        "tapeStore": [
+          {
+            "value": 300,
+            "key": "tape_success"
+          },
+          {
+            "value": 300,
+            "key": "tape_what"
+          },
+          {
+            "value": 300,
+            "key": "tape_siren"
+          },
+          {
+            "value": 300,
+            "key": "tape_clock"
+          },
+          {
+            "value": 300,
+            "key": "tape_boom"
+          },
+          {
+            "value": 300,
+            "key": "tape_wrong"
+          },
+          {
+            "value": 300,
+            "key": "tape_knock"
+          },
+          {
+            "value": 300,
+            "key": "tape_powerOn"
+          },
+          {
+            "value": 300,
+            "key": "tape_reveal"
+          },
+          {
+            "value": 300,
+            "key": "tape_spooky"
+          }
+        ]
+      },
+      "startTime": "1970 01/01 00:00:00",
+      "expireTime": "2099 01/01 00:00:00"
+    }
+  },
+  {
+    "key": "rareStore",
+    "data": {
+      "itemKeys": {
+        "rareStore": [
+          {
+            "value": 4800,
+            "key": "pelletSniper_YAWP"
+          },
+          {
+            "value": 6400,
+            "key": "wristCape_royal"
+          },
+          {
+            "value": 4800,
+            "key": "innerTube_duck"
+          },
+          {
+            "value": 6400,
+            "key": "revolver_bone"
+          },
+          {
+            "value": 4800,
+            "key": "machete_pirate"
+          },
+          {
+            "value": 4800,
+            "key": "flail_golden"
+          }
+        ]
+      },
+      "startTime": "1970 01/01 00:00:00",
+      "expireTime": "2099 01/01 00:00:00"
+    }
+  },
+  {
+    "key": "buildingStore",
+    "data": {
+      "itemKeys": {
+        "freeBlocks": [
+          {
+            "value": 0,
+            "key": "decoration_beach_crab0"
+          },
+          {
+            "value": 0,
+            "key": "2x2_flowingWater"
+          },
+          {
+            "value": 0,
+            "key": "pulseExtender_big"
+          },
+          {
+            "value": 0,
+            "key": "4x6_glassBrittle"
+          },
+          {
+            "value": 0,
+            "key": "1x1_ingredientSpawner_leaf"
+          },
+          {
+            "value": 0,
+            "key": "1x2_handhold_pole"
+          }
+        ]
+      },
+      "startTime": "1970 01/01 00:00:00",
+      "expireTime": "2099 01/01 00:00:00"
+    }
+  },
+  {
+    "key": "cosmeticsStore",
+    "data": {
+      "itemKeys": {
+        "basics": [
+          {
+            "value": 200,
+            "key": "basicHoodie[purple]"
+          },
+          {
+            "value": 200,
+            "key": "basicSweater[green_dark]"
+          },
+          {
+            "value": 200,
+            "key": "basicTankTop[green_light]"
+          },
+          {
+            "value": 200,
+            "key": "basicPuffedShirt[cyan]"
+          },
+          {
+            "value": 200,
+            "key": "basicPoloShirt[green_light]"
+          },
+          {
+            "value": 200,
+            "key": "basicCropTop[pink]"
+          },
+          {
+            "value": 200,
+            "key": "basicHoodie[red]"
+          },
+          {
+            "value": 200,
+            "key": "basicCropTop[blue_light]"
+          },
+          {
+            "value": 200,
+            "key": "basicDress[blue_light]"
+          },
+          {
+            "value": 200,
+            "key": "basicSweatPants[black]"
+          },
+          {
+            "value": 200,
+            "key": "basicShirt[brown_dark]"
+          },
+          {
+            "value": 200,
+            "key": "basicPoloShirt[blue]"
+          }
+        ],
+        "heads": [
+          {
+            "value": 1600,
+            "key": "sportsFanFacePaint"
+          },
+          {
+            "value": 1600,
+            "key": "rogueHood"
+          },
+          {
+            "value": 1600,
+            "key": "capJuiceHat"
+          },
+          {
+            "value": 800,
+            "key": "capForwardsHat"
+          },
+          {
+            "value": 1600,
+            "key": "oniMask"
+          },
+          {
+            "value": 1600,
+            "key": "grouchoHat"
+          },
+          {
+            "value": 800,
+            "key": "bandanaNeck"
+          },
+          {
+            "value": 800,
+            "key": "headphonesHead"
+          },
+          {
+            "value": 1600,
+            "key": "pancakeHat"
+          },
+          {
+            "value": 1600,
+            "key": "catHat"
+          }
+        ],
+        "zippers": [
+          {
+            "value": 1600,
+            "key": "zipperOnion"
+          },
+          {
+            "value": 1600,
+            "key": "zipperHotDog"
+          },
+          {
+            "value": 800,
+            "key": "zipperBoxingGlove"
+          },
+          {
+            "value": 800,
+            "key": "zipperFootball"
+          },
+          {
+            "value": 1600,
+            "key": "zipperFireCan"
+          },
+          {
+            "value": 800,
+            "key": "zipperHeart"
+          },
+          {
+            "value": 800,
+            "key": "zipperDice"
+          },
+          {
+            "value": 800,
+            "key": "zipperSharkTooth"
+          },
+          {
+            "value": 1600,
+            "key": "zipperScoreboard"
+          },
+          {
+            "value": 800,
+            "key": "zipperCherries"
+          }
+        ],
+        "outfits": [
+          {
+            "value": 3200,
+            "key": "giraffe"
+          },
+          {
+            "value": 1600,
+            "key": "referee"
+          },
+          {
+            "value": 1600,
+            "key": "bananaSplit"
+          },
+          {
+            "value": 1600,
+            "key": "superheroGenericGreyYellow"
+          },
+          {
+            "value": 3200,
+            "key": "baseballPlayer"
+          },
+          {
+            "value": 1600,
+            "key": "chicken"
+          },
+          {
+            "value": 1600,
+            "key": "redRidingHood"
+          },
+          {
+            "value": 4800,
+            "key": "dragonWarrior"
+          },
+          {
+            "value": 1600,
+            "key": "cheerleader"
+          },
+          {
+            "value": 1600,
+            "key": "cat"
+          },
+          {
+            "value": 1600,
+            "key": "police"
+          },
+          {
+            "value": 4800,
+            "key": "pajama"
+          }
+        ],
+        "hairs": [
+          {
+            "value": 400,
+            "key": "hairGirl9[green_light]"
+          },
+          {
+            "value": 800,
+            "key": "hairFacial3[maroon]"
+          },
+          {
+            "value": 400,
+            "key": "hairGirl9[yellow]"
+          },
+          {
+            "value": 400,
+            "key": "hairGirl2[yellow]"
+          },
+          {
+            "value": 400,
+            "key": "hairBoy11[red]"
+          },
+          {
+            "value": 400,
+            "key": "hairBoy12[red_dark]"
+          },
+          {
+            "value": 400,
+            "key": "hairGirl5[red_dark]"
+          },
+          {
+            "value": 400,
+            "key": "hairBoy6[gray]"
+          },
+          {
+            "value": 400,
+            "key": "hairBoy11[pink]"
+          },
+          {
+            "value": 400,
+            "key": "hairBoy7[purple_light]"
+          }
+        ]
+      },
+      "startTime": "1970 01/01 00:00:00",
+      "expireTime": "2099 01/01 00:00:00"
+    }
+  },
+  {
+    "key": "petCosmeticsStore",
+    "data": {
+      "itemKeys": {
+        "petCosmeticsStore": [
+          {
+            "value": 800,
+            "key": "petCrown"
+          },
+          {
+            "value": 800,
+            "key": "petGoggles"
+          },
+          {
+            "value": 1600,
+            "key": "petTopHat"
+          },
+          {
+            "value": 1600,
+            "key": "petMonocle"
+          },
+          {
+            "value": 1600,
+            "key": "petConeOfShame"
+          },
+          {
+            "value": 800,
+            "key": "petHotDog"
+          },
+          {
+            "value": 1600,
+            "key": "petGrannyOutfit"
+          },
+          {
+            "value": 800,
+            "key": "petHeartHeadband"
+          }
+        ]
+      },
+      "startTime": "1970 01/01 00:00:00",
+      "expireTime": "2099 01/01 00:00:00"
+    }
+  },
+  {
+    "key": "petItemStore",
+    "data": {
+      "itemKeys": {
+        "petItemStore": [
+          {
+            "value": 100,
+            "key": "tennisBall"
+          },
+          {
+            "value": 300,
+            "key": "petBackflipSign"
+          },
+          {
+            "value": 800,
+            "key": "4x4_stuffedPetArena"
+          },
+          {
+            "value": 100,
+            "key": "petBrush"
+          },
+          {
+            "value": 300,
+            "key": "globalPetStopSign"
+          },
+          {
+            "value": 300,
+            "key": "petLaserPointer"
+          },
+          {
+            "value": 100,
+            "key": "flyingPetRidingSign"
+          },
+          {
+            "value": 800,
+            "key": "petNametag"
+          },
+          {
+            "value": 300,
+            "key": "petStopSign"
+          },
+          {
+            "value": 300,
+            "key": "1x1_petBed"
+          },
+          {
+            "value": 800,
+            "key": "4x4_petArena"
+          },
+          {
+            "value": 100,
+            "key": "petStore"
+          }
+        ]
+      },
+      "startTime": "1970 01/01 00:00:00",
+      "expireTime": "2099 01/01 00:00:00"
+    }
+  },
+  {
+    "key": "petStore",
+    "data": {
+      "itemKeys": {
+        "petStore": [
+          {
+            "value": 800,
+            "key": "pet_grub_cyan_light_cyan"
+          },
+          {
+            "value": 800,
+            "key": "pet_dino_gray_purple_dark"
+          },
+          {
+            "value": 800,
+            "key": "pet_sheep_red_pink"
+          },
+          {
+            "value": 800,
+            "key": "pet_cow_blue_turquoise_cyan_light"
+          },
+          {
+            "value": 800,
+            "key": "pet_spider_gray_red"
+          },
+          {
+            "value": 800,
+            "key": "pet_bunny_red_red_dark"
+          }
+        ]
+      },
+      "startTime": "1970 01/01 00:00:00",
+      "expireTime": "2099 01/01 00:00:00"
+    }
+  },
+  {
+    "key": "timeMachine",
+    "data": {
+      "itemKeys": {
+        "timeMachine": [
+          {
+            "value": 0,
+            "key": "timeMachine_catacombs"
+          }
+        ]
+      },
+      "startTime": "1970 01/01 00:00:00",
+      "expireTime": "2099 01/01 00:00:00"
+    }
+  },
+  {
+    "key": "toyStore",
+    "data": {
+      "itemKeys": {
+        "toyStore": [
+          {
+            "value": 100,
+            "key": "RCToyRemote"
+          },
+          {
+            "value": 800,
+            "key": "toyLoader"
+          },
+          {
+            "value": 800,
+            "key": "wristRCToyRemote"
+          },
+          {
+            "value": 5600,
+            "key": "RCFighterJet"
+          },
+          {
+            "value": 1200,
+            "key": "RCSimpleCar"
+          },
+          {
+            "value": 4800,
+            "key": "RCAdvancedCar_green"
+          },
+          {
+            "value": 4800,
+            "key": "RCAdvancedCar_red"
+          },
+          {
+            "value": 4800,
+            "key": "RCBoat"
+          },
+          {
+            "value": 4800,
+            "key": "RCBiplane"
+          },
+          {
+            "value": 5600,
+            "key": "RCUFO"
+          },
+          {
+            "value": 100,
+            "key": "RCHandCamera"
+          },
+          {
+            "value": 5600,
+            "key": "RCTank"
+          },
+          {
+            "value": 4800,
+            "key": "RCAdvancedCar_blue"
+          },
+          {
+            "value": 2400,
+            "key": "FPVGoggles"
+          }
+        ]
+      },
+      "startTime": "1970 01/01 00:00:00",
+      "expireTime": "2099 01/01 00:00:00"
+    }
+  },
+  {
+    "key": "lootQuotas",
+    "data": {
+      "itemKeys": {
+        "lootQuotas_medium": [
+          {
+            "value": 20,
+            "maxCount": 15,
+            "key": "loot_ironIngot"
+          }
+        ],
+        "lootQuotas_easy": [
+          {
+            "value": 4,
+            "maxCount": 50,
+            "key": "loot_wood"
+          }
+        ],
+        "lootQuotas_hard": [
+          {
+            "value": 100,
+            "maxCount": 5,
+            "key": "loot_briefcase"
+          }
+        ]
+      },
+      "startTime": "1970 01/01 00:00:00",
+      "expireTime": "2099 01/01 00:00:00"
+    }
+  },
+  {
+    "key": "challenges",
+    "data": {
+      "itemKeys": {
+        "cardChallenges": [
+          {
+            "value": 50,
+            "key": "shootCrossbowInRooms"
+          },
+          {
+            "value": 50,
+            "key": "grapple"
+          },
+          {
+            "value": 50,
+            "key": "useAirGrabbersInRooms"
+          }
+        ],
+        "hard": [
+          {
+            "value": 50,
+            "key": "travelBySled"
+          }
+        ],
+        "login": [
+          {
+            "value": 100,
+            "key": "login"
+          }
+        ],
+        "easy": [
+          {
+            "value": 50,
+            "key": "fallOntoSpikeTrap"
+          }
+        ]
+      },
+      "startTime": "1970 01/01 00:00:00",
+      "expireTime": "2099 01/01 00:00:00",
+      "streakUpdate": {
+        "loginStreakData": {
+          "length": 0,
+          "currentTier": null,
+          "nextTierThreshold": 3,
+          "nextTier": "bronze"
+        },
+        "itemKeysToRemove": [
+          "loginStreakBadge_bronze",
+          "loginStreakBadge_silver",
+          "loginStreakBadge_gold",
+          "loginStreakBadge_platinum",
+          "loginStreakBadge_diamond",
+          "loginStreakBadge_mythic",
+          "loginStreakBadge_eternal"
+        ],
+        "itemKeysToAdd": []
+      }
+    }
+  }
+]

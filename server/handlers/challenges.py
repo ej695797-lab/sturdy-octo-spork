@@ -17,7 +17,7 @@ async def handle_redeem_challenge_reward(body: dict) -> dict:
     }
 
 
-_tw_cache = {"at": 0.0, "items": None}
+_tw_cache = {"at": 0.0, "items": None, "overridden": False}
 _TW_TTL = 120   # 2026-10-31: was a 167 KB Mongo read on EVERY fetchGlobalRotation
                 # (~1.3-1.7 s each, hundreds per hour) -> the whole server queued
                 # behind it and every load call took ~9 s. Edits still apply in <= 2 min.
@@ -31,20 +31,39 @@ async def techweb_items() -> list:
     import time as _t
     if _tw_cache["items"] is not None and _t.time() - _tw_cache["at"] < _TW_TTL:
         return _tw_cache["items"]
-    items = await _techweb_items_db()
+    items, overridden = await _techweb_items_db()
     _tw_cache["items"], _tw_cache["at"] = items, _t.time()
+    _tw_cache["overridden"] = overridden
     return items
 
 
-async def _techweb_items_db() -> list:
+async def _techweb_items_db() -> tuple[list, bool]:
     try:
         from services.db import globals_col
         doc = await globals_col.find_one({"key": "techweb_items"}, {"_id": 0, "value": 1})
         if doc and isinstance(doc.get("value"), list) and doc["value"]:
-            return doc["value"]
+            return doc["value"], True
     except Exception as e:
         print(f"[techweb] override load failed: {e}")
-    return ALL_TECHWEB_ITEMS
+    return ALL_TECHWEB_ITEMS, False
+
+
+_ROTATION_CACHE: dict[str, tuple[float, dict]] = {}
+_ROTATION_TTL = 120
+
+
+async def _store_rotation(rotation_key: str) -> dict:
+    import time
+    cached = _ROTATION_CACHE.get(rotation_key)
+    if cached and time.monotonic() - cached[0] < _ROTATION_TTL:
+        return cached[1]
+    from services.db import globals_col
+    doc = await globals_col.find_one({"key": rotation_key}, {"_id": 0, "data": 1})
+    data = (doc or {}).get("data")
+    if not isinstance(data, dict):
+        data = {}
+    _ROTATION_CACHE[rotation_key] = (time.monotonic(), data)
+    return data
 
 
 # ---- Daily challenges (the "daily" tab) ------------------------------------
@@ -135,7 +154,9 @@ async def _daily_challenges() -> dict:
     except Exception as e:
         print(f"[daily] live refresh failed: {type(e).__name__}: {e}")
     # Fallback: last cached set or the captured one, re-dated to today's window.
-    keys = (_daily_mem.get("itemKeys") if _daily_mem else None) or _DAILY_FALLBACK_ITEMKEYS
+    stored = await _store_rotation("challenges")
+    keys = ((_daily_mem.get("itemKeys") if _daily_mem else None)
+            or stored.get("itemKeys") or _DAILY_FALLBACK_ITEMKEYS)
     return {"itemKeys": keys, "startTime": start, "expireTime": end, "source": "fallback"}
 
 
@@ -144,24 +165,30 @@ TIME_MACHINE_ROOM_KEY = "fever_dream_1"   # fever dream served as the weekly thr
 
 
 async def handle_fetch_global_rotation(body: dict) -> dict:
-    rotation_key = body.get("rotationKey", "")
+    rotation_key = str(body.get("rotationKey") or "")
     # itemKeys maps a subcategory to its items:
     #   {<subcategory>: [{"value": int, "key": str, "maxCount": int?}]}
     # Returning {} leaves every item uncategorised, so nothing shows up in
     # the build menu even though the account owns it. Everything goes under
     # the base techWeb category for now; the real per-item subcategory
     # mapping (techWeb_beach, techWeb_paint, ...) isn't in the captured data.
-    item_keys = {}
+    stored = await _store_rotation(rotation_key) if rotation_key else {}
+    item_keys = stored.get("itemKeys") if isinstance(stored.get("itemKeys"), dict) else {}
+    result_start = str(stored.get("startTime") or "1970 01/01 00:00:00")
+    expire = str(stored.get("expireTime") or "")
     if rotation_key == "techWeb":
-        item_keys = {"techWeb": [{"value": 0, "key": k} for k in await techweb_items()]}
+        tech_items = await techweb_items()
+        if _tw_cache["overridden"]:
+            item_keys = {"techWeb": [{"value": 0, "key": k} for k in tech_items]}
+        elif not item_keys:
+            item_keys = {"techWeb": [{"value": 0, "key": k} for k in tech_items]}
     # 2.x: TimeMachineRoomManager reads itemKeys["timeMachine"][0].key as the
     # active time-machine room and caches it until expireTime. An empty list is
     # "Invalid time machine format", which also aborts loading the room map
     # ("Failed to get room map node ... NO_DATA_FOUND"). The key replaces the
     # map's "timeMachine" node, so it must NOT be a room already in that map
     # (ch2_old_starterHouse is -> "Duplicate room key" -> whole map rejected).
-    expire = ""
-    if rotation_key == "timeMachine":
+    if rotation_key == "timeMachine" and not item_keys:
         item_keys = {"timeMachine": [{"value": 0, "key": TIME_MACHINE_ROOM_KEY}]}
         expire = "2099 01/01 00:00:00"
     # Featured game mode (2.32: an empty list is "Invalid featured game mode format").
@@ -188,7 +215,7 @@ async def handle_fetch_global_rotation(body: dict) -> dict:
 
     result = {
         "rotationKey": rotation_key,
-        "startTime": result_start if rotation_key == "featuredGameMode" else "1970 01/01 00:00:00",
+        "startTime": result_start,
         "expireTime": expire,
         "itemKeys": item_keys,
     }

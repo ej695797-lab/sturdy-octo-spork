@@ -10,7 +10,7 @@ restarts, and deleting a room's document brings back the original on the next st
 import json
 from pathlib import Path
 
-from services.db import rooms, room_maps, maps, globals_col, bundles
+from services.db import rooms, room_maps, maps, globals_col, bundles, db
 
 WORLD = Path(__file__).parent / "world"
 
@@ -22,6 +22,28 @@ _SETS = [
     (bundles, "bundles.json", "bundleKey"),
     (globals_col, "globals.json", "key"),
 ]
+
+
+async def _load_rotations() -> int:
+    path = WORLD / "rotation_data.json"
+    if not path.exists():
+        return 0
+    state = db["seed_state"]
+    marker = await state.find_one({"key": "rotation_data"})
+    if (marker or {}).get("version", 0) >= 1:
+        return 0
+    docs = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(docs, list) or any(
+        not isinstance(doc, dict) or not doc.get("key") or not isinstance(doc.get("data"), dict)
+        or not isinstance(doc["data"].get("itemKeys"), dict)
+        for doc in docs
+    ):
+        raise ValueError("rotation_data.json must be a list of global rotation documents")
+    for doc in docs:
+        await globals_col.update_one({"key": doc["key"]}, {"$set": doc}, upsert=True)
+    await state.update_one({"key": "rotation_data"},
+                           {"$set": {"key": "rotation_data", "version": 1}}, upsert=True)
+    return len(docs)
 
 
 async def load_world() -> dict:
@@ -38,6 +60,7 @@ async def load_world() -> dict:
             res = await col.update_one({key: doc[key]}, {"$setOnInsert": doc}, upsert=True)
             n += 1 if res.upserted_id is not None else 0
         added[fname.split(".")[0]] = n
+    added["rotations"] = await _load_rotations()
     print(f"[seed] world loaded (new documents): {added}")
     return added
 

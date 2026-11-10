@@ -29,8 +29,10 @@ ACTION_COMMANDS = {
     "apple-stop": "apple off",
     "applesign": "applesign",
     "applesign-stop": "applesign off",
-    "item-gun": "itemgun",
-    "item-gun-off": "itemgun off",
+    "pixel-art": "pixelart",
+    "pixel-art-off": "pixelart off",
+    "soundkey-play": "soundkey",
+    "soundkey-stop": "soundkey off",
     "cleanup": "cleanup",
     "pellet-gun": "pelletfx",
     "pellet-gun-off": "pelletfx off",
@@ -67,18 +69,11 @@ ACTION_COMMANDS = {
 TARGET_ACTIONS = {"smite", "freeze-player", "jumpscare", "mimic"}
 MEDIA_ACTIONS = {"apple", "apple-small", "apple-mute", "apple-stop",
                  "applesign", "applesign-stop"}
-ITEM_ACTIONS = {"item-gun"}
-ITEM_CATALOG = {
-    "buttcoin": "Buttcoin",
-    "freezeGrenade": "Freeze grenade",
-    "throwingBasicBomb": "Basic bomb",
-    "throwingImpulseBomb": "Impulse bomb",
-    "throwingPumpkinBomb": "Pumpkin bomb",
-    "throwingRadiationBomb": "Radiation bomb",
-}
+SOUNDKEY_ACTIONS = {"soundkey-play"}
+PIXEL_ART_ACTIONS = {"pixel-art"}
 
 
-def command_for(action: str, target_name: str = "", item_id: str = "") -> str | None:
+def command_for(action: str, target_name: str = "") -> str | None:
     """Return a command only for a known action; never pass arbitrary UI text through."""
     command = ACTION_COMMANDS.get(action)
     if command is None:
@@ -88,8 +83,4 @@ def command_for(action: str, target_name: str = "", item_id: str = "") -> str | 
         if not target_name:
             return None
         command = f"{command} {target_name}"
-    if action in ITEM_ACTIONS:
-        if item_id not in ITEM_CATALOG:
-            return None
-        command = f"{command} {item_id}"
     return command

@@ -95,14 +95,14 @@ The editor's Photon bot is optional. Set `BOT_KEY` to a private random value and
 Photon custom-auth URL to the server's `PUBLIC_BASE_URL`. The Bot tab can then hook the
 bot to an online player. It provides game, arcade, cleanup, power and effect buttons,
 including Flappy Bird, Minesweeper, two-player Tic-Tac-Toe and Connect Four, finger-gun
-modes, directional right-trigger flight, and an item-spawner gun for the confirmed IDs
-shown in the editor. It has no build, live-talk or view controls.
+modes and directional right-trigger flight. It has no build, live-talk or view controls.
 Upload an MP4 in the Bot tab to show video frames, or an MP3 for an audio waveform; playback
 uses pillow blocks for the screen or the first sign placed by the tracked player. Media is
 stored in MongoDB, not in the repository.
-For bot audio playback, also set `YEEPS_VOICE_APP` to the Photon Voice App ID from the
-Photon dashboard. Without a valid Voice App ID, sign and screen animations still play,
-but without sound.
+The Bot tab also accepts an image for a pillow pixel-art mosaic and audio for SoundKey
+playback. Set `YEEPS_VOICE_APP` to the Photon Voice App ID from the Photon dashboard for
+SoundKey and Bad Apple audio; without a valid Voice App ID, visual animations still play
+without sound.
 
 The optional Discord profile bot is disabled unless `DISCORD_BOT_TOKEN` is configured.
 Create a Discord application and bot, invite it with the `bot` and `applications.commands`
