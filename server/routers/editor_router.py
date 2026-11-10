@@ -61,6 +61,11 @@ EDITOR_ADMINS = set(filter(None, (os.getenv("EDITOR_ADMINS") or "").replace(" ",
 # Signs editor sessions. start.bat/start.sh put a random one in .env; without it a
 # fresh random secret is used (signed-in editors are signed out on restart).
 EDITOR_SECRET          = os.getenv("EDITOR_SECRET") or __import__("secrets").token_hex(32)
+MODERATION_PASSWORD = os.getenv("MODERATION_PASSWORD", "")
+_MODERATION_ACCOUNT_FIELDS = {
+    "adminBlocked", "isPermabanned", "isMutebanned", "isIsolated", "shadowBanned",
+    "banExpireTimestamp", "banReason", "blockReason", "banCategory",
+}
 from config import EDITOR_PASSWORD as KIT_EDITOR_PASSWORD
 # Discord audit webhooks. Editor login + player/data edits go to the ADMIN
 # channel; in-game activity goes to the INGAME channel. Both live in config so
@@ -110,6 +115,15 @@ def _authed_name(request: Request):
         return name
     except Exception:
         return None
+
+
+def _require_moderation_password(body: dict) -> None:
+    if not MODERATION_PASSWORD:
+        raise HTTPException(status_code=503, detail="Set MODERATION_PASSWORD in the server environment first")
+    supplied = body.get("moderationPassword")
+    if not isinstance(supplied, str) or not hmac.compare_digest(
+            supplied.encode("utf-8"), MODERATION_PASSWORD.encode("utf-8")):
+        raise HTTPException(status_code=403, detail="Incorrect moderation password")
 
 
 async def _name_matches(name: str) -> list:
@@ -382,6 +396,9 @@ async def update_player(account_id: str, request: Request):
         patch = await request.json()
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON")
+    if not isinstance(patch, dict):
+        raise HTTPException(status_code=400, detail="Player update must be an object")
+    moderation_password = patch.pop("moderationPassword", None)
 
     # Never allow overwriting the primary key
     patch.pop("accountID", None)
@@ -407,6 +424,8 @@ async def update_player(account_id: str, request: Request):
     before = await accounts.find_one({"accountID": account_id}, proj)
     if before is None:
         raise HTTPException(status_code=404, detail="Account not found")
+    if any(before.get(key) != patch[key] for key in _MODERATION_ACCOUNT_FIELDS if key in patch):
+        _require_moderation_password({"moderationPassword": moderation_password})
 
     if (await _session_tier(request)) == "editor":
         # The players tab saves the WHOLE document, so a locked field only counts
@@ -451,6 +470,13 @@ async def update_player(account_id: str, request: Request):
 async def delete_player(account_id: str, request: Request):
     """Permanently delete a player account. (The client re-creates a fresh one
     from the default template if that player logs in again.)"""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="request body must be an object")
+    _require_moderation_password(body)
     doc = await accounts.find_one({"accountID": account_id}, {"_id": 0})
     if doc is None:
         raise HTTPException(status_code=404, detail="Account not found")
@@ -487,6 +513,9 @@ async def block_player(account_id: str, request: Request):
         body = await request.json()
     except Exception:
         body = {}
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="request body must be an object")
+    _require_moderation_password(body)
     blocked = 1 if body.get("blocked", True) else 0
     reason = str(body.get("reason") or "")
     patch = {"adminBlocked": blocked}
@@ -1091,6 +1120,9 @@ async def ban_player(account_id: str, request: Request):
         body = await request.json()
     except Exception:
         body = {}
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="request body must be an object")
+    _require_moderation_password(body)
     doc = await accounts.find_one({"accountID": account_id},
                                   {"_id": 0, "displayName": 1, "deviceKeys": 1})
     if not doc:
@@ -1136,6 +1168,13 @@ async def ban_player(account_id: str, request: Request):
 
 @router.post("/api/player/{account_id}/unban")
 async def unban_player(account_id: str, request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="request body must be an object")
+    _require_moderation_password(body)
     doc = await accounts.find_one({"accountID": account_id},
                                   {"_id": 0, "displayName": 1, "deviceKeys": 1})
     if not doc:
@@ -1187,6 +1226,9 @@ async def kick_player(account_id: str, request: Request):
         body = await request.json()
     except Exception:
         body = {}
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="request body must be an object")
+    _require_moderation_password(body)
     doc = await accounts.find_one({"accountID": account_id}, {"_id": 0, "displayName": 1})
     if not doc or not await kick_account(account_id, body.get("reason", "")):
         raise HTTPException(status_code=404, detail="Account not found")
@@ -1558,6 +1600,9 @@ async def kick_wrong_build_players(request: Request):
         body = await request.json()
     except Exception:
         body = {}
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="request body must be an object")
+    _require_moderation_password(body)
     kicked = await kick_wrong_build(body.get("reason", ""))
     who = _authed_name(request) or "?"
     await _discord_notify(f"**{who}** kicked {len(kicked)} player(s) on the wrong APK build")
@@ -1585,7 +1630,11 @@ async def set_require_build(request: Request):
         body = await request.json()
     except Exception:
         body = {}
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="request body must be an object")
     on = bool(body.get("on"))
+    if on:
+        _require_moderation_password(body)
     who = _authed_name(request) or "?"
     target = newest_build() if on else "*"   # "*" = allow all builds (testing)
     await globals_col.update_one({"key": "requireBuild"},
@@ -1617,6 +1666,9 @@ async def kick_all_players(request: Request):
         body = await request.json()
     except Exception:
         body = {}
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="request body must be an object")
+    _require_moderation_password(body)
     kicked = await kick_all(body.get("reason", ""), body.get("exclude") or [])
     who = _authed_name(request) or "?"
     await _discord_notify(f"**{who}** kicked ALL online players ({len(kicked)})"

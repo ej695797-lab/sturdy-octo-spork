@@ -151,7 +151,12 @@ installed, uninstall it first: a different signing key can't update it.
 ### 6. Use the editor
 
 Open `<your server>/editor` and sign in with `EDITOR_PASSWORD` from `server/.env`:
-players, bans, kicks, the news board, rooms, maps, disks, and more.
+players, bans, kicks, the news board, rooms, maps, disks, and more. Set a separate,
+long, unique `MODERATION_PASSWORD` in the server environment. The editor asks for it
+again for every ban, unban, kick, or account deletion; the server rejects these
+requests and direct edits to ban fields until the variable is configured. On Render,
+add it as a private service environment variable and redeploy; locally, put it in
+`server/.env`.
 
 ## Maps
 

@@ -128,6 +128,17 @@
   </aside>
 </div>
 <div id="msg"></div>
+<dialog id="moderation-dialog" style="border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--fg);max-width:400px;width:calc(100% - 32px)">
+  <form method="dialog" id="moderation-form">
+    <h3 style="margin-top:0">Confirm moderation password</h3>
+    <p class="note">Enter the separate password configured as MODERATION_PASSWORD on the server.</p>
+    <input id="moderation-password" type="password" autocomplete="current-password" required style="width:100%;box-sizing:border-box">
+    <div class="row" style="justify-content:flex-end;margin-top:12px">
+      <button type="button" class="blk" id="moderation-cancel">Cancel</button>
+      <button type="submit" class="del" value="authorize">Continue</button>
+    </div>
+  </form>
+</dialog>
 
 <script>
 const API = "/editor/api";
@@ -145,6 +156,27 @@ async function api(path, opts) {
   let j; try { j = txt ? JSON.parse(txt) : {}; } catch { j = { raw: txt }; }
   if (!r.ok) throw new Error(j.detail || j.error || ("HTTP " + r.status));
   return j;
+}
+function askModerationPassword() {
+  const dialog = document.getElementById("moderation-dialog");
+  const form = document.getElementById("moderation-form");
+  const input = document.getElementById("moderation-password");
+  input.value = "";
+  return new Promise(resolve => {
+    dialog.addEventListener("close", () => {
+      const password = dialog.returnValue === "authorize" ? input.value : null;
+      input.value = "";
+      resolve(password);
+    }, { once: true });
+    form.onsubmit = event => {
+      event.preventDefault();
+      if (!input.value) return;
+      dialog.close("authorize");
+    };
+    document.getElementById("moderation-cancel").onclick = () => dialog.close("cancel");
+    dialog.showModal();
+    input.focus();
+  });
 }
 function pretty(o) { return JSON.stringify(o, null, 2); }
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
@@ -217,13 +249,24 @@ function renderJsonEditor(opts) {
   } else { open(null); }
   document.getElementById("save").onclick = async () => {
     let obj; try { obj = JSON.parse(ed.value); } catch (e) { return toast("Invalid JSON: " + e.message, true); }
-    try { await opts.save(id, obj); toast("Saved."); } catch (e) { toast(e.message, true); }
+    const moderationFields = ["adminBlocked", "isPermabanned", "isMutebanned", "isIsolated",
+      "shadowBanned", "banExpireTimestamp", "banReason", "blockReason", "banCategory"];
+    const changesBanState = loaded && moderationFields.some(key =>
+      Object.prototype.hasOwnProperty.call(obj, key) && JSON.stringify(obj[key]) !== JSON.stringify(loaded[key]));
+    let moderationPassword;
+    if (changesBanState) {
+      moderationPassword = await askModerationPassword();
+      if (moderationPassword === null) return;
+    }
+    try { await opts.save(id, obj, moderationPassword); toast("Saved."); } catch (e) { toast(e.message, true); }
   };
   const delBtn = document.getElementById("delrow");
   if (delBtn) delBtn.onclick = async () => {
     if (!id) return toast("Select one first", true);
     if (!confirm("Permanently delete " + id + "? This cannot be undone.")) return;
-    try { await opts.del(id); toast("Deleted " + id); id = null; ed.value = ""; sel.textContent = ""; if (run) run(); }
+    const moderationPassword = await askModerationPassword();
+    if (moderationPassword === null) return;
+    try { await opts.del(id, moderationPassword); toast("Deleted " + id); id = null; ed.value = ""; sel.textContent = ""; if (run) run(); }
     catch (e) { toast(e.message, true); }
   };
   const kickBtn = document.getElementById("kickrow");
@@ -231,7 +274,9 @@ function renderJsonEditor(opts) {
     if (!id) return toast("Select a player first", true);
     const reason = prompt("Kick " + ((loaded && loaded.displayName) || id) + "? Optional reason (shown to them):", "");
     if (reason === null) return;
-    try { await opts.kick(id, reason.trim()); toast("Kicked - lands within about a minute"); }
+    const moderationPassword = await askModerationPassword();
+    if (moderationPassword === null) return;
+    try { await opts.kick(id, reason.trim(), moderationPassword); toast("Kicked - lands within about a minute"); }
     catch (e) { toast(e.message, true); }
   };
   const devBtn = document.getElementById("devrow");
@@ -245,10 +290,25 @@ function renderJsonEditor(opts) {
   if (blockBtn) blockBtn.onclick = async () => {
     if (!id) return toast("Select a player first", true);
     const isBlocked = loaded && (loaded.adminBlocked == 1 || loaded.adminBlocked === true);
+    if (isBlocked) {
+      const moderationPassword = await askModerationPassword();
+      if (moderationPassword === null) return;
+      try {
+        await opts.block(id, false, moderationPassword);
+        toast("Unbanned — can connect");
+        await open(id);
+      } catch (e) { toast(e.message, true); }
+      return;
+    }
     try {
-      const r = await opts.block(id, !isBlocked);
-      if (isBlocked) toast("Unbanned — can connect");
-      else toast("Banned " + (r && r.until ? "until " + r.until : "(permanent)"));
+      const raw = prompt("Ban length — e.g. 2h, 3d, 7d, 1w — or leave blank for permanent:", "");
+      if (raw === null) return;
+      const hours = parseDur(raw);
+      if (hours === null) return toast("Bad length — use e.g. 2h, 3d, 7d, or blank for permanent", true);
+      const moderationPassword = await askModerationPassword();
+      if (moderationPassword === null) return;
+      const r = await opts.block(id, true, moderationPassword, hours);
+      toast("Banned " + (r && r.until ? "until " + r.until : "(permanent)"));
       await open(id);
     } catch (e) { toast(e.message, true); }
   };
@@ -260,17 +320,17 @@ const tabs = {
     search: q => api("/players?limit=100&q=" + encodeURIComponent(q)),
     id: r => r.accountID, row: r => `${r.displayName || "(no name)"} <span class="muted">${r.accountID}${r.discordUsername ? " · Discord: " + esc(r.discordUsername) : ""} · ${r.currency ?? "?"}c ${r.beans ?? "?"}b</span>`,
     load: id => api("/player/" + encodeURIComponent(id)),
-    save: (id, o) => api("/player/" + encodeURIComponent(id), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(o) }),
-    del: id => api("/player/" + encodeURIComponent(id), { method: "DELETE" }),
-    kick: (id, reason) => api("/player/" + encodeURIComponent(id) + "/kick", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }) }),
+    save: (id, o, moderationPassword) => {
+      if (moderationPassword) o.moderationPassword = moderationPassword;
+      return api("/player/" + encodeURIComponent(id), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(o) });
+    },
+    del: (id, moderationPassword) => api("/player/" + encodeURIComponent(id), { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ moderationPassword }) }),
+    kick: (id, reason, moderationPassword) => api("/player/" + encodeURIComponent(id) + "/kick", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason, moderationPassword }) }),
     devreset: id => api("/player/" + encodeURIComponent(id) + "/device-reset", { method: "POST" }),
-    block: (id, blocked) => {
-      if (!blocked) return api("/player/" + encodeURIComponent(id) + "/unban", { method: "POST" });
-      const raw = prompt("Ban length — e.g. 2h, 3d, 7d, 1w — or leave blank for permanent:", "");
-      if (raw === null) return Promise.reject(new Error("cancelled"));
-      const h = parseDur(raw);
-      if (h === null) return Promise.reject(new Error("Bad length — use e.g. 2h, 3d, 7d, or blank for permanent"));
-      return api("/player/" + encodeURIComponent(id) + "/ban", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ durationHours: h }) });
+    block: (id, blocked, moderationPassword, hours) => {
+      const headers = { "Content-Type": "application/json" };
+      if (!blocked) return api("/player/" + encodeURIComponent(id) + "/unban", { method: "POST", headers, body: JSON.stringify({ moderationPassword }) });
+      return api("/player/" + encodeURIComponent(id) + "/ban", { method: "POST", headers, body: JSON.stringify({ durationHours: hours, moderationPassword }) });
     },
   }),
   banned: async () => {
@@ -294,8 +354,12 @@ const tabs = {
       ).join("");
       list.querySelectorAll("button[data-unban]").forEach(btn => btn.onclick = async () => {
         if (!confirm("Unban " + btn.dataset.unban + "?")) return;
+        const moderationPassword = await askModerationPassword();
+        if (moderationPassword === null) return;
         try {
-          await api("/player/" + encodeURIComponent(btn.dataset.unban) + "/unban", { method: "POST" });
+          await api("/player/" + encodeURIComponent(btn.dataset.unban) + "/unban", {
+            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ moderationPassword })
+          });
           toast("Unbanned " + btn.dataset.unban); load();
         } catch (e) { toast(e.message, true); }
       });
@@ -667,7 +731,9 @@ const tabs = {
         }).join("") || `<li class="muted" style="cursor:default">nobody online</li>`;
         ul.querySelectorAll("button[data-k]").forEach(b => b.onclick = async () => {
           if (!confirm("Kick " + b.dataset.n + "?")) return;
-          try { await post("/player/" + encodeURIComponent(b.dataset.k) + "/kick", { reason: reason() }); toast("Kicked " + b.dataset.n); }
+          const moderationPassword = await askModerationPassword();
+          if (moderationPassword === null) return;
+          try { await post("/player/" + encodeURIComponent(b.dataset.k) + "/kick", { reason: reason(), moderationPassword }); toast("Kicked " + b.dataset.n); }
           catch (e) { toast(e.message, true); }
         });
       } catch (e) { ul.innerHTML = `<li>${esc(e.message)}</li>`; }
@@ -675,15 +741,19 @@ const tabs = {
     document.getElementById("orefresh").onclick = load;
     document.getElementById("kall").onclick = async () => {
       if (!confirm("Kick EVERYONE who is online (except you)?")) return;
+      const moderationPassword = await askModerationPassword();
+      if (moderationPassword === null) return;
       try { const me = await api("/me"), on = await api("/online");
             const mine = on.players.filter(p => (p.displayName || "").replace(/<[^>]+>/g, "").toLowerCase() === (me.name || "").toLowerCase()).map(p => p.accountID);
-            const r = await post("/kick_all", { reason: reason(), exclude: mine });
+            const r = await post("/kick_all", { reason: reason(), exclude: mine, moderationPassword });
             toast("Kicked " + (r.kicked != null ? r.kicked : (r.accountIDs || []).length) + " player(s)"); load(); }
       catch (e) { toast(e.message, true); }
     };
     document.getElementById("kwrong").onclick = async () => {
       if (!confirm("Kick everyone who is not on the current APK?")) return;
-      try { const r = await post("/kick_wrong_build", { reason: reason() }); toast("Kicked " + r.kicked + " player(s) on a wrong APK"); load(); }
+      const moderationPassword = await askModerationPassword();
+      if (moderationPassword === null) return;
+      try { const r = await post("/kick_wrong_build", { reason: reason(), moderationPassword }); toast("Kicked " + r.kicked + " player(s) on a wrong APK"); load(); }
       catch (e) { toast(e.message, true); }
     };
     async function loadRB() {
@@ -697,7 +767,9 @@ const tabs = {
     }
     document.getElementById("rbon").onclick = async () => {
       if (!confirm("Require the newest build? Everyone on an older APK gets 'Outdated version' and is kicked until you turn this off.")) return;
-      try { const r = await post("/require_build", { on: true }); toast("Require newest build ON - kicked " + r.kicked + " player(s)"); loadRB(); load(); }
+      const moderationPassword = await askModerationPassword();
+      if (moderationPassword === null) return;
+      try { const r = await post("/require_build", { on: true, moderationPassword }); toast("Require newest build ON - kicked " + r.kicked + " player(s)"); loadRB(); load(); }
       catch (e) { toast(e.message, true); }
     };
     document.getElementById("rboff").onclick = async () => {
