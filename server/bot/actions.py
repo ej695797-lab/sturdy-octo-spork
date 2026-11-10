@@ -61,6 +61,8 @@ ACTION_COMMANDS = {
     "boom": "boom",
     "coins-planet": "coins planet",
     "coins-off": "coins off",
+    "orbit-start": "orbit",
+    "orbit-stop": "orbit off",
     "mimic": "mimic",
     "mimic-stop": "stop",
     "players": "players",

@@ -351,15 +351,19 @@ async def handle_try_redeem_currency_stash(body: dict) -> dict:
         return_document=ReturnDocument.AFTER,
     )
     if updated:
+        print(f"[stash] redeemed: award={CURRENCY_STASH_REWARD}")
         return {"success": 1, "newCurrency": int(updated.get("currency") or 0),
                 "currencyAmount": CURRENCY_STASH_REWARD}
 
     account = await accounts.find_one({"accountID": account_id},
                                        {"_id": 0, "currency": 1, "redeemedStashIDs": 1})
     if not account:
+        print("[stash] redemption failed: account not found")
         return {"success": 0, "newCurrency": 0, "currencyAmount": 0}
     if stash_id in (account.get("redeemedStashIDs") or []):
+        print("[stash] duplicate redemption: award=0")
         return {"success": 1, "newCurrency": int(account.get("currency") or 0), "currencyAmount": 0}
+    print("[stash] redemption failed: account update did not match")
     return {"success": 0, "newCurrency": int(account.get("currency") or 0), "currencyAmount": 0}
 
 

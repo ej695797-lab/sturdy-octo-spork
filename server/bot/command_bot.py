@@ -913,6 +913,8 @@ async def cmd_run(a):
 
     bot.handlers.append(lambda code, sender, data: reresolve() if code in (pun.EV_JOIN, pun.EV_LEAVE) else None)
     track(state, "mimic")
+    orbit = {"actor": None, "acct": None, "started": 0.0}
+    track(orbit, "actor")
 
     async def apply_look(name):
         t = bot.actor_by_name(name)
@@ -1117,6 +1119,21 @@ async def cmd_run(a):
                     await bot.send_pose(fp)
                 continue
             if state.get("hidden"):
+                continue
+            if orbit["actor"] is not None:
+                vd = bot.poses.get(orbit["actor"])
+                if not vd:
+                    continue
+                v = list(vd[3:])
+                target_pos = pun.Vector3(v[0], v[1], v[2])
+                angle = (time.monotonic() - orbit["started"]) * 1.5
+                radius = 1.25
+                x, z = math.cos(angle) * radius, math.sin(angle) * radius
+                v[0:3] = [target_pos.x + x, target_pos.y + 0.4, target_pos.z + z]
+                yaw = math.atan2(-x, -z)
+                v[3:7] = [0.0, math.sin(yaw / 2), 0.0, math.cos(yaw / 2)]
+                state["last"] = v
+                await bot.send_pose(v)
                 continue
             t = state["mimic"]
             if t is None:
@@ -7354,6 +7371,21 @@ async def cmd_run(a):
                     tracked_flight.update(actor=t, enabled=True, last_boost=0.0)
                     remember(tracked_flight, "actor")
                     print(f"right-trigger flight ON for {pname(t)}")
+                elif cmd == "orbit":
+                    if off:
+                        orbit.update(actor=None, acct=None, started=0.0)
+                        state["last"] = None
+                        t = bot.actor_by_name(who)
+                        if t is not None:
+                            ensure_avatar(t)
+                        print("bot orbit off")
+                        continue
+                    t = bot.actor_by_name(who)
+                    if t is None or not bot.pose_of(t):
+                        print("can't see the hooked player to orbit")
+                        continue
+                    orbit.update(actor=t, acct=acct_of(t), started=time.monotonic())
+                    print(f"YeeperBot orbiting {pname(t)} - 'orbit off' to stop")
                 elif cmd == "disco":
                     await bot.rpc(bot.view_id, "SendBeginParty", [], receivers=pun.RECV_OTHERS)
                     await bot.rpc(bot.view_id, "SendStartParty", [], receivers=pun.RECV_OTHERS)
