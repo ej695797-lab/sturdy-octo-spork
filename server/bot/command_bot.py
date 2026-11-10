@@ -780,8 +780,8 @@ is enough). Leave NAME out and it means you.
                             (default: the "firebox" spam bot)
   talk / talk off            talk to the players live from the editor's Talk panel (your
                             voice plays at the hooked player's face; you hear them back)
-  applesign                 the first sign you place plays Bad Apple as text art
-                            with the song; applesign off stops playback and keeps the sign
+  applesign                 the first sign you place plays silent Bad Apple text art
+                            applesign off stops playback and keeps the sign
   apple off                 stop
   apple off                 stop and remove the screen
   mimic NAME [METERS]       a copy of NAME beside them (2 m) that walks, moves and looks like
@@ -2178,7 +2178,7 @@ async def cmd_run(a):
     # The sign drops messages longer than about 60 characters. Keep the 5-line
     # frame and rich-text size tags within that limit.
     asg = {"on": False, "actor": None, "signs": {}, "task": None, "stop": False, "frames": {},
-           "voice": None, "w": 8, "h": 5, "fps": 8, "plain": True}
+           "w": 8, "h": 5, "fps": 8, "plain": True}
 
     def decode_sign_frames(path, w, h, fps):
         """Video or audio waveform -> frames of lit pixels."""
@@ -2266,28 +2266,9 @@ async def cmd_run(a):
                 print("\napplesign: converting the video...")
                 asg["frames"][key] = await asyncio.to_thread(decode_sign_frames, path, w, h, fps)
             frames = asg["frames"][key]
-            voice = None
-            try:
-                from photon.voice import opus_packets, VoiceSender
-                packets = await asyncio.to_thread(opus_packets, path, os.path.join(HERE, "media"))
-                first = next(iter(asg["signs"]), None)
-                if packets and first is not None:
-                    await bot.spawn_speaker()
-                    await strip_cosmetics()
-                    sw = cell_world(first)
-                    spot = pun.Vector3(sw.x, first[1] * 0.5 - 1.0, sw.z)   # under the ground below the sign
-                    park_avatar(spot)
-                    state["speaker"] = spot
-                    voice = VoiceSender(cur["room"], bot.actor * 1000 + 2, a.name)
-                    await voice.connect()
-                    asg["voice"] = voice
-                    await asyncio.sleep(1.0)
-            except Exception as e:
-                print(f"applesign: playing without sound ({e!r})")
-                packets, voice = [], None
             start = time.monotonic() + 0.3
 
-            async def video():
+            async def animate_sign():
                 for i, lit in enumerate(frames):
                     if asg["stop"] or not asg["signs"]:
                         break
@@ -2298,24 +2279,10 @@ async def cmd_run(a):
                     if delay > 0:
                         await asyncio.sleep(delay)
 
-            jobs = [video()]
-            if voice:
-                jobs.append(voice.play(packets, start, stop=lambda: asg["stop"] or not asg["signs"]))
-            await asyncio.gather(*jobs)
+            await animate_sign()
         except Exception as e:
             print(f"applesign error: {e!r}")
         finally:
-            if asg["voice"]:
-                try:
-                    await asg["voice"].close()
-                except Exception as e:
-                    print(f"applesign: couldn't close voice ({e!r})")
-                asg["voice"] = None
-            state["speaker"] = None
-            state["last"] = None
-            t0 = bot.actor_by_name(who)
-            if t0 is not None:
-                ensure_avatar(t0)
             for c, entry in list(asg["signs"].items()):
                 try:
                     await sign_say(c, entry["original_text"], entry["owner"])
@@ -7852,7 +7819,7 @@ async def cmd_run(a):
                         print("no player to do that for"); continue
                     asg["actor"], asg["on"] = t0, True
                     asg["signs"].clear()
-                    print("applesign on - the first sign you place will play Bad Apple as text; "
+                    print("applesign on - the first sign you place will play silent Bad Apple text; "
                           "'applesign off' stops playback and keeps your sign.")
                 elif cmd == "talk":
                     if off:
