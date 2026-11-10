@@ -100,6 +100,9 @@ shown in the editor. It has no build, live-talk or view controls.
 Upload an MP4 in the Bot tab to show video frames, or an MP3 for an audio waveform; playback
 uses pillow blocks for the screen or the first sign placed by the tracked player. Media is
 stored in MongoDB, not in the repository.
+For bot audio playback, also set `YEEPS_VOICE_APP` to the Photon Voice App ID from the
+Photon dashboard. Without a valid Voice App ID, sign and screen animations still play,
+but without sound.
 
 The optional Discord profile bot is disabled unless `DISCORD_BOT_TOKEN` is configured.
 Create a Discord application and bot, invite it with the `bot` and `applications.commands`

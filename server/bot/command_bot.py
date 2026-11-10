@@ -2036,13 +2036,10 @@ async def cmd_run(a):
         print("screen ready - type apple to play on it, 'screen off' to remove it\nbot> ", end="", flush=True)
 
     # --- Bad Apple text animation on the first sign the followed player places ---
-    # The sign is a legacy UI Text in Londrina Solid, size 36, no rich text, in a
-    # 300x252 box: 5 lines fit (a 6th is cut off) and a text over ~60 characters is
-    # dropped. The font has no braille or block glyphs (braille showed nothing), so a
-    # frame is 11 x 5 cells of "#" (dark) and "_" (light), which are nearly the same
-    # width in this font so the rows line up: 55 + 4 newlines = 59 characters.
+    # The sign drops messages longer than about 60 characters. Keep the 5-line
+    # frame and rich-text size tags within that limit.
     asg = {"on": False, "actor": None, "signs": {}, "task": None, "stop": False, "frames": {},
-           "voice": None, "w": 11, "h": 5, "fps": 8, "plain": True}
+           "voice": None, "w": 8, "h": 5, "fps": 8, "plain": True}
 
     def decode_sign_frames(path, w, h, fps):
         """Video or audio waveform -> frames of lit pixels."""
@@ -2062,8 +2059,9 @@ async def cmd_run(a):
     SIGN = "1x1x2_textSign"
 
     def sign_text(lit, w, h, plain):
-        """One frame as 5 rows of "#" (dark pixel) and "_" (light pixel)."""
-        return "\n".join("".join("_" if (x, y) in lit else "#" for x in range(w)) for y in range(h))
+        """One compact rich-text frame that fits the sign's message limit."""
+        pixels = "\n".join("".join("_" if (x, y) in lit else "#" for x in range(w)) for y in range(h))
+        return f"<size=10>{pixels}</size>"
 
     async def sign_say(cell, text):
         x, y, z = cell
