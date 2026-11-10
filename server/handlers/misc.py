@@ -337,8 +337,17 @@ async def handle_try_redeem_currency_stash(body: dict) -> dict:
         amount = int(raw_amount)
     except (TypeError, ValueError):
         amount = 0
-    if not account_id.startswith("o_") or len(account_id) > 80 or not stash_id or len(stash_id) > 120 \
-            or amount <= 0 or amount > 100_000:
+    invalid = []
+    if not account_id.startswith("o_") or len(account_id) > 80:
+        invalid.append("account_id")
+    if not stash_id or len(stash_id) > 120:
+        invalid.append("stash_id")
+    if amount <= 0 or amount > 100_000:
+        invalid.append("amount")
+    if invalid:
+        fields = {str(key): type(value).__name__ for key, value in body.items()
+                  if not str(key).startswith("_")}
+        print(f"[stash] rejected ({','.join(invalid)}); request fields/types={fields}")
         return {"success": 0, "newCurrency": 0, "currencyAmount": 0}
 
     from pymongo import ReturnDocument
