@@ -50,6 +50,28 @@ async def _techweb_items_db() -> tuple[list, bool]:
 
 _ROTATION_CACHE: dict[str, tuple[float, dict]] = {}
 _ROTATION_TTL = 120
+_ROTATION_DEFAULTS: dict[str, dict] | None = None
+
+
+def _rotation_default(rotation_key: str) -> dict:
+    global _ROTATION_DEFAULTS
+    if _ROTATION_DEFAULTS is None:
+        import json
+        from pathlib import Path
+        path = Path(__file__).resolve().parents[1] / "seed" / "world" / "rotation_data.json"
+        try:
+            docs = json.loads(path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            _ROTATION_DEFAULTS = {}
+        else:
+            if not isinstance(docs, list):
+                raise ValueError("rotation_data.json must contain a list")
+            _ROTATION_DEFAULTS = {
+                doc["key"]: doc["data"] for doc in docs
+                if isinstance(doc, dict) and isinstance(doc.get("key"), str)
+                and isinstance(doc.get("data"), dict)
+            }
+    return _ROTATION_DEFAULTS.get(rotation_key, {})
 
 
 async def _store_rotation(rotation_key: str) -> dict:
@@ -61,7 +83,7 @@ async def _store_rotation(rotation_key: str) -> dict:
     doc = await globals_col.find_one({"key": rotation_key}, {"_id": 0, "data": 1})
     data = (doc or {}).get("data")
     if not isinstance(data, dict):
-        data = {}
+        data = _rotation_default(rotation_key)
     _ROTATION_CACHE[rotation_key] = (time.monotonic(), data)
     return data
 

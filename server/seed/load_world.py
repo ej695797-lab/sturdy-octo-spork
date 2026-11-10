@@ -29,9 +29,6 @@ async def _load_rotations() -> int:
     if not path.exists():
         return 0
     state = db["seed_state"]
-    marker = await state.find_one({"key": "rotation_data"})
-    if (marker or {}).get("version", 0) >= 1:
-        return 0
     docs = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(docs, list) or any(
         not isinstance(doc, dict) or not doc.get("key") or not isinstance(doc.get("data"), dict)
@@ -39,11 +36,13 @@ async def _load_rotations() -> int:
         for doc in docs
     ):
         raise ValueError("rotation_data.json must be a list of global rotation documents")
+    added = 0
     for doc in docs:
-        await globals_col.update_one({"key": doc["key"]}, {"$set": doc}, upsert=True)
+        result = await globals_col.update_one({"key": doc["key"]}, {"$setOnInsert": doc}, upsert=True)
+        added += result.upserted_id is not None
     await state.update_one({"key": "rotation_data"},
-                           {"$set": {"key": "rotation_data", "version": 1}}, upsert=True)
-    return len(docs)
+                           {"$set": {"key": "rotation_data", "version": 2}}, upsert=True)
+    return added
 
 
 async def load_world() -> dict:

@@ -89,10 +89,12 @@ class VoiceSender:
         for app, ver in cands:
             self.app, self.ver = app, ver
             try:
+                print(f"(voice: trying app {app[:8]} version {ver!r})")
                 await self._connect_one()
                 print(f"(voice: joined {self.room} on app {app[:8]} version {ver!r})")
                 return
             except Exception as e:
+                print(f"(voice: app {app[:8]} failed: {e!r})")
                 last = e
                 try:
                     if self.conn:
