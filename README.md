@@ -92,7 +92,10 @@ should end with `ALL PASS`.
 
 The editor's Photon bot is optional. Set `BOT_KEY` to a private random value and
 `PHOTON_APP_ID` to the PUN App ID used in the host's APK, then configure the PUN app's
-Photon custom-auth URL to the server's `PUBLIC_BASE_URL`. The Bot tab can then hook the
+Photon custom-auth URL to the server's `PUBLIC_BASE_URL`. To authenticate game clients
+on Photon Voice too, set the Voice app's custom-auth URL to the same `PUBLIC_BASE_URL`;
+the server applies its account, headset, and build checks to both apps. Keep the Voice
+App ID in the APK as usual. The Bot tab can then hook the
 bot to an online player. It provides game, arcade, cleanup, power and effect buttons,
 including Flappy Bird, Minesweeper, two-player Tic-Tac-Toe and Connect Four, finger-gun
 modes and directional right-trigger flight. It has no build, live-talk or view controls.
@@ -101,8 +104,10 @@ uses pillow blocks for the screen or the first sign placed by the tracked player
 stored in MongoDB, not in the repository.
 The Bot tab also accepts an image for a pillow pixel-art mosaic and audio for SoundKey
 playback. Set `YEEPS_VOICE_APP` to the Photon Voice App ID from the Photon dashboard for
-SoundKey and Bad Apple audio; without a valid Voice App ID, visual animations still play
-without sound.
+bot SoundKey and Bad Apple audio; without a valid Voice App ID, visual animations still
+play without sound. `YEEPS_VOICE_AUTH` is optional custom-auth query data for the bot's
+Voice connection only; player Voice authentication uses the Voice app's custom-auth URL
+and does not require that bot setting.
 
 The optional Discord profile bot is disabled unless `DISCORD_BOT_TOKEN` is configured.
 Create a Discord application and bot, invite it with the `bot` and `applications.commands`
