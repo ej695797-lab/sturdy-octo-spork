@@ -1220,8 +1220,9 @@ const tabs = {
       </section><section class="bot-map-panel" aria-label="Live room map">
         <h3>Live room map</h3>
         <span class="muted" id="bmapstate">Waiting for the bot…</span>
-        <p class="note">Live isometric view built from room blocks and player positions, using simplified geometry.</p>
-        <canvas id="bot-map" aria-label="Isometric view of room blocks and players"></canvas>
+        <p class="note">Click the viewer to look around. WASD flies, Shift boosts, Space/Ctrl moves vertically, and Esc releases the mouse. This moves the map camera only.</p>
+        <button class="blk" id="bot-map-reset" type="button">Reset camera</button>
+        <canvas id="bot-map" tabindex="0" aria-label="First-person 3D view of room blocks and players"></canvas>
       </section></div>`;
     const $ = id => document.getElementById(id);
       let mapData = null, mapBlocks = [];
@@ -1237,99 +1238,225 @@ const tabs = {
         mocha:"#9b755c"
       };
       function mapColor(key) {
-        if (mapColors[key]) return mapColors[key];
+        const hex = mapColors[key] || "";
+        if (hex) return [parseInt(hex.slice(1, 3), 16) / 255, parseInt(hex.slice(3, 5), 16) / 255, parseInt(hex.slice(5, 7), 16) / 255];
         let hash = 0;
         for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) | 0;
-        return `hsl(${Math.abs(hash) % 360} 48% 58%)`;
+        const h = Math.abs(hash) % 360 / 60, c = 0.58 * 0.48, x = c * (1 - Math.abs(h % 2 - 1)), m = 0.58 - c / 2;
+        const rgb = h < 1 ? [c, x, 0] : h < 2 ? [x, c, 0] : h < 3 ? [0, c, x]
+          : h < 4 ? [0, x, c] : h < 5 ? [x, 0, c] : [c, 0, x];
+        return rgb.map(v => v + m);
       }
-      function shadeColor(color, amount) {
-        const m = color.match(/^#([0-9a-f]{6})$/i);
-        if (!m) return color;
-        const n = parseInt(m[1], 16);
-        const r = Math.max(0, Math.min(255, ((n >> 16) & 255) + amount));
-        const g = Math.max(0, Math.min(255, ((n >> 8) & 255) + amount));
-        const b = Math.max(0, Math.min(255, (n & 255) + amount));
-        return `rgb(${r},${g},${b})`;
+      const canvas = $("bot-map");
+      const gl = canvas.getContext("webgl", { antialias: true, alpha: false });
+      let shaderProgram = null, positionBuffer = null, playerBuffer = null, gridBuffer = null, renderError = "";
+      let positionCount = 0, playerCount = 0, gridCount = 0, cameraPosition = [0, 6, 0];
+      let cameraYaw = 0, cameraPitch = 0, cameraRoom = "", cameraActor = null, gridDimensions = "";
+      let frameRequest = 0, lastFrameTime = 0;
+      const cameraKeys = new Set();
+      const shader = (type, source) => {
+        const value = gl.createShader(type);
+        gl.shaderSource(value, source); gl.compileShader(value);
+        if (!gl.getShaderParameter(value, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(value));
+        return value;
+      };
+      if (gl) {
+        try {
+          const vertex = shader(gl.VERTEX_SHADER, `
+            attribute vec3 aPosition; attribute vec3 aColor;
+            uniform vec3 uCamera; uniform vec3 uRight; uniform vec3 uUp; uniform vec3 uForward;
+            uniform float uAspect; uniform float uFocal;
+            varying vec3 vColor;
+            void main() {
+              vec3 d = aPosition - uCamera;
+              float depth = dot(d, uForward);
+              gl_Position = vec4(dot(d, uRight) * uFocal / uAspect, dot(d, uUp) * uFocal,
+                depth * 1.0002 - 0.20002, depth);
+              vColor = aColor;
+            }`);
+          const fragment = shader(gl.FRAGMENT_SHADER, `
+            precision mediump float; varying vec3 vColor;
+            void main() { gl_FragColor = vec4(vColor, 1.0); }`);
+          shaderProgram = gl.createProgram();
+          gl.attachShader(shaderProgram, vertex); gl.attachShader(shaderProgram, fragment);
+          gl.linkProgram(shaderProgram);
+          if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(shaderProgram));
+          gl.useProgram(shaderProgram);
+          shaderProgram.position = gl.getAttribLocation(shaderProgram, "aPosition");
+          shaderProgram.color = gl.getAttribLocation(shaderProgram, "aColor");
+          shaderProgram.camera = gl.getUniformLocation(shaderProgram, "uCamera");
+          shaderProgram.right = gl.getUniformLocation(shaderProgram, "uRight");
+          shaderProgram.up = gl.getUniformLocation(shaderProgram, "uUp");
+          shaderProgram.forward = gl.getUniformLocation(shaderProgram, "uForward");
+          shaderProgram.aspect = gl.getUniformLocation(shaderProgram, "uAspect");
+          shaderProgram.focal = gl.getUniformLocation(shaderProgram, "uFocal");
+          gl.enableVertexAttribArray(shaderProgram.position);
+          gl.enableVertexAttribArray(shaderProgram.color);
+          positionBuffer = gl.createBuffer(); playerBuffer = gl.createBuffer(); gridBuffer = gl.createBuffer();
+          gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.disable(gl.CULL_FACE);
+          gl.clearColor(0.035, 0.035, 0.04, 1);
+        } catch (e) {
+          renderError = e.message || "WebGL setup failed";
+          shaderProgram = null;
+          gl.getExtension("WEBGL_lose_context")?.loseContext();
+        }
+      } else {
+        renderError = "This browser does not support WebGL";
       }
-      function mapPolygon(ctx, points, fill, stroke) {
-        ctx.beginPath();
-        points.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
-        ctx.closePath();
-        ctx.fillStyle = fill; ctx.fill();
-        if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 0.7; ctx.stroke(); }
+      function pushQuad(out, a, b, c, d, color) {
+        for (const v of [a, b, c, a, c, d]) out.push(v[0], v[1], v[2], color[0], color[1], color[2]);
       }
-      function drawBotMap() {
-        const canvas = $("bot-map");
-        if (!canvas) return;
-        const rect = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
-        if (!rect.width || !rect.height) return;
-        canvas.width = Math.round(rect.width * dpr);
-        canvas.height = Math.round(rect.height * dpr);
-        const ctx = canvas.getContext("2d");
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        const width = rect.width, height = rect.height;
-        ctx.fillStyle = "#0c0c0c"; ctx.fillRect(0, 0, width, height);
-        if (!mapData || !mapData.available) {
-          ctx.fillStyle = "#999"; ctx.font = "13px system-ui"; ctx.textAlign = "center";
-          ctx.fillText("Hook the bot to a player to load the live map", width / 2, height / 2);
-          return;
-        }
-        const [dx0, dy0, dz0] = mapData.dims || [];
-        const dx = Math.max(1, Number(dx0) || 96), dz = Math.max(1, Number(dz0) || 96);
-        const blocks = mapBlocks || [], players = mapData.players || [];
-        let maxY = 8;
-        for (const b of blocks) maxY = Math.max(maxY, Number(b[2]) + (Number(b[8]) || 1));
-        for (const p of players) maxY = Math.max(maxY, Number(p.y || 0) + 8);
-        const projectedW = dx + dz, projectedH = (dx + dz) * 0.5 + maxY * 1.25;
-        const scale = Math.max(0.1, Math.min((width - 30) / projectedW, (height - 44) / projectedH));
-        const left = (width - projectedW * scale) / 2 + dz * scale;
-        const top = (height - projectedH * scale) / 2;
-        const project = (x, y, z) => [left + (x - z) * scale, top + ((x + z) * 0.5 + maxY * 1.25 - y * 1.25) * scale];
-        const room = [project(0, 0, 0), project(dx, 0, 0), project(dx, 0, dz), project(0, 0, dz)];
-        mapPolygon(ctx, room, "#111", "#353535");
-        ctx.strokeStyle = "#252525"; ctx.lineWidth = 0.6;
-        for (let x = 16; x < dx; x += 16) {
-          const a = project(x, 0, 0), b = project(x, 0, dz);
-          ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.stroke();
-        }
-        for (let z = 16; z < dz; z += 16) {
-          const a = project(0, 0, z), b = project(dx, 0, z);
-          ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.stroke();
-        }
-        function box(x, y, z, w, h, d, color) {
-          const p = (xx, yy, zz) => project(xx, yy, zz);
-          mapPolygon(ctx, [p(x + w, y, z), p(x + w, y, z + d), p(x + w, y + h, z + d), p(x + w, y + h, z)],
-            shadeColor(color, -32), "#161616");
-          mapPolygon(ctx, [p(x, y, z + d), p(x + w, y, z + d), p(x + w, y + h, z + d), p(x, y + h, z + d)],
-            shadeColor(color, -18), "#161616");
-          mapPolygon(ctx, [p(x, y + h, z), p(x + w, y + h, z), p(x + w, y + h, z + d), p(x, y + h, z + d)],
-            color, "#161616");
-        }
-        const ordered = blocks.slice().sort((a, b) => (Number(a[1]) + Number(a[3]) + Number(a[2])) -
-          (Number(b[1]) + Number(b[3]) + Number(b[2])));
-        for (const b of ordered) {
+      function pushBox(out, x, y, z, w, h, d, base) {
+        const top = base.map(v => Math.min(1, v * 1.12 + 0.035));
+        const sideA = base.map(v => v * 0.72), sideB = base.map(v => v * 0.86);
+        pushQuad(out, [x, y + h, z], [x + w, y + h, z], [x + w, y + h, z + d], [x, y + h, z + d], top);
+        pushQuad(out, [x + w, y, z], [x + w, y, z + d], [x + w, y + h, z + d], [x + w, y + h, z], sideA);
+        pushQuad(out, [x, y, z + d], [x + w, y, z + d], [x + w, y + h, z + d], [x, y + h, z + d], sideB);
+        pushQuad(out, [x, y, z], [x, y, z + d], [x, y + h, z + d], [x, y + h, z], sideA);
+        pushQuad(out, [x + w, y, z], [x, y, z], [x, y + h, z], [x + w, y + h, z], sideB);
+        pushQuad(out, [x, y, z], [x + w, y, z], [x + w, y, z + d], [x, y, z + d], base.map(v => v * 0.5));
+      }
+      function upload(buffer, values, usage) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(values), usage);
+        return values.length / 6;
+      }
+      function updateBlockGeometry() {
+        if (!gl || !positionBuffer) return;
+        const vertices = [];
+        for (const b of mapBlocks) {
           const x = Number(b[1]), y = Number(b[2]), z = Number(b[3]);
           if (![x, y, z].every(Number.isFinite)) continue;
-          box(x, y, z, Math.max(1, Number(b[7]) || 1), Math.max(1, Number(b[8]) || 1),
+          pushBox(vertices, x, y, z, Math.max(1, Number(b[7]) || 1), Math.max(1, Number(b[8]) || 1),
             Math.max(1, Number(b[9]) || 1), mapColor(String(b[6] || "")));
         }
-        for (const p of players) {
+        positionCount = upload(positionBuffer, vertices, gl.STATIC_DRAW);
+      }
+      function updatePlayers() {
+        if (!gl || !playerBuffer) return;
+        const vertices = [];
+        for (const p of (mapData?.players || [])) {
+          if (p.a === cameraActor) continue;
           const x = Number(p.x), y = Number(p.y), z = Number(p.z);
           if (![x, y, z].every(Number.isFinite)) continue;
-          const color = p.t || p.me ? "#f5d76e" : "#b99aff";
-          box(x - 0.35, y, z - 0.35, 0.7, 2.1, 0.7, color);
-          const head = project(x, y + 2.55, z);
-          ctx.beginPath(); ctx.arc(head[0], head[1], Math.max(2.2, scale * 0.28), 0, Math.PI * 2);
-          ctx.fillStyle = p.t ? "#fff08a" : "#e4d8ff"; ctx.fill();
-          const yaw = Number(p.yaw) || 0, tip = project(x + Math.sin(yaw) * 1.8, y + 1.6, z + Math.cos(yaw) * 1.8);
-          const base = project(x, y + 1.6, z);
-          ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(...base); ctx.lineTo(...tip); ctx.stroke();
-          const label = String(p.n || "Player").slice(0, 24), labelAt = project(x, y + 3.4, z);
-          ctx.font = "11px system-ui"; ctx.textAlign = "center";
-          ctx.lineWidth = 3; ctx.strokeStyle = "#080808"; ctx.strokeText(label, labelAt[0], labelAt[1]);
-          ctx.fillStyle = "#f2f2f2"; ctx.fillText(label, labelAt[0], labelAt[1]);
+          const color = p.t || p.me ? [0.98, 0.82, 0.35] : [0.68, 0.53, 0.96];
+          pushBox(vertices, x - 0.36, y + 0.9, z - 0.28, 0.72, 1.15, 0.56, color);
+          pushBox(vertices, x - 0.27, y + 2.12, z - 0.27, 0.54, 0.54, 0.54, color.map(v => Math.min(1, v * 1.12)));
+          pushBox(vertices, x - 0.62, y + 1.0, z - 0.18, 0.22, 1.05, 0.36, color.map(v => v * 0.9));
+          pushBox(vertices, x + 0.4, y + 1.0, z - 0.18, 0.22, 1.05, 0.36, color.map(v => v * 0.9));
+          pushBox(vertices, x - 0.31, y, z - 0.22, 0.26, 0.9, 0.44, color.map(v => v * 0.72));
+          pushBox(vertices, x + 0.05, y, z - 0.22, 0.26, 0.9, 0.44, color.map(v => v * 0.72));
+        }
+        playerCount = upload(playerBuffer, vertices, gl.DYNAMIC_DRAW);
+      }
+      function updateGrid() {
+        if (!gl || !gridBuffer) return;
+        const [dx0, , dz0] = mapData?.dims || [];
+        const dx = Math.max(1, Number(dx0) || 96), dz = Math.max(1, Number(dz0) || 96);
+        const signature = `${dx}:${dz}`;
+        if (signature === gridDimensions) return;
+        gridDimensions = signature;
+        const values = [], color = [0.15, 0.16, 0.18];
+        const line = (a, b) => { values.push(...a, ...color, ...b, ...color); };
+        for (let x = 0; x <= dx; x += 8) line([x, 0.01, 0], [x, 0.01, dz]);
+        for (let z = 0; z <= dz; z += 8) line([0, 0.01, z], [dx, 0.01, z]);
+        gridCount = upload(gridBuffer, values, gl.STATIC_DRAW);
+      }
+      function resetBotCamera() {
+        const players = mapData?.players || [];
+        const p = players.find(x => x.me && !x.hidden && Number(x.y) >= 0) || players.find(x => x.t) ||
+          players.find(x => x.me && !x.hidden && Number(x.y) >= 0) || players[0];
+        if (p) {
+          cameraActor = p.a;
+          cameraPosition = [Number(p.x) || 0, (Number(p.y) || 0) + 1.55, Number(p.z) || 0];
+          cameraYaw = Number(p.yaw) || 0;
+        } else {
+          cameraActor = null;
+          const [dx, , dz] = mapData?.dims || [];
+          cameraPosition = [(Number(dx) || 96) / 2, 8, (Number(dz) || 96) / 2];
+          cameraYaw = Math.PI;
+        }
+        cameraPitch = 0;
+      }
+      function drawBuffer(buffer, count, mode) {
+        if (!count) return;
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.vertexAttribPointer(shaderProgram.position, 3, gl.FLOAT, false, 24, 0);
+        gl.vertexAttribPointer(shaderProgram.color, 3, gl.FLOAT, false, 24, 12);
+        gl.drawArrays(mode, 0, count);
+      }
+      function renderBotMap(now) {
+        if (!gl || !shaderProgram) return;
+        const dt = lastFrameTime ? Math.min((now - lastFrameTime) / 1000, 0.05) : 0;
+        lastFrameTime = now;
+        if (document.pointerLockElement === canvas) {
+          const forward = (cameraKeys.has("KeyW") ? 1 : 0) - (cameraKeys.has("KeyS") ? 1 : 0);
+          const side = (cameraKeys.has("KeyD") ? 1 : 0) - (cameraKeys.has("KeyA") ? 1 : 0);
+          const vertical = (cameraKeys.has("Space") || cameraKeys.has("KeyE") ? 1 : 0) -
+            (cameraKeys.has("ControlLeft") || cameraKeys.has("ControlRight") || cameraKeys.has("KeyQ") ? 1 : 0);
+          const length = Math.hypot(forward, side, vertical) || 1;
+          const speed = cameraKeys.has("ShiftLeft") || cameraKeys.has("ShiftRight") ? 24 : 6;
+          cameraPosition[0] += (Math.sin(cameraYaw) * forward + Math.cos(cameraYaw) * side) * speed * dt / length;
+          cameraPosition[2] += (Math.cos(cameraYaw) * forward - Math.sin(cameraYaw) * side) * speed * dt / length;
+          cameraPosition[1] += vertical * speed * dt / length;
+        }
+        const rect = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+        const w = Math.max(1, Math.round(rect.width * dpr)), h = Math.max(1, Math.round(rect.height * dpr));
+        if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+        gl.viewport(0, 0, w, h);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.useProgram(shaderProgram);
+        const cp = Math.cos(cameraPitch), sp = Math.sin(cameraPitch), cy = Math.cos(cameraYaw), sy = Math.sin(cameraYaw);
+        gl.uniform3fv(shaderProgram.camera, cameraPosition);
+        gl.uniform3fv(shaderProgram.right, [cy, 0, -sy]);
+        gl.uniform3fv(shaderProgram.up, [-sy * sp, cp, -cy * sp]);
+        gl.uniform3fv(shaderProgram.forward, [sy * cp, sp, cy * cp]);
+        gl.uniform1f(shaderProgram.aspect, w / h);
+        gl.uniform1f(shaderProgram.focal, 1 / Math.tan(75 * Math.PI / 360));
+        drawBuffer(gridBuffer, gridCount, gl.LINES);
+        drawBuffer(positionBuffer, positionCount, gl.TRIANGLES);
+        drawBuffer(playerBuffer, playerCount, gl.TRIANGLES);
+        frameRequest = requestAnimationFrame(renderBotMap);
+      }
+      function cameraMouseMove(event) {
+        if (document.pointerLockElement !== canvas) return;
+        cameraYaw += event.movementX * 0.0025;
+        cameraPitch = Math.max(-1.5, Math.min(1.5, cameraPitch - event.movementY * 0.0025));
+      }
+      const movementCodes = new Set(["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "KeyQ", "Space",
+        "ControlLeft", "ControlRight", "ShiftLeft", "ShiftRight"]);
+      function cameraKeyDown(event) {
+        if (document.pointerLockElement !== canvas || !movementCodes.has(event.code)) return;
+        cameraKeys.add(event.code); event.preventDefault();
+      }
+      function cameraKeyUp(event) { cameraKeys.delete(event.code); }
+      function cameraLockChanged() { if (document.pointerLockElement !== canvas) cameraKeys.clear(); }
+      function cameraClick() {
+        if (!gl) return;
+        canvas.focus();
+        if (canvas.requestPointerLock) {
+          const result = canvas.requestPointerLock();
+          if (result && result.catch) result.catch(e => {
+            $("bmapstate").textContent = "Could not capture mouse: " + e.message;
+          });
         }
       }
+      canvas.addEventListener("click", cameraClick);
+      document.addEventListener("mousemove", cameraMouseMove);
+      document.addEventListener("keydown", cameraKeyDown);
+      document.addEventListener("keyup", cameraKeyUp);
+      document.addEventListener("pointerlockchange", cameraLockChanged);
+      $("bot-map-reset").onclick = resetBotCamera;
+      window._botMapCleanup = () => {
+        if (document.pointerLockElement === canvas) document.exitPointerLock();
+        canvas.removeEventListener("click", cameraClick);
+        document.removeEventListener("mousemove", cameraMouseMove);
+        document.removeEventListener("keydown", cameraKeyDown);
+        document.removeEventListener("keyup", cameraKeyUp);
+        document.removeEventListener("pointerlockchange", cameraLockChanged);
+        cancelAnimationFrame(frameRequest); cameraKeys.clear();
+      };
+      if (gl && shaderProgram) frameRequest = requestAnimationFrame(renderBotMap);
       async function loadBotMap() {
         const params = new URLSearchParams();
         if (mapData && mapData.sid) {
@@ -1338,13 +1465,27 @@ const tabs = {
         }
         try {
           const s = await api("/bot/map?" + params.toString());
-          if (s.blocks !== null) mapBlocks = s.blocks || [];
-          mapData = { ...s, players: s.players || [], blocks: mapBlocks };
+          if (!s.available) {
+            mapBlocks = [];
+            mapData = { ...s, players: [], blocks: [] };
+            cameraRoom = "";
+            updateBlockGeometry(); updatePlayers();
+          } else {
+            if (s.blocks !== null) {
+              mapBlocks = s.blocks || [];
+              updateBlockGeometry();
+            }
+            const oldRoom = mapData && `${mapData.sid}:${mapData.room}`;
+            mapData = { ...s, players: s.players || [], blocks: mapBlocks };
+            const room = `${s.sid}:${s.room}`;
+            if (room !== oldRoom) { cameraRoom = room; resetBotCamera(); }
+            updatePlayers(); updateGrid();
+          }
           const status = $("bmapstate");
-          if (status) status.textContent = !s.available ? "Waiting for the bot to connect…"
+          if (status) status.textContent = renderError ? "3D viewer unavailable: " + renderError
+            : !s.available ? "Waiting for the bot to connect…"
             : `${esc(s.room || s.rk || "Room")} · ${mapBlocks.length.toLocaleString()} blocks · ${(s.players || []).length} players` +
               (s.loaded ? "" : " · map data loading");
-          drawBotMap();
         } catch (e) {
           const status = $("bmapstate");
           if (status) status.textContent = "Map unavailable: " + e.message;
@@ -1484,9 +1625,6 @@ const tabs = {
     window._botTimer = setInterval(refresh, 3000);
     clearInterval(window._botMapTimer);
     window._botMapTimer = setInterval(loadBotMap, 1000);
-    if (window._botMapResize) window.removeEventListener("resize", window._botMapResize);
-    window._botMapResize = drawBotMap;
-    window.addEventListener("resize", window._botMapResize);
     clearInterval(window._botPlayersTimer);
     window._botPlayersTimer = setInterval(players, 10000);
   },
@@ -1497,9 +1635,9 @@ document.querySelectorAll("aside button[data-t]").forEach(b => b.onclick = () =>
   clearInterval(window._botTimer);
   clearInterval(window._botPlayersTimer);
   clearInterval(window._botMapTimer);
-  if (window._botMapResize) {
-    window.removeEventListener("resize", window._botMapResize);
-    window._botMapResize = null;
+  if (window._botMapCleanup) {
+    window._botMapCleanup();
+    window._botMapCleanup = null;
   }
   document.querySelector(".app").classList.remove("bot-open");
   document.querySelectorAll("aside button[data-t]").forEach(x => x.classList.remove("on"));
