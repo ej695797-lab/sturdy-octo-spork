@@ -703,16 +703,18 @@ def _strip_protected_account_fields(table_name: str, fields: dict, who: str = ""
               f"to {who or '?'}: {hit}")
 
 
-def _take_owned_patterns(table_name: str, fields: dict) -> list:
+def _take_owned_patterns(table_name: str, fields: dict, account_id: str = "") -> list:
     """Clients must never SHRINK a player's owned blocks (everyone owns all of
     them; a client write of its own, shorter list used to replace the stored
     one). Pull ownedPatterns out of a client account write; the caller only
-    ADDS those keys ($addToSet). Role-locked keys are never added by a client."""
+    ADDS those keys ($addToSet). Role-locked keys are never added by a client;
+    account-locked keys are only added to their allowed accounts."""
     if table_name != "G2_Accounts" or not isinstance(fields, dict) or "ownedPatterns" not in fields:
         return []
-    from services.role_locks import ROLE_LOCKED_PATTERNS
+    from services.role_locks import ROLE_LOCKED_PATTERNS, account_may_own_pattern
     owned = fields.pop("ownedPatterns") or []
-    return [k for k in owned if isinstance(k, str) and k not in ROLE_LOCKED_PATTERNS]
+    return [k for k in owned if isinstance(k, str) and k not in ROLE_LOCKED_PATTERNS
+            and account_may_own_pattern(account_id, k)]
 
 
 async def handle_update_item(body: dict) -> tuple[str, dict]:
@@ -730,7 +732,7 @@ async def handle_update_item(body: dict) -> tuple[str, dict]:
         if table_name == "G2_Accounts" and "activeCosmetics" in set_fields:
             from services.hair_colors import clamp_active_cosmetics
             set_fields["activeCosmetics"] = clamp_active_cosmetics(set_fields["activeCosmetics"])
-        add_owned = _take_owned_patterns(table_name, set_fields)
+        add_owned = _take_owned_patterns(table_name, set_fields, query.get("accountID", ""))
         if add_owned and query:
             await collection.update_one(query, {"$addToSet": {"ownedPatterns": {"$each": add_owned}}})
         if set_fields:
@@ -766,7 +768,7 @@ async def handle_put_item(body: dict) -> tuple[str, dict]:
         if table_name == "G2_Accounts" and "activeCosmetics" in doc:
             from services.hair_colors import clamp_active_cosmetics
             doc["activeCosmetics"] = clamp_active_cosmetics(doc["activeCosmetics"])
-        add_owned = _take_owned_patterns(table_name, doc)
+        add_owned = _take_owned_patterns(table_name, doc, doc.get("accountID", ""))
         if add_owned and doc.get("accountID"):
             await collection.update_one({"accountID": doc["accountID"]},
                                         {"$addToSet": {"ownedPatterns": {"$each": add_owned}}})

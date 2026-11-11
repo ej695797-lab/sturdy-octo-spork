@@ -198,6 +198,8 @@ async def startup_event():
         await load_world()
     else:
         print("[seed] Skipped (SEED_WORLD=0)")
+    from services.role_locks import enforce_account_pattern_ownership
+    await enforce_account_pattern_ownership()
     discord_token = os.getenv("DISCORD_BOT_TOKEN", "").strip()
     if discord_token:
         import asyncio

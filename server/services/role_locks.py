@@ -1,9 +1,10 @@
 """
 Role-locked patterns: special blocks only accounts with a given server-only role
-may own (and therefore place). Applied to every place the client reads its
-account: the login reply (handlers/login.py) and DynamoDB G2_Accounts reads
-(services/dynamo_ops.py). Server-only roles aren't game roles, so they are
-stripped from the roleKeys the client sees.
+may own (and therefore place). Account-locked patterns are restricted to their
+listed accounts. Applied to every place the client reads its account: the login
+reply (handlers/login.py) and DynamoDB G2_Accounts reads (services/dynamo_ops.py).
+Server-only roles aren't game roles, so they are stripped from the roleKeys the
+client sees.
 
 Grant: add the role to the account's roleKeys (editor / Mongo), e.g. "blaze".
 """
@@ -19,6 +20,12 @@ ROLE_LOCKED_PATTERNS = {"1x5x2_stuffedTextBlaze": "blaze",
                         "1x1_920man": "larp",
                         "2x2_dancingskeleton": "larp",
                         "3x2x1_blazeScreenRole": "larp"}
+# These patterns are account-specific rather than role-based. They are only
+# granted to the named accounts and are removed from every other account.
+ACCOUNT_LOCKED_PATTERNS = {
+    "1x4x2_ronald": frozenset({"o_25596005490046939", "o_6353697468088304"}),
+    "1x4x2_fae": frozenset({"o_25596005490046939", "o_6353697468088304"}),
+}
 # Roles hidden from the client. Neither "blaze" nor "larp" is hidden: the BLAZE
 # blocks carry MapObject.requiredRoleKey = "blaze" (APK 131b4+), the custom
 # blocks carry requiredRoleKey = "larp", and the game checks that against the
@@ -96,6 +103,26 @@ def is_blaze_holder(account_id) -> bool:
     return is_holder(BLAZE_ROLE, account_id)
 
 
+def account_may_own_pattern(account_id, pattern) -> bool:
+    allowed_accounts = ACCOUNT_LOCKED_PATTERNS.get(pattern)
+    return allowed_accounts is None or account_id in allowed_accounts
+
+
+async def enforce_account_pattern_ownership() -> None:
+    from services.db import accounts
+
+    for pattern, allowed_accounts in ACCOUNT_LOCKED_PATTERNS.items():
+        ids = sorted(allowed_accounts)
+        await accounts.update_many(
+            {"accountID": {"$nin": ids}, "ownedPatterns": pattern},
+            {"$pull": {"ownedPatterns": pattern}},
+        )
+        await accounts.update_many(
+            {"accountID": {"$in": ids}},
+            {"$addToSet": {"ownedPatterns": pattern}},
+        )
+
+
 def apply(owned, roles, account_id=None) -> tuple[list, list]:
     """(ownedPatterns, roleKeys) as the client should see them."""
     roles = list(roles or [])
@@ -115,4 +142,10 @@ def apply(owned, roles, account_id=None) -> tuple[list, list]:
                 owned.append(pattern)
         elif pattern in owned:
             owned.remove(pattern)
+    for pattern, allowed_accounts in ACCOUNT_LOCKED_PATTERNS.items():
+        if account_id in allowed_accounts:
+            if pattern not in owned:
+                owned.append(pattern)
+        else:
+            owned = [item for item in owned if item != pattern]
     return owned, [r for r in roles if r not in SERVER_ONLY_ROLES]

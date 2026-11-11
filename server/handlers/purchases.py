@@ -77,6 +77,16 @@ async def handle_purchase(body: dict) -> dict:
         await _log(fn, body, resp)
         print(f"[purchase] BLOCKED {fn} {account_id}")
         return resp
+    item_key = body.get("itemKey")
+    item_purchase = (isinstance(item_key, str) and bool(item_key)
+                     and ("trypurchase" == fl or "direct" in fl or fl.endswith("trypurchase")))
+    if item_purchase:
+        from services.role_locks import account_may_own_pattern
+        if not account_may_own_pattern(account_id, item_key):
+            resp = {"_lambda_error": "ITEM_NOT_AVAILABLE"}
+            await _log(fn, body, resp)
+            print(f"[purchase] DENIED account-locked item for {account_id}")
+            return resp
     price = max(0, _int(body.get("expectedPrice", body.get("cost", 0))))
     if any(k in fl for k in FREE_KINDS):
         price = 0
@@ -97,9 +107,7 @@ async def handle_purchase(body: dict) -> dict:
         upd["hasUnlockedPrivateRooms"] = 1
     if "creatorpack" in fl:
         upd["hasCreatorPack"] = 1
-    item_key = body.get("itemKey")
-    if isinstance(item_key, str) and item_key and ("trypurchase" == fl or "direct" in fl
-                                                  or fl.endswith("trypurchase")):
+    if item_purchase:
         add["ownedPatterns"] = item_key
     bundle_key = body.get("bundleKey")
     if isinstance(bundle_key, str) and bundle_key and "bundle" in fl:
