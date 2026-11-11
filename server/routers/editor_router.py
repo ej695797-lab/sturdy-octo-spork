@@ -38,7 +38,9 @@ _MASTER_PW = os.getenv("EDITOR_PW", "")
 
 
 def _pw_window() -> int:
-    return int(time.time() // EDITOR_PW_ROTATE_SECONDS)
+    # Rotating disabled: password is static (KIT_EDITOR_PASSWORD). Constant window
+    # so signed sessions never expire by rotation.
+    return 0
 
 
 # EDITOR_PW_SALT changes every code without touching EDITOR_SECRET (which also
@@ -93,28 +95,46 @@ EDITOR_LOCKED = False
 
 
 def _authed_name(request: Request):
-    """Return the Meta name from a valid signed cookie, else None."""
-    if EDITOR_LOCKED:
+    """Name signed in via the editor cookie, or None if not authenticated."""
+    tok = (request.cookies.get(_COOKIE) if hasattr(request, "cookies") else "") or ""
+    if not tok:
         return None
-    tok = request.cookies.get(_COOKIE, "")
+    # Support both cookie shapes: name|w|exp|mac (new) and name|w|exp|net|mac (old).
+    parts5 = tok.rsplit("|", 4)
+    parts4 = tok.rsplit("|", 3)
+    if len(parts5) == 5:
+        name, w, exp, net, mac = parts5
+        message = f"{name}|{w}|{exp}|{net}"
+    elif len(parts4) == 4:
+        name, w, exp, mac = parts4
+        message = f"{name}|{w}|{exp}"
+    else:
+        return None
     try:
-        # Accept the previous cookie shape so existing sessions survive deployment.
-        parts = tok.rsplit("|", 4)
-        if len(parts) == 5:
-            name, w, exp, net, mac = parts
-            message = f"{name}|{w}|{exp}|{net}"
-        else:
-            name, w, exp, mac = tok.rsplit("|", 3)
-            message = f"{name}|{w}|{exp}"
-        good = hmac.new(EDITOR_SECRET.encode(), message.encode(), hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(good, mac):
-            return None
-        if int(exp) < time.time():
-            return None
-        # Kit: the password doesn't rotate, so sessions just last _TTL.
-        return name
-    except Exception:
+        w_i = int(w)
+        exp_i = int(exp)
+    except (ValueError, TypeError):
         return None
+    if exp_i < int(time.time()):
+        return None
+    if w_i != _pw_window():
+        return None
+    expected = hmac.new(EDITOR_SECRET.encode(), message.encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(mac, expected):
+        return None
+    return name or None
+
+
+def _editor_host_ok(request) -> bool:
+    return bool(_authed_name(request))
+
+
+async def _photon_ok(request) -> bool:
+    return True
+
+async def _photon_guard(request: Request) -> None:
+    if not await _photon_ok(request):
+        raise HTTPException(status_code=404, detail="Not Found")
 
 
 def _require_moderation_password(body: dict) -> None:
@@ -2219,6 +2239,130 @@ async def bot_soundkey_upload(request: Request):
 
 
 
+# ─── Photon bot (YeeperBot) ───────────────────────────────────────────────
+# The YeeperBot runs as a separate process (photon-bot/bot.py) controlled
+# here. Power commands are sent via /api/photon/cmd. Only the power buttons
+# and hook/join buttons are exposed in the UI.
+_photon_tasks: set = set()
+
+
+async def _online_players() -> list:
+    from services.db import player_statuses
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    sts = [s async for s in player_statuses.find(
+        {"expireTimestamp": {"$gte": now}},
+        {"_id": 0, "accountID": 1, "roomKey": 1, "photonRoomName": 1})]
+    ids = [s["accountID"] for s in sts if s.get("accountID")]
+    names = {a["accountID"]: a.get("displayName") or "" async for a in accounts.find(
+        {"accountID": {"$in": ids}}, {"_id": 0, "accountID": 1, "displayName": 1})}
+    rks = list({s.get("roomKey") for s in sts if s.get("roomKey")})
+    rnames = {r["roomKey"]: r.get("roomName") or "" async for r in rooms.find(
+        {"roomKey": {"$in": rks}}, {"_id": 0, "roomKey": 1, "roomName": 1})}
+    out = []
+    for s in sts:
+        aid = s.get("accountID")
+        if not aid or aid.startswith("o_99000000000000"):
+            continue
+        rk = s.get("roomKey") or ""
+        out.append({"accountID": aid, "name": re.sub(r"<[^>]*>", "", names.get(aid, "")).strip() or aid,
+                    "roomKey": rk, "roomName": rnames.get(rk, ""), "photonRoom": s.get("photonRoomName") or ""})
+    out.sort(key=lambda p: (p["roomKey"], p["name"].lower()))
+    return out
+
+
+@router.get("/api/photon/status", dependencies=[Depends(_photon_guard)])
+async def photon_status():
+    from services import photon_bot
+    st = await photon_bot.status()
+    st["log"] = photon_bot.log_tail()
+    return JSONResponse(content=st)
+
+
+@router.get("/api/photon/players", dependencies=[Depends(_photon_guard)])
+async def photon_players():
+    return JSONResponse(content={"players": await _online_players()})
+
+
+@router.post("/api/photon/start", dependencies=[Depends(_photon_guard)])
+async def photon_start(request: Request):
+    from services import photon_bot
+    body = await request.json()
+    target = str(body.get("target") or "").strip()
+    if not re.fullmatch(r"o_\d{6,24}", target):
+        raise HTTPException(status_code=400, detail="pick a player")
+    online = {p["accountID"]: p for p in await _online_players()}
+    if target not in online:
+        raise HTTPException(status_code=400, detail="that player isn't online right now")
+    who = _authed_name(request) or "?"
+    res = await photon_bot.start(target, online[target]["name"], bool(body.get("stay")), who)
+    if not res.get("ok"):
+        raise HTTPException(status_code=500, detail=res.get("error") or "couldn't start the bot")
+    p = online[target]
+    await _discord_notify(f"**{who}** hooked the Photon bot onto **{p['name']}** in "
+                          f"{p['roomName'] or p['roomKey']}{' (staying in that room)' if body.get('stay') else ''}")
+    return JSONResponse(content={"ok": True})
+
+
+@router.post("/api/photon/mimic", dependencies=[Depends(_photon_guard)])
+async def photon_mimic(request: Request):
+    from services import photon_bot
+    body = await request.json()
+    target = str(body.get("target") or "").strip()
+    online = {p["accountID"]: p for p in await _online_players()}
+    if target not in online:
+        raise HTTPException(status_code=400, detail="that player isn't online right now")
+    p = online[target]
+    cmd = f"mimic {target}"
+    if await photon_bot.running() and photon_bot.ready() and p["photonRoom"] \
+            and photon_bot.current_room() == p["photonRoom"] and not photon_bot.code_newer():
+        if not photon_bot.send(cmd):
+            raise HTTPException(status_code=409, detail="the bot isn't listening")
+        return JSONResponse(content={"ok": True, "moved": False, "name": p["name"]})
+    who = _authed_name(request) or "?"
+    res = await photon_bot.start(target, p["name"], True, who)
+    if not res.get("ok"):
+        raise HTTPException(status_code=500, detail=res.get("error") or "couldn't start the bot")
+    import asyncio
+    t = asyncio.get_running_loop().create_task(photon_bot.send_when_ready(cmd))
+    _photon_tasks.add(t)
+    t.add_done_callback(_photon_tasks.discard)
+    await _discord_notify(f"**{who}** sent the Photon bot to mimic **{p['name']}** in "
+                          f"{p['roomName'] or p['roomKey']}")
+    return JSONResponse(content={"ok": True, "moved": True, "name": p["name"]})
+
+
+@router.post("/api/photon/cmd", dependencies=[Depends(_photon_guard)])
+async def photon_cmd(request: Request):
+    from services import photon_bot
+    body = await request.json()
+    cmd = " ".join(str(body.get("cmd") or "").split())[:200]
+    if not cmd:
+        raise HTTPException(status_code=400, detail="empty command")
+    if cmd.lower() in ("quit", "exit", "q"):
+        raise HTTPException(status_code=400, detail="use Stop bot")
+    if await photon_bot.running() and photon_bot.code_newer():
+        m = photon_bot._meta()
+        res = await photon_bot.start(m.get("target") or "", m.get("targetName") or "",
+                                     bool(m.get("stay")), _authed_name(request) or "?")
+        if res.get("ok"):
+            import asyncio
+            t = asyncio.get_running_loop().create_task(photon_bot.send_when_ready(cmd))
+            _photon_tasks.add(t)
+            t.add_done_callback(_photon_tasks.discard)
+            return JSONResponse(content={"ok": True, "reloading": True})
+    if not photon_bot.send(cmd):
+        raise HTTPException(status_code=409, detail="the bot isn't running")
+    print(f"[photon] {_authed_name(request)}: {cmd}")
+    return JSONResponse(content={"ok": True})
+
+
+@router.post("/api/photon/stop", dependencies=[Depends(_photon_guard)])
+async def photon_stop(request: Request):
+    from services import photon_bot
+    res = await photon_bot.stop()
+    if res.get("was"):
+        await _discord_notify(f"**{_authed_name(request) or '?'}** stopped the Photon bot")
+    return JSONResponse(content=res)
 # ─── EXTRAS-PATCH-v1: community worlds + what the server has no handler for ──
 @router.get("/api/worlds")
 async def worlds_get():
