@@ -7183,8 +7183,10 @@ async def cmd_run(a):
                                          "dims": [DX, DY, DZ], "rev": live.rev, "loaded": live.loaded,
                                          "target": a.target, "targetName": who, "players": players})
                 if live.rev != last_rev and now - last_blocks >= 0.5:
-                    blocks = [[nm, x, y, z, *live.rot.get((nm, x, y, z), (4, 2)), col]
-                              for (nm, x, y, z), col in list(live.colors.items())]
+                    blocks = []
+                    for (nm, x, y, z), col in list(live.colors.items()):
+                        fwd, up = live.rot.get((nm, x, y, z), (4, 2))
+                        blocks.append([nm, x, y, z, fwd, up, col, *block_ext(nm, fwd, up)])
                     view_write("view_blocks.json", {"rev": live.rev, "sid": VIEW_SID, "rk": cur.get("rk"),
                                                     "blocks": blocks})
                     last_rev, last_blocks = live.rev, now

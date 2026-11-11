@@ -74,6 +74,13 @@
   .pwhit .pwname { flex: 1 1 200px; min-width: 0; }
   .pwhit button { background: #222; color: #ddd; border: 1px solid #444; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
   .pwhit button:hover { border-color: var(--accent); }
+  .app.bot-open main { max-width: 1600px; }
+  .bot-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(320px, .7fr); gap: 16px; align-items: start; }
+  .bot-controls { min-width: 0; }
+  .bot-map-panel { min-width: 0; position: sticky; top: 12px; background: #151515; border: 1px solid #333; border-radius: 8px; padding: 10px; }
+  .bot-map-panel h3 { margin: 0 0 4px; font-size: 15px; }
+  .bot-map-panel .muted { display: block; min-height: 18px; font-size: 12px; margin-bottom: 8px; }
+  #bot-map { display: block; width: 100%; height: min(72vh, 760px); min-height: 360px; background: #0c0c0c; border: 1px solid #292929; border-radius: 6px; }
 
   /* Phones keep the tab controls in a scrolling strip at the bottom. */
   @media (max-width: 720px) {
@@ -97,6 +104,9 @@
     ul.list li { padding: 11px 10px; }
     ul.list { max-height: 50vh; }
     li.bli { flex-wrap: wrap; }
+    .bot-layout { grid-template-columns: minmax(0, 1fr); }
+    .bot-map-panel { position: static; }
+    #bot-map { height: 55vh; min-height: 300px; }
     table { display: block; overflow-x: auto; max-width: 100%; }
     pre.smp, #pblog { font-size: 12px; }
     #msg { top: 12px; left: 12px; right: 12px; max-width: none; }
@@ -1112,6 +1122,7 @@ const tabs = {
     load();
   },
   bot: async () => {
+    document.querySelector(".app").classList.add("bot-open");
     const GROUPS = [
       ["Games", [
         ["Start disco", "disco-start"],
@@ -1162,6 +1173,7 @@ const tabs = {
       ]]
     ];
     view.innerHTML = `
+      <div class="bot-layout"><section class="bot-controls">
       <p class="note">Hook YeeperBot to an online player, then place the marker pillow and (for Flappy Bird or Minesweeper) a controller marker when prompted. Grab the Flappy Bird control to flap. For Minesweeper, grab reveal or flag mode, then grab a board tile. Tic-Tac-Toe and Connect Four are two-player games: grab an empty tile to place a mark or drop a piece in that column. These are fixed game controls; building, live talk, and view controls are not included.</p>
       <div class="row">
         <select id="bhook" style="min-width:260px"><option value="">loading online players...</option></select>
@@ -1204,8 +1216,140 @@ const tabs = {
       <p class="note">Verify the player before issuing a code, then share it privately. It is one-use, account-specific, and expires in 10 minutes.</p>
       <div id="bactions"></div>
       <div class="muted">Log</div>
-      <pre id="blog" class="smp" style="max-height:160px;overflow:auto"></pre>`;
+      <pre id="blog" class="smp" style="max-height:160px;overflow:auto"></pre>
+      </section><section class="bot-map-panel" aria-label="Live room map">
+        <h3>Live room map</h3>
+        <span class="muted" id="bmapstate">Waiting for the bot…</span>
+        <p class="note">Live isometric view built from room blocks and player positions, using simplified geometry.</p>
+        <canvas id="bot-map" aria-label="Isometric view of room blocks and players"></canvas>
+      </section></div>`;
     const $ = id => document.getElementById(id);
+      let mapData = null, mapBlocks = [];
+      const mapColors = {
+        black:"#151515", gray_dark:"#555", gray:"#999", white:"#ececec",
+        red_dark:"#8f3035", red:"#dc373c", orange:"#ed8b32", orange_light:"#f2a45d",
+        yellow:"#eed64b", yellow_light:"#f3e5a0", green_dark:"#34703b",
+        green:"#57a34a", green_light:"#83c76a", cyan:"#48b5c2", cyan_light:"#90dce1",
+        blue_dark:"#405b9f", blue:"#527fcd", blue_light:"#8bb4ea", blue_turquoise:"#48b5a2",
+        purple:"#8956b5", purple_light:"#b68bd7", pink:"#df87b8", brown:"#835d42",
+        brown_dark:"#604332", brown_light:"#b68a64", teal:"#4d9b91",
+        blurple:"#7766ca", lavender:"#aa9bd4", olive:"#788545", olive_light:"#a8b56b",
+        mocha:"#9b755c"
+      };
+      function mapColor(key) {
+        if (mapColors[key]) return mapColors[key];
+        let hash = 0;
+        for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) | 0;
+        return `hsl(${Math.abs(hash) % 360} 48% 58%)`;
+      }
+      function shadeColor(color, amount) {
+        const m = color.match(/^#([0-9a-f]{6})$/i);
+        if (!m) return color;
+        const n = parseInt(m[1], 16);
+        const r = Math.max(0, Math.min(255, ((n >> 16) & 255) + amount));
+        const g = Math.max(0, Math.min(255, ((n >> 8) & 255) + amount));
+        const b = Math.max(0, Math.min(255, (n & 255) + amount));
+        return `rgb(${r},${g},${b})`;
+      }
+      function mapPolygon(ctx, points, fill, stroke) {
+        ctx.beginPath();
+        points.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+        ctx.closePath();
+        ctx.fillStyle = fill; ctx.fill();
+        if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 0.7; ctx.stroke(); }
+      }
+      function drawBotMap() {
+        const canvas = $("bot-map");
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+        if (!rect.width || !rect.height) return;
+        canvas.width = Math.round(rect.width * dpr);
+        canvas.height = Math.round(rect.height * dpr);
+        const ctx = canvas.getContext("2d");
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const width = rect.width, height = rect.height;
+        ctx.fillStyle = "#0c0c0c"; ctx.fillRect(0, 0, width, height);
+        if (!mapData || !mapData.available) {
+          ctx.fillStyle = "#999"; ctx.font = "13px system-ui"; ctx.textAlign = "center";
+          ctx.fillText("Hook the bot to a player to load the live map", width / 2, height / 2);
+          return;
+        }
+        const [dx0, dy0, dz0] = mapData.dims || [];
+        const dx = Math.max(1, Number(dx0) || 96), dz = Math.max(1, Number(dz0) || 96);
+        const blocks = mapBlocks || [], players = mapData.players || [];
+        let maxY = 8;
+        for (const b of blocks) maxY = Math.max(maxY, Number(b[2]) + (Number(b[8]) || 1));
+        for (const p of players) maxY = Math.max(maxY, Number(p.y || 0) + 8);
+        const projectedW = dx + dz, projectedH = (dx + dz) * 0.5 + maxY * 1.25;
+        const scale = Math.max(0.1, Math.min((width - 30) / projectedW, (height - 44) / projectedH));
+        const left = (width - projectedW * scale) / 2 + dz * scale;
+        const top = (height - projectedH * scale) / 2;
+        const project = (x, y, z) => [left + (x - z) * scale, top + ((x + z) * 0.5 + maxY * 1.25 - y * 1.25) * scale];
+        const room = [project(0, 0, 0), project(dx, 0, 0), project(dx, 0, dz), project(0, 0, dz)];
+        mapPolygon(ctx, room, "#111", "#353535");
+        ctx.strokeStyle = "#252525"; ctx.lineWidth = 0.6;
+        for (let x = 16; x < dx; x += 16) {
+          const a = project(x, 0, 0), b = project(x, 0, dz);
+          ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.stroke();
+        }
+        for (let z = 16; z < dz; z += 16) {
+          const a = project(0, 0, z), b = project(dx, 0, z);
+          ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.stroke();
+        }
+        function box(x, y, z, w, h, d, color) {
+          const p = (xx, yy, zz) => project(xx, yy, zz);
+          mapPolygon(ctx, [p(x + w, y, z), p(x + w, y, z + d), p(x + w, y + h, z + d), p(x + w, y + h, z)],
+            shadeColor(color, -32), "#161616");
+          mapPolygon(ctx, [p(x, y, z + d), p(x + w, y, z + d), p(x + w, y + h, z + d), p(x, y + h, z + d)],
+            shadeColor(color, -18), "#161616");
+          mapPolygon(ctx, [p(x, y + h, z), p(x + w, y + h, z), p(x + w, y + h, z + d), p(x, y + h, z + d)],
+            color, "#161616");
+        }
+        const ordered = blocks.slice().sort((a, b) => (Number(a[1]) + Number(a[3]) + Number(a[2])) -
+          (Number(b[1]) + Number(b[3]) + Number(b[2])));
+        for (const b of ordered) {
+          const x = Number(b[1]), y = Number(b[2]), z = Number(b[3]);
+          if (![x, y, z].every(Number.isFinite)) continue;
+          box(x, y, z, Math.max(1, Number(b[7]) || 1), Math.max(1, Number(b[8]) || 1),
+            Math.max(1, Number(b[9]) || 1), mapColor(String(b[6] || "")));
+        }
+        for (const p of players) {
+          const x = Number(p.x), y = Number(p.y), z = Number(p.z);
+          if (![x, y, z].every(Number.isFinite)) continue;
+          const color = p.t || p.me ? "#f5d76e" : "#b99aff";
+          box(x - 0.35, y, z - 0.35, 0.7, 2.1, 0.7, color);
+          const head = project(x, y + 2.55, z);
+          ctx.beginPath(); ctx.arc(head[0], head[1], Math.max(2.2, scale * 0.28), 0, Math.PI * 2);
+          ctx.fillStyle = p.t ? "#fff08a" : "#e4d8ff"; ctx.fill();
+          const yaw = Number(p.yaw) || 0, tip = project(x + Math.sin(yaw) * 1.8, y + 1.6, z + Math.cos(yaw) * 1.8);
+          const base = project(x, y + 1.6, z);
+          ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(...base); ctx.lineTo(...tip); ctx.stroke();
+          const label = String(p.n || "Player").slice(0, 24), labelAt = project(x, y + 3.4, z);
+          ctx.font = "11px system-ui"; ctx.textAlign = "center";
+          ctx.lineWidth = 3; ctx.strokeStyle = "#080808"; ctx.strokeText(label, labelAt[0], labelAt[1]);
+          ctx.fillStyle = "#f2f2f2"; ctx.fillText(label, labelAt[0], labelAt[1]);
+        }
+      }
+      async function loadBotMap() {
+        const params = new URLSearchParams();
+        if (mapData && mapData.sid) {
+          params.set("sid", mapData.sid);
+          params.set("rev", String(mapData.blocksRev));
+        }
+        try {
+          const s = await api("/bot/map?" + params.toString());
+          if (s.blocks !== null) mapBlocks = s.blocks || [];
+          mapData = { ...s, players: s.players || [], blocks: mapBlocks };
+          const status = $("bmapstate");
+          if (status) status.textContent = !s.available ? "Waiting for the bot to connect…"
+            : `${esc(s.room || s.rk || "Room")} · ${mapBlocks.length.toLocaleString()} blocks · ${(s.players || []).length} players` +
+              (s.loaded ? "" : " · map data loading");
+          drawBotMap();
+        } catch (e) {
+          const status = $("bmapstate");
+          if (status) status.textContent = "Map unavailable: " + e.message;
+        }
+      }
     function renderActions(state) {
       $("bactions").innerHTML = GROUPS.map(([title, buttons]) =>
         `<div class="pgrp"><span class="muted">${esc(title)}</span>${buttons.map(([label, action, off, media, needsTarget]) =>
@@ -1335,9 +1479,14 @@ const tabs = {
       refresh();
     };
     await players();
-    await refresh();
+    await Promise.all([refresh(), loadBotMap()]);
     clearInterval(window._botTimer);
     window._botTimer = setInterval(refresh, 3000);
+    clearInterval(window._botMapTimer);
+    window._botMapTimer = setInterval(loadBotMap, 1000);
+    if (window._botMapResize) window.removeEventListener("resize", window._botMapResize);
+    window._botMapResize = drawBotMap;
+    window.addEventListener("resize", window._botMapResize);
     clearInterval(window._botPlayersTimer);
     window._botPlayersTimer = setInterval(players, 10000);
   },
@@ -1347,6 +1496,12 @@ const tabs = {
 document.querySelectorAll("aside button[data-t]").forEach(b => b.onclick = () => {
   clearInterval(window._botTimer);
   clearInterval(window._botPlayersTimer);
+  clearInterval(window._botMapTimer);
+  if (window._botMapResize) {
+    window.removeEventListener("resize", window._botMapResize);
+    window._botMapResize = null;
+  }
+  document.querySelector(".app").classList.remove("bot-open");
   document.querySelectorAll("aside button[data-t]").forEach(x => x.classList.remove("on"));
   b.classList.add("on"); tabs[b.dataset.t]();
 });

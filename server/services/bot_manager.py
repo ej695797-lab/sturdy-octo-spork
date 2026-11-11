@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import re
 import subprocess
@@ -42,6 +43,8 @@ class BotManager:
         self._pixel_art_ready = False
         self._soundkey_path = ""
         self._soundkey_ready = False
+        self._view_temp: tempfile.TemporaryDirectory | None = None
+        self._view_dir = ""
 
     def available(self) -> tuple[bool, str]:
         if not BOT_KEY:
@@ -92,6 +95,9 @@ class BotManager:
             if code not in (None, 0):
                 with self._lock:
                     self.error = self.log[-1].split(" ", 1)[-1] if self.log else f"bot exited ({code})"
+            with self._lock:
+                if self._process is process:
+                    self._remove_view_dir()
 
     def _new_media_file(self, data: bytes = b"", ext: str = "mp3", prefix: str = "yeeper-bad-apple-") -> str:
         suffix = "." + ext if ext in {"mp3", "mp4", "wav", "ogg", "m4a", "png"} else ".bin"
@@ -131,6 +137,15 @@ class BotManager:
                 pass
             except OSError as exc:
                 self._note(f"couldn't remove temporary SoundKey audio: {exc}")
+
+    def _remove_view_dir(self) -> None:
+        view_temp, self._view_temp = self._view_temp, None
+        self._view_dir = ""
+        if view_temp:
+            try:
+                view_temp.cleanup()
+            except OSError as exc:
+                self._note(f"couldn't remove temporary bot map data: {exc}")
 
     def set_media(self, data: bytes, ext: str = "mp3") -> bool:
         with self._lock:
@@ -188,6 +203,7 @@ class BotManager:
             self._remove_audio_file()
             self._remove_pixel_art_file()
             self._remove_soundkey_file()
+            self._remove_view_dir()
             try:
                 self._audio_path = self._new_media_file(media_data, media_ext)
                 self._audio_ready = bool(media_data)
@@ -197,10 +213,13 @@ class BotManager:
                 self._soundkey_path = (self._new_media_file(soundkey_data, soundkey_ext, "yeeper-soundkey-")
                                        if soundkey_data else "")
                 self._soundkey_ready = bool(soundkey_data)
+                self._view_temp = tempfile.TemporaryDirectory(prefix="yeeper-bot-view-")
+                self._view_dir = self._view_temp.name
             except OSError as exc:
                 self._remove_audio_file()
                 self._remove_pixel_art_file()
                 self._remove_soundkey_file()
+                self._remove_view_dir()
                 with self._lock:
                     self.error = f"couldn't prepare bot media: {exc}"
                 return {"ok": False, **self.status()}
@@ -211,6 +230,7 @@ class BotManager:
             env.pop("YEEPS_BOT_ENV", None)
             env.pop("YEEPS_LOOK_ACCT", None)
             env.pop("AUTH", None)
+            env["YEEPS_VIEW_DIR"] = self._view_dir
             env["PYTHONPATH"] = str(SERVER_DIR) + os.pathsep + env.get("PYTHONPATH", "")
             env["PYTHONUNBUFFERED"] = "1"
             env["YEEPS_BAD_APPLE_MEDIA"] = self._audio_path
@@ -239,6 +259,7 @@ class BotManager:
                 self._remove_audio_file()
                 self._remove_pixel_art_file()
                 self._remove_soundkey_file()
+                self._remove_view_dir()
                 with self._lock:
                     self.error = f"couldn't start the bot: {exc}"
                 return {"ok": False, **self.status()}
@@ -292,7 +313,53 @@ class BotManager:
                 self._remove_audio_file()
                 self._remove_pixel_art_file()
                 self._remove_soundkey_file()
+                self._remove_view_dir()
             return {"ok": True, **self.status()}
+
+    def map_snapshot(self, sid: str = "", rev: int = -1) -> dict:
+        with self._lock:
+            running = self._process is not None and self._process.poll() is None
+            view_dir = self._view_dir
+        if not running or not view_dir:
+            return {"available": False, "blocks": [], "players": []}
+
+        view_path = Path(view_dir) / "view.json"
+        blocks_path = Path(view_dir) / "view_blocks.json"
+        try:
+            view = json.loads(view_path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            return {"available": False, "blocks": [], "players": []}
+        try:
+            block_view = json.loads(blocks_path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            block_view = {}
+
+        blocks = block_view.get("blocks", [])
+        blocks_sid = str(block_view.get("sid") or "")
+        blocks_rev = int(block_view.get("rev", -1))
+        view_sid = str(view.get("sid") or "")
+        view_rev = int(view.get("rev", -1))
+        include_blocks = (sid != view_sid or rev != blocks_rev or blocks_sid != view_sid
+                          or blocks_rev != view_rev)
+        players = []
+        for player in view.get("players", []):
+            players.append({
+                key: player[key] for key in ("a", "n", "x", "y", "z", "yaw", "t", "me", "hidden")
+                if key in player
+            })
+        return {
+            "available": True,
+            "sid": view_sid,
+            "room": str(view.get("room") or ""),
+            "rk": str(view.get("rk") or ""),
+            "dims": view.get("dims") or [],
+            "loaded": bool(view.get("loaded")),
+            "rev": view_rev,
+            "blocksRev": blocks_rev,
+            "blocks": blocks if include_blocks else None,
+            "players": players,
+            "updatedAt": float(view.get("t") or 0),
+        }
 
     def action(self, action: str, target_name: str = "", item_id: str = "") -> dict:
         if action not in ACTION_COMMANDS:

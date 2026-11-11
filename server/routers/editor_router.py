@@ -1955,6 +1955,19 @@ async def bot_status(request: Request):
     })
 
 
+@router.get("/api/bot/map")
+async def bot_map_snapshot(request: Request):
+    if not _authed_name(request):
+        raise HTTPException(status_code=401, detail="unauthorized")
+    try:
+        rev = int(request.query_params.get("rev", "-1"))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="rev must be an integer")
+    sid = str(request.query_params.get("sid") or "")[:100]
+    from services.bot_manager import manager
+    return JSONResponse(content=manager.map_snapshot(sid, rev), headers={"Cache-Control": "no-store"})
+
+
 @router.post("/api/bot/link-code")
 async def bot_link_code(request: Request):
     editor_name = _authed_name(request)
