@@ -1135,6 +1135,7 @@ const tabs = {
         ["Tetris", "tetris"], ["Snake", "snake"], ["Pong", "pong"], ["Pong 2 players", "pong-2p"],
         ["Flappy Bird", "flappy-bird"], ["Minesweeper", "minesweeper"],
         ["Tic-Tac-Toe (2 player)", "tic-tac-toe"], ["Connect Four (2 player)", "connect-four"],
+        ["Memory Match", "memory-match"], ["Simon Says", "simon-says"],
         ["Paint canvas", "canvas"], ["Canvas off", "canvas-stop", 1], ["Game off", "game-stop", 1]
       ]],
       ["Bad Apple", [
@@ -1166,15 +1167,22 @@ const tabs = {
       ]],
       ["Effects", [
         ["Rain", "rain"], ["Rain off", "rain-off", 1], ["Clean up rain", "rain-clean", 1],
-        ["Boom", "boom"], ["Bot orbit me", "orbit-start"], ["Stop bot orbit", "orbit-stop", 1],
+        ["Boom", "boom"],
         ["Coin planet", "coins-planet"], ["Coins off", "coins-off", 1],
         ["Mimic picked player", "mimic", 0, 0, 1], ["Stop mimic", "mimic-stop", 1],
         ["Who's here", "players"]
+      ]],
+      ["Bot movement", [
+        ["Follow hooked player", "follow-start"],
+        ["Orbit (default)", "orbit-start"],
+        ["Orbit (tight)", "orbit-tight"], ["Orbit (wide)", "orbit-wide"],
+        ["Orbit (fast)", "orbit-fast"], ["Orbit (slow)", "orbit-slow"],
+        ["Figure-eight orbit", "figure-eight"], ["Stop movement", "orbit-stop", 1]
       ]]
     ];
     view.innerHTML = `
       <div class="bot-layout"><section class="bot-controls">
-      <p class="note">Hook YeeperBot to an online player, then place the marker pillow and (for Flappy Bird or Minesweeper) a controller marker when prompted. Grab the Flappy Bird control to flap. For Minesweeper, grab reveal or flag mode, then grab a board tile. Tic-Tac-Toe and Connect Four are two-player games: grab an empty tile to place a mark or drop a piece in that column. These are fixed game controls; building, live talk, and view controls are not included.</p>
+      <p class="note">Hook YeeperBot to an online player, then place the marker pillow and (for Flappy Bird or Minesweeper) a controller marker when prompted. Memory Match, Simon Says, Tic-Tac-Toe, and Connect Four use grab-to-select board tiles. For Minesweeper, grab reveal or flag mode, then grab a board tile. These are fixed game controls; building, live talk, and view controls are not included.</p>
       <div class="row">
         <select id="bhook" style="min-width:260px"><option value="">loading online players...</option></select>
         <button class="go" id="bstart">Hook bot to player</button>

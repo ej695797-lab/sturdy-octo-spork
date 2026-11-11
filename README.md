@@ -97,8 +97,9 @@ on Photon Voice too, set the Voice app's custom-auth URL to the same `PUBLIC_BAS
 the server applies its account, headset, and build checks to both apps. Keep the Voice
 App ID in the APK as usual. The Bot tab can then hook the
 bot to an online player. It provides game, arcade, cleanup, power and effect buttons,
-including Flappy Bird, Minesweeper, two-player Tic-Tac-Toe and Connect Four, finger-gun
-modes and directional right-trigger flight. It has no build, live-talk or view controls.
+including Simon Says, Memory Match, Flappy Bird, Minesweeper, two-player Tic-Tac-Toe and
+Connect Four, plus follow, adjustable orbit presets and figure-eight bot movement. It has
+no build, live-talk or view controls.
 Upload an MP4 in the Bot tab to show video frames, or an MP3 for an audio waveform; playback
 uses pillow blocks for the screen or the first sign placed by the tracked player. Media is
 stored in MongoDB, not in the repository.

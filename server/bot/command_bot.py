@@ -753,7 +753,11 @@ is enough). Leave NAME out and it means you.
   pong [big] [2p]           the same: board pillow, then controller pillow (green up,
                             yellow down); 2p = two players: a 3rd pillow for the right
                             player's controller; 'pong hand' = move your paddle with your hand
-  tetris|snake|pong restart / game off   new game / remove it
+  memory [big] / simon [big]  place one board pillow, then grab the tiles to play
+  tetris|snake|pong|memory|simon restart / game off   new game / remove it
+  follow / follow off       have YeeperBot follow the hooked player / stop movement
+  orbit [RADIUS [SPEED]]     circle the hooked player; 'orbit figure8' makes a figure-eight
+                            (radius 0.5-4 m, speed 0.25-4); 'orbit off' stops movement
   controls [METERS]         move the game's controller(s) that far in front of the board
                             (pong: grab the purple/orange block to switch bot <-> 2 players;
                             blue/red score bars stand left of the board)
@@ -913,7 +917,7 @@ async def cmd_run(a):
 
     bot.handlers.append(lambda code, sender, data: reresolve() if code in (pun.EV_JOIN, pun.EV_LEAVE) else None)
     track(state, "mimic")
-    orbit = {"actor": None, "acct": None, "started": 0.0}
+    orbit = {"actor": None, "acct": None, "started": 0.0, "mode": "orbit", "radius": 1.25, "speed": 1.5}
     track(orbit, "actor")
 
     async def apply_look(name):
@@ -1126,12 +1130,19 @@ async def cmd_run(a):
                     continue
                 v = list(vd[3:])
                 target_pos = pun.Vector3(v[0], v[1], v[2])
-                angle = (time.monotonic() - orbit["started"]) * 1.5
-                radius = 1.25
-                x, z = math.cos(angle) * radius, math.sin(angle) * radius
-                v[0:3] = [target_pos.x + x, target_pos.y + 0.4, target_pos.z + z]
-                yaw = math.atan2(-x, -z)
-                v[3:7] = [0.0, math.sin(yaw / 2), 0.0, math.cos(yaw / 2)]
+                if orbit["mode"] == "follow":
+                    fwd = q_forward(tuple(v[3:7]))
+                    v[0:3] = [target_pos.x - fwd.x * 1.5, target_pos.y, target_pos.z - fwd.z * 1.5]
+                else:
+                    angle = (time.monotonic() - orbit["started"]) * orbit["speed"]
+                    radius = orbit["radius"]
+                    if orbit["mode"] == "figure8":
+                        x, z = math.sin(angle) * radius, math.sin(2 * angle) * radius * 0.5
+                    else:
+                        x, z = math.cos(angle) * radius, math.sin(angle) * radius
+                    v[0:3] = [target_pos.x + x, target_pos.y + 0.4, target_pos.z + z]
+                    yaw = math.atan2(-x, -z)
+                    v[3:7] = [0.0, math.sin(yaw / 2), 0.0, math.cos(yaw / 2)]
                 state["last"] = v
                 await bot.send_pose(v)
                 continue
@@ -2359,7 +2370,12 @@ async def cmd_run(a):
                         "ctrl": [("reveal-mode", "cyan"), ("flag-mode", "yellow")]},
         "tictactoe": {"size": (3, 3), "top": True, "board_only": True},
         "connectfour": {"size": (7, 6), "top": True, "board_only": True},
+        "memory": {"size": (4, 4), "top": True, "board_only": True},
+        "simon": {"size": (2, 2), "top": True, "board_only": True},
     }
+    MEMORY_COLORS = ("red", "orange", "yellow", "green", "cyan", "blue", "purple", "pink")
+    SIMON_COLORS = ("red", "green", "blue", "yellow")
+    SIMON_GLOW = ("red_emissive", "green_emissive", "cyan_emissive", "yellow_emissive")
     P2_CTRL = [("upx3_2", "red"), ("up2", "red"), ("down2", "red"), ("downx3_2", "red")]
     gm = {"kind": None, "lay": None, "shown": {}, "controls": {}, "gone": {}, "queue": [], "task": None,
           "pick": None, "over": False, "score": 0, "lines": 0, "locked": {}, "piece": None,
@@ -2836,13 +2852,113 @@ async def cmd_run(a):
     def c4_speed():
         return 3600.0
 
+    # Memory Match: tap tiles to find all eight color pairs. A mismatched pair
+    # stays visible until the next tap so players can inspect it.
+    def mm_new():
+        deck = list(range(len(MEMORY_COLORS))) * 2
+        random.shuffle(deck)
+        mw, mh = GAMES["memory"]["size"]
+        gm.update(memory_cards={(x, y): deck[y * mw + x] for x in range(mw) for y in range(mh)},
+                  memory_open=[], memory_matched=set(), memory_waiting=False, memory_turns=0, score=0)
+
+    def mm_click(x, y):
+        cell = (x, y)
+        if gm["over"] or cell in gm["memory_matched"] or cell in gm["memory_open"]:
+            return
+        if gm["memory_waiting"]:
+            gm["memory_open"] = []
+            gm["memory_waiting"] = False
+        gm["memory_open"].append(cell)
+        if len(gm["memory_open"]) != 2:
+            return
+        first, second = gm["memory_open"]
+        gm["memory_turns"] += 1
+        if gm["memory_cards"][first] == gm["memory_cards"][second]:
+            gm["memory_matched"].update(gm["memory_open"])
+            gm["memory_open"] = []
+            gm["score"] += 1
+            if len(gm["memory_matched"]) == 16:
+                gm.update(over=True, end_message=f"memory match: all pairs found in {gm['memory_turns']} turns")
+            else:
+                g_say(f"memory match: pair found - {gm['score']} of 8")
+        else:
+            gm["memory_waiting"] = True
+            g_say("memory match: no pair - grab another tile to turn these over")
+
+    def mm_want():
+        mw, mh = GAMES["memory"]["size"]
+        want = g_frame()
+        shown = gm["memory_matched"] | set(gm["memory_open"])
+        for x in range(mw):
+            for y in range(mh):
+                cell = (x, y)
+                color = MEMORY_COLORS[gm["memory_cards"][cell]] if cell in shown else "blue_dark"
+                want[g_cell(x, y)] = color
+        return want
+
+    def mm_speed():
+        return 3600.0
+
+    # Simon Says: replay the growing sequence by grabbing the matching tile.
+    def sim_new():
+        gm.update(simon_seq=[random.randrange(4)], simon_pos=0, simon_flash=None,
+                  simon_input=False, simon_show_pending=True, score=0)
+
+    def sim_act(x, y):
+        if gm["over"] or not gm.get("simon_input"):
+            return
+        choice = y * 2 + x
+        if choice != gm["simon_seq"][gm["simon_pos"]]:
+            gm.update(over=True, simon_input=False,
+                      end_message=f"simon says: wrong tile - you reached level {len(gm['simon_seq'])}")
+            return
+        gm["simon_pos"] += 1
+        if gm["simon_pos"] == len(gm["simon_seq"]):
+            gm["score"] += 1
+            gm["simon_seq"].append(random.randrange(4))
+            gm["simon_pos"] = 0
+            gm["simon_input"] = False
+            gm["simon_show_pending"] = True
+
+    def sim_want():
+        want = g_frame()
+        flash = gm.get("simon_flash")
+        for x in range(2):
+            for y in range(2):
+                i = y * 2 + x
+                want[g_cell(x, y)] = SIMON_GLOW[i] if flash == i else SIMON_COLORS[i]
+        return want
+
+    def sim_speed():
+        return 3600.0
+
+    async def sim_show_sequence():
+        gm["simon_show_pending"] = False
+        gm["simon_input"] = False
+        gm["simon_flash"] = None
+        gm["queue"].clear()
+        for i in gm["simon_seq"]:
+            gm["simon_flash"] = i
+            await g_render(sim_want())
+            await asyncio.sleep(0.45)
+            gm["simon_flash"] = None
+            await g_render(sim_want())
+            await asyncio.sleep(0.18)
+        gm["simon_pos"] = 0
+        gm["simon_input"] = True
+        g_say(f"simon says: your turn - repeat {len(gm['simon_seq'])} tile"
+              f"{'s' if len(gm['simon_seq']) != 1 else ''}")
+
     RULES = {"tetris": (t_act, t_step, t_want, t_speed), "snake": (s_act, s_step, s_want, s_speed),
              "pong": (p_act, p_step, p_want, p_speed),
              "flappy": (f_act, f_step, f_want, f_speed),
              "minesweeper": (m_act, lambda: None, m_want, m_speed),
              "tictactoe": (lambda _a: None, lambda: None, tt_want, tt_speed),
-             "connectfour": (lambda _a: None, lambda: None, c4_want, c4_speed)}
-    BOARD_ACTIONS = {"minesweeper": m_click, "tictactoe": tt_act, "connectfour": c4_act}
+             "connectfour": (lambda _a: None, lambda: None, c4_want, c4_speed),
+             "memory": (lambda _a: None, lambda: None, mm_want, mm_speed),
+             "simon": (lambda _a: None, lambda: None, sim_want, sim_speed)}
+    BOARD_ACTIONS = {"minesweeper": m_click, "tictactoe": tt_act, "connectfour": c4_act,
+                     "memory": mm_click, "simon": sim_act}
 
     def g_new_game():
         gm.update(over=False, score=0, lines=0, locked={}, queue=[], end_message="")
@@ -2860,6 +2976,10 @@ async def cmd_run(a):
             tt_new()
         elif gm["kind"] == "connectfour":
             c4_new()
+        elif gm["kind"] == "memory":
+            mm_new()
+        elif gm["kind"] == "simon":
+            sim_new()
 
     async def g_loop():
         act, step, want_fn, speed = RULES[gm["kind"]]
@@ -2874,6 +2994,9 @@ async def cmd_run(a):
                         if board_act:
                             board_act(a_[1], a_[2])
                     dirty = True
+                    if gm["kind"] == "simon" and gm.get("simon_show_pending") and not gm["over"]:
+                        await sim_show_sequence()
+                        dirty = True
                     continue
                 if a_ == "mode":
                     if time.monotonic() - gm.get("mode_t", 0) > 1.5:
@@ -2894,9 +3017,12 @@ async def cmd_run(a):
                 g_say(f"{message}. new game in 4 s")
             if gm["over"] and announced and time.monotonic() - over_at >= 4.0:
                 g_new_game()                                    # auto reset after a fail
+                if gm["kind"] == "simon":
+                    await sim_show_sequence()
+                else:
+                    g_say(f"{gm['kind']}: new game!")
                 gm["queue"].clear()
                 last, dirty = time.monotonic(), True
-                g_say(f"{gm['kind']}: new game!")
             if not gm["over"]:
                 announced = False
             for cell, t_gone in list(gm["gone"].items()):      # put grabbed controls back
@@ -2922,6 +3048,8 @@ async def cmd_run(a):
             elif r["method"] == "RpcMapObjectCreated":         # player put it back
                 gm["gone"].pop(cell, None)
         elif r["method"] == "RpcDestroyMapObject" and cell in gm["interact_cells"]:
+            if gm["kind"] == "simon" and not gm.get("simon_input"):
+                return
             gm["shown"].pop(cell, None)
             gm["queue"].append(("board", *gm["interact_cells"][cell]))
 
@@ -3051,12 +3179,16 @@ async def cmd_run(a):
         if gm["kind"] == "pong":
             await p_mode_block(p_mode_spot(spot or default_controls_spot(), spot2 if gm.get("twop") else None))
         g_new_game()
+        if gm["kind"] == "simon":
+            await sim_show_sequence()
         gm["task"] = asyncio.create_task(g_loop())
         if gm["kind"] == "flappy":
             g_say("flappy: grab the flap control to fly through the gaps; avoid the green pipes")
         elif gm["kind"] == "minesweeper":
             g_say("minesweeper: grab reveal or flag mode, then grab a board tile; first reveal is safe. "
                   "Colors: white 0, cyan 1, green 2, orange 3, blue 4, purple 5, light-cyan 6, red 7, bright-red 8")
+        elif gm["kind"] == "memory":
+            g_say("memory match: grab tiles to turn them over; match all eight color pairs")
 
     async def g_off():
         if gm["task"]:
@@ -3094,7 +3226,8 @@ async def cmd_run(a):
                 if GAMES[pk["kind"]].get("board_only"):
                     gm["pick"] = None
                     await g_start()
-                    g_say(f"{pk['kind']}: board ready - grab a tile to play; 'game off' removes it")
+                    if pk["kind"] not in ("memory", "simon"):
+                        g_say(f"{pk['kind']}: board ready - grab a tile to play; 'game off' removes it")
                 else:
                     pk["stage"] = "controls"
                     g_say(f"{pk['kind']}: now place another 1x1 pillow where the CONTROLLER should go")
@@ -7372,21 +7505,32 @@ async def cmd_run(a):
                     tracked_flight.update(actor=t, enabled=True, last_boost=0.0)
                     remember(tracked_flight, "actor")
                     print(f"right-trigger flight ON for {pname(t)}")
-                elif cmd == "orbit":
+                elif cmd in ("orbit", "follow"):
                     if off:
                         orbit.update(actor=None, acct=None, started=0.0)
                         state["last"] = None
                         t = bot.actor_by_name(who)
                         if t is not None:
                             ensure_avatar(t)
-                        print("bot orbit off")
+                        print("bot movement off")
                         continue
                     t = bot.actor_by_name(who)
                     if t is None or not bot.pose_of(t):
-                        print("can't see the hooked player to orbit")
+                        print("can't see the hooked player to move")
                         continue
-                    orbit.update(actor=t, acct=acct_of(t), started=time.monotonic())
-                    print(f"YeeperBot orbiting {pname(t)} - 'orbit off' to stop")
+                    mode, nums = "follow", []
+                    if cmd == "orbit":
+                        mode = "figure8" if args and args[0].lower() in ("figure8", "figure-eight") else "orbit"
+                        values = args[1:] if mode == "figure8" else args
+                        nums = [float(x) for x in values if is_num(x)]
+                    radius = min(max(nums[0], 0.5), 4.0) if nums else 1.25
+                    speed = min(max(nums[1], 0.25), 4.0) if len(nums) > 1 else 1.5
+                    orbit.update(actor=t, acct=acct_of(t), started=time.monotonic(), mode=mode,
+                                 radius=radius, speed=speed)
+                    description = ("following" if mode == "follow" else
+                                   ("moving in a figure-eight" if mode == "figure8" else
+                                    f"orbiting at radius {radius:g} m, speed {speed:g}"))
+                    print(f"YeeperBot {description} around {pname(t)} - 'orbit off' to stop")
                 elif cmd == "disco":
                     await bot.rpc(bot.view_id, "SendBeginParty", [], receivers=pun.RECV_OTHERS)
                     await bot.rpc(bot.view_id, "SendStartParty", [], receivers=pun.RECV_OTHERS)
@@ -7768,9 +7912,11 @@ async def cmd_run(a):
                     print("canvas: place a 1x1 pillow where the BOTTOM-MIDDLE of the canvas should go "
                           "(then a second one for the colour palette)")
                 elif cmd in ("tetris", "snake", "pong", "game", "flappy", "flappybird",
-                             "minesweeper", "mines", "tictactoe", "ttt", "connectfour", "connect4"):
+                             "minesweeper", "mines", "tictactoe", "ttt", "connectfour", "connect4",
+                             "memory", "memorymatch", "simon", "simon-says"):
                     aliases = {"flappybird": "flappy", "mines": "minesweeper",
-                               "ttt": "tictactoe", "connect4": "connectfour"}
+                               "ttt": "tictactoe", "connect4": "connectfour",
+                               "memorymatch": "memory", "simon-says": "simon"}
                     kind = gm["kind"] if cmd == "game" else aliases.get(cmd, cmd)
                     sub = args[0].lower() if args else ""
                     if off or (cmd == "game" and not kind):
@@ -7796,9 +7942,13 @@ async def cmd_run(a):
                         await g_build_board(kind, xyz, size_name, None)
                         await g_start(); continue
                     gm["pick"] = {"actor": hooked(args)[0], "kind": kind, "size": size_name, "stage": "board"}
-                    print(f"{kind}: place a 1x1 pillow where the BOTTOM-MIDDLE of the board should go "
-                          + ("(then one for the LEFT player's controller, then one for the RIGHT player's)"
-                             if gm["twop"] else "(then a second one for the controller)"))
+                    if GAMES[kind].get("board_only"):
+                        placement = "(board-only; grab its tiles when it is ready)"
+                    elif gm["twop"]:
+                        placement = "(then one for the LEFT player's controller, then one for the RIGHT player's)"
+                    else:
+                        placement = "(then a second one for the controller)"
+                    print(f"{kind}: place a 1x1 pillow where the BOTTOM-MIDDLE of the board should go {placement}")
                 elif cmd in ("controls", "controller"):
                     if not gm["lay"]:
                         print("no game board"); continue
