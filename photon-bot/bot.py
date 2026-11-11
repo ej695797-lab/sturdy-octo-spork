@@ -712,10 +712,9 @@ is enough). Leave NAME out and it means you.
                             in their face, the game's skull scream + monster roar
   jumpscare NAME            jump scare NAME right now
   thaw                      melt every ice cube
-  godhand [NAME] [both]     a giant golden HAND OF GOD copies NAME's real hand: squeeze to grab
-                            players, let go to throw, swing to smack, smash the ground = explosion,
-                            clap your real hands = knockback blast, every 1x1 you place becomes
-                            four 2x2x2 blocks ('godhand off')
+  godhand [NAME] [both] [big]  a giant hand copies NAME's real hand: squeeze to grab players,
+                            let go to throw, swing to smack; 'big' uses purple/cyan oversized hands
+                            with stronger grabs, throws, slams and clap shockwaves ('godhand off')
   bigbuild [NAME] / bigbuild off   just the giant builder (1x1 -> four 2x2x2 blocks)
                             (the hand also rests on the ground, slams on contact and smashes pillows)
   blackhole [NAME]          a black hole in front of NAME drags everyone in, then explodes
@@ -5333,18 +5332,18 @@ async def cmd_run(a):
     def clamp01(v):
         return max(0.0, min(1.0, v))
 
-    # --- HAND OF GOD: a giant golden hand that copies a player's real hand ---
+    # --- HAND OF GOD: a giant hand that copies a player's real hand ---
     # Fingers along the hand's +Z, palm facing inward (-X right, +X left), thumb on
     # top. Fingers curl with the grip, the index with the trigger, the thumb with
     # the thumb. Squeeze near someone = grab them (held at the palm by steady
     # knockback pulls), open = throw with the hand's speed; swing fast = smack.
-    gh = {"on": False, "actor": None, "both": False, "hands": {}, "task": None}
+    gh = {"on": False, "actor": None, "both": False, "big": False, "hands": {}, "task": None}
     track(gh, "actor")
     GH_S, GH_UP, GH_FWD = 6.0, 0.6, 2.5
     GH_REST = (math.sin(0.19), 0.0, 0.0, math.cos(0.19))       # fingers angled ~22 deg down at rest
     BAR_X = (1.0, 0.0, 0.0)
 
-    def gh_parts(side, ci, cg, ct):
+    def gh_parts(side, ci, cg, ct, big=False):
         """A Yeep-style 3-finger hand (~4 m): palm, index finger (trigger), one
         finger for the grip, and a thumb."""
         parts = [("4x4_stuffed", (0.0, 0.0, 0.0), from_to((0.0, 1.0, 0.0), (1.0, 0.0, 0.0)), "yellow_emissive")]
@@ -5369,6 +5368,15 @@ async def cmd_run(a):
         tmid = tuple(base[i] + t1[i] * 1.0 for i in range(3))
         parts.append(("1x2_stuffed", tuple(base[i] + t1[i] * 0.5 for i in range(3)), from_to(BAR_X, t1), "orange_emissive"))
         parts.append(("1x1_stuffed", tuple(tmid[i] + t2[i] * 0.25 for i in range(3)), from_to(BAR_X, t2), "yellow_emissive"))
+        if big:
+            palm = parts[0]
+            parts[0] = (palm[0], (-1.0, -1.0, 0.0), palm[2], "purple_emissive")
+            for i, (pat, loc, rot, _) in enumerate(parts[1:], 1):
+                larger = "2x4_stuffed" if pat == "1x2_stuffed" else "2x2x2_stuffed"
+                parts[i] = (larger, tuple(value * 1.5 for value in loc), rot,
+                            "cyan_emissive" if pat == "1x2_stuffed" else "purple_emissive")
+            for dx, dy in ((-1.0, 1.0), (1.0, -1.0), (1.0, 1.0)):
+                parts.append((palm[0], (dx, dy, 0.0), palm[2], "purple_emissive"))
         return parts
 
     def gh_track_pose(actor, off):
@@ -5391,20 +5399,22 @@ async def cmd_run(a):
         except (TypeError, ValueError):
             return None
 
-    async def gh_start(actor, both):
+    async def gh_start(actor, both, big=False):
         await gh_stop()
         ensure_avatar(actor)
-        gh.update(on=True, actor=actor, both=both, hands={})
+        gh.update(on=True, actor=actor, both=both, big=big, hands={})
         remember(gh, "actor")
         for off, side in ((14, 1.0), (24, -1.0)) if both else ((14, 1.0),):
-            ids = [rand_id() for _ in gh_parts(side, 0, 0, 0)]
-            for pid, (pat, _, _, col) in zip(ids, gh_parts(side, 0, 0, 0)):
+            parts = gh_parts(side, 0, 0, 0, big)
+            ids = [rand_id() for _ in parts]
+            for pid, (pat, _, _, col) in zip(ids, parts):
                 await boss_preview(pid, col, pat)
             gh["hands"][off] = {"ids": ids, "side": side, "prev": None, "held": None, "open": True,
                                 "hpos": {}, "hit_cd": {}, "swish": 0.0, "slam_cd": 0.0}
         gh.update(clap_d=None, clap_cd=0.0)
         gh["task"] = asyncio.create_task(gh_loop())
-        print(f"HAND OF GOD on for {pname(actor)} ({'both hands' if both else 'right hand'}): move your hand, "
+        style = "BIG HANDS (purple, heavy shockwaves)" if big else "HAND OF GOD"
+        print(f"{style} on for {pname(actor)} ({'both hands' if both else 'right hand'}): move your hand, "
               f"squeeze to grab, let go to throw, swing to smack")
 
     async def gh_stop():
@@ -5449,7 +5459,7 @@ async def cmd_run(a):
                         gh["clap_cd"] = now + 1.0
                         mids = [o["prev"] for o in gh["hands"].values() if o.get("prev") is not None]
                         cpos = (mids[0] + mids[1]) * 0.5 if len(mids) == 2 else (mids[0] if mids else bp0)
-                        asyncio.get_running_loop().create_task(gh_clap(cpos, a_))
+                        asyncio.get_running_loop().create_task(gh_clap(cpos, a_, gh["big"]))
                 vd_now = bot.poses.get(a_)
                 fresh = vd_now is not None and vd_now is not gh.get("last_vd")
                 if fresh:
@@ -5488,7 +5498,7 @@ async def cmd_run(a):
                     if abs(ct - lc[2]) > 0.2:
                         snap |= {7, 8}                             # thumb
                     h["curl"] = (ci, cg, ct)
-                    parts_ = gh_parts(h["side"], ci, cg, ct)
+                    parts_ = gh_parts(h["side"], ci, cg, ct, gh["big"])
                     wpos = [P + q_rotate(rq, loc) for (_, loc, _, _) in parts_]
                     low = min(w_.y for w_ in wpos) - 0.3
                     ground = max(feet, surface_below(P.x, P.z, P.y + 1.0))
@@ -5536,17 +5546,21 @@ async def cmd_run(a):
                             last, lt = h["hpos"].get("p"), h["hpos"].get("t", now)
                             pv = (pos - last) * (1 / max(now - lt, 0.05)) if last is not None else pun.Vector3()
                             h["hpos"].update(p=pos, t=now, vd=bot.poses.get(held))
-                            fvec = (palm - pos) * 5.0 - pv * 0.6 + pun.Vector3(0, 2.5, 0)
+                            force_scale = 1.6 if gh["big"] else 1.0
+                            fvec = (palm - pos) * (5.0 * force_scale) - pv * 0.6 + pun.Vector3(0, 2.5 * force_scale, 0)
                             m_ = math.sqrt(fvec.x ** 2 + fvec.y ** 2 + fvec.z ** 2)
-                            if m_ > 30:
-                                fvec = fvec * (30 / m_)
+                            max_force = 45.0 if gh["big"] else 30.0
+                            if m_ > max_force:
+                                fvec = fvec * (max_force / m_)
                             await bot.rpc(bot.view_id, "RpcApplyPlayerKnockback", [uid, fvec, 3, None, -1],
                                           receivers=pun.RECV_OTHERS)
                         elif not closed:                                 # let go: throw
-                            fvec = vel * 0.8 + pun.Vector3(0, 4, 0)
+                            force_scale = 1.6 if gh["big"] else 1.0
+                            fvec = vel * (0.8 * force_scale) + pun.Vector3(0, 4 * force_scale, 0)
                             m_ = math.sqrt(fvec.x ** 2 + fvec.y ** 2 + fvec.z ** 2)
-                            if m_ > 28:
-                                fvec = fvec * (28 / m_)
+                            max_force = 42.0 if gh["big"] else 28.0
+                            if m_ > max_force:
+                                fvec = fvec * (max_force / m_)
                             await bot.rpc(bot.view_id, "RpcApplyPlayerKnockback", [uid, fvec, 3, None, -1],
                                           receivers=pun.RECV_OTHERS)
                             await play_sfx(4, palm, 2.0, 0.6)
@@ -5556,21 +5570,26 @@ async def cmd_run(a):
                     if fist and vel.y < -3.0 and touching and not h.get("was_touching") and now > h["slam_cd"]:
                         h["slam_cd"] = now + 0.8
                         hit_at = pun.Vector3(palm.x, ground + 0.1, palm.z)
-                        asyncio.get_running_loop().create_task(gh_slam(hit_at, a_))
+                        asyncio.get_running_loop().create_task(gh_slam(hit_at, a_, gh["big"]))
                     h["was_touching"] = touching
                     # SMASH: pillows the moving hand runs into are destroyed
                     if speed > 3.0 and now > h.get("smash_cd", 0.0):
                         h["smash_cd"] = now + 0.15
-                        tip_ = P + q_rotate(rq, (0.0, 0.0, 2.6))
-                        n_sm = await smash_pillows(palm, 3.0, cap=6) + await smash_pillows(tip_, 2.0, cap=4)
+                        reach = 1.5 if gh["big"] else 1.0
+                        tip_ = P + q_rotate(rq, (0.0, 0.0, 2.6 * reach))
+                        n_sm = await smash_pillows(palm, 3.0 * reach, cap=12 if gh["big"] else 6) + \
+                            await smash_pillows(tip_, 2.0 * reach, cap=8 if gh["big"] else 4)
                         if n_sm:
                             h["smashed"] = h.get("smashed", 0) + n_sm
                     # smack: a fast swing hits whoever the hand passes through
                     if speed > 6.0:
                         if now > h["swish"]:                 # no swing sound (owner 2026-11-01: sounded like a chainsaw)
                             h["swish"] = now + 0.45
-                        tip = P + q_rotate(rq, (0.0, 0.0, 3.0))
-                        await fx_add(tip, random.choice(["yellow_emissive", "white", "orange_emissive"]),
+                        reach = 1.5 if gh["big"] else 1.0
+                        tip = P + q_rotate(rq, (0.0, 0.0, 3.0 * reach))
+                        colors = ["purple_emissive", "cyan_emissive", "white"] if gh["big"] else \
+                            ["yellow_emissive", "white", "orange_emissive"]
+                        await fx_add(tip, random.choice(colors),
                                      vel=pun.Vector3(random.uniform(-1, 1), random.uniform(-1, 1), random.uniform(-1, 1)),
                                      life=0.3, spin=15.0)
                         vd_ = unit(vel.x, vel.y, vel.z)
@@ -5579,10 +5598,11 @@ async def cmd_run(a):
                                 continue
                             q_ = bot.pose_of(b_)[0]
                             near = min(math.dist((q_.x, q_.y, q_.z), (c_.x, c_.y, c_.z)) for c_ in (palm, tip, P))
-                            if near < 2.0:
+                            if near < (3.0 if gh["big"] else 2.0):
                                 h["hit_cd"][b_] = now + 0.7
-                                k = min(speed * 0.85, 24.0)
-                                await smack(b_, pun.Vector3(vd_[0] * k, vd_[1] * k + 5.0, vd_[2] * k), q_)
+                                k = min(speed * (1.2 if gh["big"] else 0.85), 36.0 if gh["big"] else 24.0)
+                                await smack(b_, pun.Vector3(vd_[0] * k, vd_[1] * k + (8.0 if gh["big"] else 5.0),
+                                                           vd_[2] * k), q_)
                                 await play_sfx(226, q_, 2.5, 0.8)
         except asyncio.CancelledError:
             pass
@@ -5728,11 +5748,13 @@ async def cmd_run(a):
             await play_sfx(63, center, 2.0, 0.8)
         return len(hit)
 
-    async def gh_slam(at, owner):
+    async def gh_slam(at, owner, big=False):
         """Ground slam: a real explosion, a dust/shock ring along the ground and debris."""
         await play_sfx(320, at, 2.5, 0.7)
         await play_sfx(97, at, 2.0, 0.9)
-        await smash_pillows(at + pun.Vector3(0, 0.5, 0), 5.0, cap=20, include_own=True)
+        radius = 8.5 if big else 5.5
+        await smash_pillows(at + pun.Vector3(0, 0.5, 0), 7.0 if big else 5.0,
+                           cap=40 if big else 20, include_own=True)
         await explode(at, land=False, power=0.0, radius=0.1)        # the blast itself, no bot knockback
         for a_ in player_actors():                                   # knockback for others, not the owner
             if a_ == owner:
@@ -5740,41 +5762,55 @@ async def cmd_run(a):
             p_ = bot.pose_of(a_)[0]
             d_ = p_ - at
             dist = math.sqrt(d_.x ** 2 + d_.y ** 2 + d_.z ** 2)
-            if dist < 5.5:
+            if dist < radius:
                 flat = math.hypot(d_.x, d_.z) or 1.0
-                k = 7.0 * (1.15 - dist / 5.5)
-                await smack(a_, pun.Vector3(d_.x / flat * k, 5.0 + k * 0.5, d_.z / flat * k), p_)
-        for j in range(16):
-            a_ = j * 2 * math.pi / 16
-            await fx_add(at + pun.Vector3(0, 0.15, 0), ("yellow_emissive", "orange_emissive", "brown")[j % 3],
-                         vel=pun.Vector3(math.cos(a_) * 9, 0.0, math.sin(a_) * 9), life=0.5, spin=10.0)
+                k = (13.0 if big else 7.0) * (1.15 - dist / radius)
+                await smack(a_, pun.Vector3(d_.x / flat * k, 7.0 + k * 0.6, d_.z / flat * k), p_)
+        count = 24 if big else 16
+        colors = ("purple_emissive", "cyan_emissive", "white") if big else \
+            ("yellow_emissive", "orange_emissive", "brown")
+        for j in range(count):
+            a_ = j * 2 * math.pi / count
+            await fx_add(at + pun.Vector3(0, 0.15, 0), colors[j % len(colors)],
+                         vel=pun.Vector3(math.cos(a_) * (14 if big else 9), 0.0,
+                                         math.sin(a_) * (14 if big else 9)), life=0.5, spin=10.0)
         for _ in range(8):
-            await fx_add(at, random.choice(["brown", "gray", "brown_dark"]),
-                         vel=pun.Vector3(random.uniform(-3, 3), random.uniform(4, 8), random.uniform(-3, 3)),
+            debris = ["purple_emissive", "cyan_emissive", "gray"] if big else ["brown", "gray", "brown_dark"]
+            await fx_add(at, random.choice(debris),
+                         vel=pun.Vector3(random.uniform(-4, 4), random.uniform(4, 9), random.uniform(-4, 4)),
                          gravity=14.0, life=0.9, spin=14.0)
 
-    async def gh_clap(at, owner):
+    async def gh_clap(at, owner, big=False):
         """Clap: everyone close is thrown away from it, with a bright burst ring."""
         await play_sfx(623, at, 2.5, 0.8)
         await play_sfx(99, at, 2.0, 1.0)
         await bot.rpc(bot.view_id, "RpcCreateHitEffect", [at, pun.Vector3(0, 1, 0), 0], receivers=pun.RECV_OTHERS)
+        radius = 11.0 if big else 7.0
         for a_ in player_actors():
             if a_ == owner:
                 continue
             p_ = bot.pose_of(a_)[0]
             d_ = p_ - at
             dist = math.sqrt(d_.x ** 2 + d_.y ** 2 + d_.z ** 2)
-            if dist > 7.0:
+            if dist > radius:
                 continue
             flat = math.hypot(d_.x, d_.z) or 1.0
-            k = 9.0 * (1.15 - dist / 7.0)
-            await smack(a_, pun.Vector3(d_.x / flat * k, 4.0 + k * 0.4, d_.z / flat * k), p_)
-        for ring_ in range(2):                                  # two bright rings (flat + upright)
-            for j in range(14):
-                a_ = j * 2 * math.pi / 14
-                v_ = (pun.Vector3(math.cos(a_) * 10, 0.0, math.sin(a_) * 10) if ring_ == 0
-                      else pun.Vector3(math.cos(a_) * 10, math.sin(a_) * 10, 0.0))
-                await fx_add(at, ("white", "yellow_emissive")[j % 2], vel=v_, life=0.45, spin=14.0)
+            k = (16.0 if big else 9.0) * (1.15 - dist / radius)
+            await smack(a_, pun.Vector3(d_.x / flat * k, 6.0 + k * 0.6, d_.z / flat * k), p_)
+        rings = 3 if big else 2
+        count = 18 if big else 14
+        colors = ("purple_emissive", "cyan_emissive", "white") if big else ("white", "yellow_emissive")
+        for ring_ in range(rings):                               # flat and upright shockwave rings
+            for j in range(count):
+                a_ = j * 2 * math.pi / count
+                speed = 16 if big else 10
+                if ring_ == 0:
+                    v_ = pun.Vector3(math.cos(a_) * speed, 0.0, math.sin(a_) * speed)
+                elif ring_ == 1:
+                    v_ = pun.Vector3(math.cos(a_) * speed, math.sin(a_) * speed, 0.0)
+                else:
+                    v_ = pun.Vector3(0.0, math.cos(a_) * speed, math.sin(a_) * speed)
+                await fx_add(at, colors[j % len(colors)], vel=v_, life=0.45, spin=14.0)
 
     # --- BLACK HOLE: a swirling vortex that drags everyone in, then collapses into a blast ---
     async def black_hole(center, secs=10.0):
@@ -7070,10 +7106,12 @@ async def cmd_run(a):
                     if off:
                         await gh_stop(); print("hand of god off"); continue
                     both = any(x.lower() in ("both", "2", "two") for x in args)
-                    t, _ = split_name([x for x in args if x.lower() not in ("both", "2", "two")])
+                    big = any(x.lower() in ("big", "biggest", "big-hands") for x in args)
+                    t, _ = split_name([x for x in args if x.lower() not in
+                                       ("both", "2", "two", "big", "biggest", "big-hands")])
                     if t is None or not bot.pose_of(t):
                         print("can't see that player yet"); continue
-                    await gh_start(t, both)
+                    await gh_start(t, both, big)
                 elif cmd in ("bigbuild", "giantbuild"):
                     if off:
                         bigb["actor"] = None; bigb["actor_acct"] = None

@@ -108,6 +108,17 @@ def account_may_own_pattern(account_id, pattern) -> bool:
     return allowed_accounts is None or account_id in allowed_accounts
 
 
+def apply_account_pattern_locks(owned, account_id) -> list:
+    owned = list(owned or [])
+    for pattern, allowed_accounts in ACCOUNT_LOCKED_PATTERNS.items():
+        if account_id in allowed_accounts:
+            if pattern not in owned:
+                owned.append(pattern)
+        else:
+            owned = [item for item in owned if item != pattern]
+    return owned
+
+
 async def enforce_account_pattern_ownership() -> None:
     from services.db import accounts
 
@@ -142,10 +153,5 @@ def apply(owned, roles, account_id=None) -> tuple[list, list]:
                 owned.append(pattern)
         elif pattern in owned:
             owned.remove(pattern)
-    for pattern, allowed_accounts in ACCOUNT_LOCKED_PATTERNS.items():
-        if account_id in allowed_accounts:
-            if pattern not in owned:
-                owned.append(pattern)
-        else:
-            owned = [item for item in owned if item != pattern]
+    owned = apply_account_pattern_locks(owned, account_id)
     return owned, [r for r in roles if r not in SERVER_ONLY_ROLES]

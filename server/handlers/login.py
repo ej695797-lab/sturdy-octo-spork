@@ -2405,6 +2405,8 @@ async def handle_login(body: dict) -> dict:
     # ownership grants only ever lived in the response, never in Mongo
     # (invisible to the editor UI, and re-computed from scratch every login
     # instead of actually sticking).
+    from services.role_locks import apply_account_pattern_locks
+    account["ownedPatterns"] = apply_account_pattern_locks(account.get("ownedPatterns"), account_id)
     from services.moderator_roles import client_role_keys
     account["roleKeys"] = client_role_keys(account_id, account.get("roleKeys"))
     account.pop("lastIP", None)
