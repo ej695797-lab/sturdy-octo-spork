@@ -63,7 +63,6 @@
                  border-radius: 6px; cursor: pointer; margin: 0 6px 6px 0; }
   .pgrp button:hover { border-color: var(--accent); }
   .pgrp button.off { color: #e99; }
-  #pblog { height: 40vh; overflow: auto; }
   .bars { display: flex; align-items: flex-end; gap: 2px; height: 60px; margin: 8px 0 12px; }
   .bars div { flex: 1; background: var(--accent); min-height: 1px; }
   pre.smp { background: #0c0c0c; border: 1px solid #333; padding: 8px; border-radius: 6px;
@@ -108,7 +107,7 @@
     .bot-map-panel { position: static; }
     #bot-map { height: 55vh; min-height: 300px; }
     table { display: block; overflow-x: auto; max-width: 100%; }
-    pre.smp, #pblog { font-size: 12px; }
+    pre.smp { font-size: 12px; }
     #msg { top: 12px; left: 12px; right: 12px; max-width: none; }
   }
   body.tier-editor .adminonly{display:none!important}
@@ -121,7 +120,6 @@
     <button data-t="players" class="on">Players</button>
     <button data-t="online">Online</button>
     <button data-t="bot">Bot</button>
-<button data-t="photon">Photon</button>
     <button data-t="banned">Banned</button>
     <button data-t="default">Default</button>
     <button data-t="maps">Maps</button>
@@ -161,18 +159,10 @@ function toast(t, bad) {
   clearTimeout(toast._t); toast._t = setTimeout(() => m.style.display = "none", 3500);
 }
 async function api(path, opts) {
-  opts = { ...(opts || {}) };
-  const isPhoton = path.startsWith("/photon/");
-  if (isPhoton) {
-    const headers = new Headers(opts.headers || {});
-    headers.set("X-Photon-Bot-Password", sessionStorage.getItem("photonBotPassword") || "");
-    opts.headers = headers;
-  }
-  const r = await fetch(API + path, opts);
+  const r = await fetch(API + path, opts || {});
   if (r.status === 401) { location.href = "/editor/login"; throw new Error("auth"); }
   const txt = await r.text();
   let j; try { j = txt ? JSON.parse(txt) : {}; } catch { j = { raw: txt }; }
-  if (isPhoton && r.status === 403) sessionStorage.removeItem("photonBotPassword");
   if (!r.ok) throw new Error(j.detail || j.error || ("HTTP " + r.status));
   return j;
 }
@@ -1644,159 +1634,6 @@ const tabs = {
     window._botMapTimer = setInterval(loadBotMap, 1000);
     clearInterval(window._botPlayersTimer);
     window._botPlayersTimer = setInterval(players, 10000);
-  },
-  photon: async () => {
-    const GROUPS = [
-      ["Player powers", [["Finger gun", "fingergun"], ["Lightning gun", "lightning"],
-                  ["Freeze gun", "freeze"], ["Pellet effect gun", "pelletfx"],
-                  ["Jumpscare gun", "scare"], ["Finger gun off", "fingergun off", 1],
-                  ["Lightning off", "lightning off", 1], ["Freeze off / thaw", "freeze off", 1],
-                  ["Pellet gun off", "pelletfx off", 1], ["Jumpscare off", "scare off", 1],
-                  ["Smite picked player", "@smite"], ["Freeze picked player", "@ice"],
-                  ["Jump scare picked player", "@jumpscare"], ["Mimic picked player", "@mimic"],
-                  ["Copy picked player's look", "@look"], ["Orbit coins around picked player", "@coins"]]],
-      ["Big effects", [["Big hands", "godhand big"], ["Big hands (both hands)", "godhand big both"],
-                  ["Hand off", "godhand off", 1], ["Rain", "rain"], ["Rain off", "rain off", 1],
-                  ["Clean up rain", "rain clean", 1], ["Meteor shower", "meteors"],
-                  ["Black hole", "blackhole"], ["Explosion in front of picked player", "@boom"],
-                  ["Coin planet", "coins planet"], ["Coins off", "coins off", 1],
-                  ["Thaw everyone", "thaw", 1],
-                  ["Bomb type: basic", "bomb basic"], ["Bomb type: impulse", "bomb impulse"],
-                  ["Bomb type: pumpkin", "bomb pumpkin"], ["Bomb type: radiation", "bomb radiation"],
-                  ["Bomb type: off", "bomb off", 1]]],
-      ["Quick actions", [["Who's here", "players"], ["Stop mimic", "stop", 1],
-                  ["Clean firebox spam", "cleanup", 1]]],
-    ];
-    view.innerHTML = `<p class="note">A separate PHOTON_BOT_PASSWORD is required. Set it in the server environment and enter it here. The password stays in this browser session only.</p>
-      <div id="pbauth" class="row">
-        <input id="pbpw" type="password" autocomplete="current-password" placeholder="Photon bot password" aria-label="Photon bot password">
-        <button class="go" id="pbunlock">Unlock Photon bot</button>
-        <span class="muted" id="pbpwmsg"></span>
-      </div>
-      <div id="pbcontrols" style="display:none">
-      <div class="row"><button class="blk" id="pblock">Lock controls</button></div>
-      <p class="note">Hook the bot onto a player: it joins their room. Use the powers and effects below, or the selected player shortcuts. Building, live talk, and view controls are not included.</p>
-      <div class="row"><b>Bot:</b> <span id="pbst" class="muted">checking...</span>
-        <button class="del" id="pbstop">Stop bot</button></div>
-      <div class="row">
-        <select id="pbpl" style="min-width:260px"><option value="">loading players...</option></select>
-        <label class="muted"><input type="checkbox" id="pbstay"> Stay in that room</label>
-        <button class="go" id="pbhook">Hook on</button>
-        <button class="blk" id="pbref">Refresh players</button>
-      </div>
-      ${GROUPS.map(([title, btns]) => `<div class="pgrp"><span class="muted">${esc(title)}</span>${
-        btns.map(([label, cmd, off]) => `<button data-cmd="${esc(cmd)}"${off ? ' class="off"' : ""}>${esc(label)}</button>`).join("")}</div>`).join("")}
-      <div class="row"><input type="text" id="pbcmd" placeholder="any bot command" style="flex:1">
-        <button class="go" id="pbsend">Send</button></div>
-      <pre class="smp" id="pblog"></pre></div>`;
-    const $ = id => document.getElementById(id);
-    function lock(message) {
-      sessionStorage.removeItem("photonBotPassword");
-      clearInterval(tabs.photon._t);
-      tabs.photon._t = null;
-      $("pbcontrols").style.display = "none";
-      $("pbauth").style.display = "";
-      $("pbpw").value = "";
-      $("pbpwmsg").textContent = message || "";
-    }
-    async function players() {
-      const sel = $("pbpl");
-      try {
-        const d = await api("/photon/players");
-        const byRoom = {};
-        d.players.forEach(p => (byRoom[p.roomName || p.roomKey || "?"] ||= []).push(p));
-        sel.innerHTML = `<option value="">pick a player (${d.players.length} online)</option>` +
-          Object.entries(byRoom).map(([room, ps]) => `<optgroup label="${esc(room)} (${ps.length})">${
-            ps.map(p => `<option value="${esc(p.accountID)}">${esc(p.name)}</option>`).join("")}</optgroup>`).join("");
-      } catch (e) {
-        sel.innerHTML = `<option value="">error: ${esc(e.message)}</option>`;
-        if (!sessionStorage.getItem("photonBotPassword")) lock(e.message);
-      }
-    }
-    async function status() {
-      if (!$("pblog")) { clearInterval(tabs.photon._t); return; }
-      try {
-        const s = await api("/photon/status");
-        $("pbst").textContent = s.running
-          ? `on - hooked to ${s.targetName || s.target || "?"}${s.stay ? " (staying in that room)" : " (following)"}`
-          : "off";
-        const box = $("pblog"), atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
-        box.textContent = s.log || "(no output yet)";
-        if (atEnd) box.scrollTop = box.scrollHeight;
-      } catch (e) {
-        $("pbst").textContent = "error: " + e.message;
-        if (!sessionStorage.getItem("photonBotPassword")) lock(e.message);
-      }
-    }
-    async function send(cmd) {
-      try { const r = await api("/photon/cmd", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cmd }) });
-            toast(r.reloading ? "Updating the bot first" : "Sent: " + cmd);
-            setTimeout(status, 1200); }
-      catch (e) { toast(e.message, true); }
-    }
-    function onPicked(word) {
-      const target = $("pbpl").value;
-      if (!target) { toast("Pick a player in the list first", true); return; }
-      send(word + " " + target);
-    }
-    view.querySelectorAll("button[data-cmd]").forEach(b => b.onclick = () => {
-      const c = b.dataset.cmd;
-      if (c === "@mimic") {
-        const target = $("pbpl").value;
-        if (!target) { toast("Pick a player first", true); return; }
-        api("/photon/mimic", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ target }) })
-          .then(r => toast(r.moved ? "Bot going to room" : "Mimicking"))
-          .catch(e => toast(e.message, true));
-      } else if (c.startsWith("@")) onPicked(c.slice(1));
-      else send(c);
-    });
-    async function unlock(password) {
-      password = password || $("pbpw").value;
-      if (!password) { $("pbpwmsg").textContent = "Enter the server's Photon bot password."; return; }
-      sessionStorage.setItem("photonBotPassword", password);
-      $("pbunlock").disabled = true;
-      $("pbpwmsg").textContent = "Checking password...";
-      try {
-        await api("/photon/status");
-        $("pbauth").style.display = "none";
-        $("pbcontrols").style.display = "";
-        $("pbpwmsg").textContent = "";
-        $("pbpw").value = "";
-        clearInterval(tabs.photon._t);
-        tabs.photon._t = setInterval(status, 3000);
-        players(); status();
-      } catch (e) {
-        sessionStorage.removeItem("photonBotPassword");
-        $("pbpwmsg").textContent = e.message;
-        $("pbpw").focus();
-      } finally { $("pbunlock").disabled = false; }
-    }
-    $("pbunlock").onclick = () => unlock();
-    $("pbpw").onkeydown = e => { if (e.key === "Enter") unlock(); };
-    $("pblock").onclick = () => lock("Photon bot controls locked.");
-    $("pbsend").onclick = () => { const v = $("pbcmd").value.trim(); if (v) { send(v); $("pbcmd").value = ""; } };
-    $("pbcmd").onkeydown = e => { if (e.key === "Enter") $("pbsend").click(); };
-    $("pbref").onclick = players;
-    $("pbhook").onclick = async () => {
-      const target = $("pbpl").value;
-      if (!target) { toast("Pick a player first", true); return; }
-      $("pbhook").disabled = true;
-      try { await api("/photon/start", { method: "POST", headers: { "Content-Type": "application/json" },
-                                         body: JSON.stringify({ target, stay: $("pbstay").checked }) });
-            toast("Bot hooked on"); }
-      catch (e) { toast(e.message, true); }
-      $("pbhook").disabled = false; status();
-    };
-    $("pbstop").onclick = async () => {
-      $("pbstop").disabled = true;
-      try { const r = await api("/photon/stop", { method: "POST" }); toast(r.was ? "Bot stopped" : "It wasn't running"); }
-      catch (e) { toast(e.message, true); }
-      $("pbstop").disabled = false; status();
-    };
-    clearInterval(tabs.photon._t);
-    tabs.photon._t = null;
-    const savedPassword = sessionStorage.getItem("photonBotPassword");
-    if (savedPassword) unlock(savedPassword);
   },
 };
 

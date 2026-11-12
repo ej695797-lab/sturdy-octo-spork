@@ -64,7 +64,6 @@ EDITOR_ADMINS = set(filter(None, (os.getenv("EDITOR_ADMINS") or "").replace(" ",
 # fresh random secret is used (signed-in editors are signed out on restart).
 EDITOR_SECRET          = os.getenv("EDITOR_SECRET") or __import__("secrets").token_hex(32)
 MODERATION_PASSWORD = os.getenv("MODERATION_PASSWORD", "")
-PHOTON_BOT_PASSWORD = os.getenv("PHOTON_BOT_PASSWORD", "")
 _MODERATION_ACCOUNT_FIELDS = {
     "adminBlocked", "isPermabanned", "isMutebanned", "isIsolated", "shadowBanned",
     "banExpireTimestamp", "banReason", "blockReason", "banCategory",
@@ -128,19 +127,6 @@ def _authed_name(request: Request):
 
 def _editor_host_ok(request) -> bool:
     return bool(_authed_name(request))
-
-
-async def _photon_ok(request) -> bool:
-    return True
-
-async def _photon_guard(request: Request) -> None:
-    if not await _photon_ok(request):
-        raise HTTPException(status_code=404, detail="Not Found")
-    if not PHOTON_BOT_PASSWORD:
-        raise HTTPException(status_code=503, detail="Set PHOTON_BOT_PASSWORD on the server first")
-    supplied = request.headers.get("X-Photon-Bot-Password", "")
-    if not hmac.compare_digest(supplied.encode("utf-8"), PHOTON_BOT_PASSWORD.encode("utf-8")):
-        raise HTTPException(status_code=403, detail="Incorrect Photon bot password")
 
 
 def _require_moderation_password(body: dict) -> None:
@@ -2245,130 +2231,6 @@ async def bot_soundkey_upload(request: Request):
 
 
 
-# ─── Photon bot (YeeperBot) ───────────────────────────────────────────────
-# The YeeperBot runs as a separate process (photon-bot/bot.py) controlled
-# here. Power commands are sent via /api/photon/cmd. Only the power buttons
-# and hook/join buttons are exposed in the UI.
-_photon_tasks: set = set()
-
-
-async def _online_players() -> list:
-    from services.db import player_statuses
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-    sts = [s async for s in player_statuses.find(
-        {"expireTimestamp": {"$gte": now}},
-        {"_id": 0, "accountID": 1, "roomKey": 1, "photonRoomName": 1})]
-    ids = [s["accountID"] for s in sts if s.get("accountID")]
-    names = {a["accountID"]: a.get("displayName") or "" async for a in accounts.find(
-        {"accountID": {"$in": ids}}, {"_id": 0, "accountID": 1, "displayName": 1})}
-    rks = list({s.get("roomKey") for s in sts if s.get("roomKey")})
-    rnames = {r["roomKey"]: r.get("roomName") or "" async for r in rooms.find(
-        {"roomKey": {"$in": rks}}, {"_id": 0, "roomKey": 1, "roomName": 1})}
-    out = []
-    for s in sts:
-        aid = s.get("accountID")
-        if not aid or aid.startswith("o_99000000000000"):
-            continue
-        rk = s.get("roomKey") or ""
-        out.append({"accountID": aid, "name": re.sub(r"<[^>]*>", "", names.get(aid, "")).strip() or aid,
-                    "roomKey": rk, "roomName": rnames.get(rk, ""), "photonRoom": s.get("photonRoomName") or ""})
-    out.sort(key=lambda p: (p["roomKey"], p["name"].lower()))
-    return out
-
-
-@router.get("/api/photon/status", dependencies=[Depends(_photon_guard)])
-async def photon_status():
-    from services import photon_bot
-    st = await photon_bot.status()
-    st["log"] = photon_bot.log_tail()
-    return JSONResponse(content=st)
-
-
-@router.get("/api/photon/players", dependencies=[Depends(_photon_guard)])
-async def photon_players():
-    return JSONResponse(content={"players": await _online_players()})
-
-
-@router.post("/api/photon/start", dependencies=[Depends(_photon_guard)])
-async def photon_start(request: Request):
-    from services import photon_bot
-    body = await request.json()
-    target = str(body.get("target") or "").strip()
-    if not re.fullmatch(r"o_\d{6,24}", target):
-        raise HTTPException(status_code=400, detail="pick a player")
-    online = {p["accountID"]: p for p in await _online_players()}
-    if target not in online:
-        raise HTTPException(status_code=400, detail="that player isn't online right now")
-    who = _authed_name(request) or "?"
-    res = await photon_bot.start(target, online[target]["name"], bool(body.get("stay")), who)
-    if not res.get("ok"):
-        raise HTTPException(status_code=500, detail=res.get("error") or "couldn't start the bot")
-    p = online[target]
-    await _discord_notify(f"**{who}** hooked the Photon bot onto **{p['name']}** in "
-                          f"{p['roomName'] or p['roomKey']}{' (staying in that room)' if body.get('stay') else ''}")
-    return JSONResponse(content={"ok": True})
-
-
-@router.post("/api/photon/mimic", dependencies=[Depends(_photon_guard)])
-async def photon_mimic(request: Request):
-    from services import photon_bot
-    body = await request.json()
-    target = str(body.get("target") or "").strip()
-    online = {p["accountID"]: p for p in await _online_players()}
-    if target not in online:
-        raise HTTPException(status_code=400, detail="that player isn't online right now")
-    p = online[target]
-    cmd = f"mimic {target}"
-    if await photon_bot.running() and photon_bot.ready() and p["photonRoom"] \
-            and photon_bot.current_room() == p["photonRoom"] and not photon_bot.code_newer():
-        if not photon_bot.send(cmd):
-            raise HTTPException(status_code=409, detail="the bot isn't listening")
-        return JSONResponse(content={"ok": True, "moved": False, "name": p["name"]})
-    who = _authed_name(request) or "?"
-    res = await photon_bot.start(target, p["name"], True, who)
-    if not res.get("ok"):
-        raise HTTPException(status_code=500, detail=res.get("error") or "couldn't start the bot")
-    import asyncio
-    t = asyncio.get_running_loop().create_task(photon_bot.send_when_ready(cmd))
-    _photon_tasks.add(t)
-    t.add_done_callback(_photon_tasks.discard)
-    await _discord_notify(f"**{who}** sent the Photon bot to mimic **{p['name']}** in "
-                          f"{p['roomName'] or p['roomKey']}")
-    return JSONResponse(content={"ok": True, "moved": True, "name": p["name"]})
-
-
-@router.post("/api/photon/cmd", dependencies=[Depends(_photon_guard)])
-async def photon_cmd(request: Request):
-    from services import photon_bot
-    body = await request.json()
-    cmd = " ".join(str(body.get("cmd") or "").split())[:200]
-    if not cmd:
-        raise HTTPException(status_code=400, detail="empty command")
-    if cmd.lower() in ("quit", "exit", "q"):
-        raise HTTPException(status_code=400, detail="use Stop bot")
-    if await photon_bot.running() and photon_bot.code_newer():
-        m = photon_bot._meta()
-        res = await photon_bot.start(m.get("target") or "", m.get("targetName") or "",
-                                     bool(m.get("stay")), _authed_name(request) or "?")
-        if res.get("ok"):
-            import asyncio
-            t = asyncio.get_running_loop().create_task(photon_bot.send_when_ready(cmd))
-            _photon_tasks.add(t)
-            t.add_done_callback(_photon_tasks.discard)
-            return JSONResponse(content={"ok": True, "reloading": True})
-    if not photon_bot.send(cmd):
-        raise HTTPException(status_code=409, detail="the bot isn't running")
-    print(f"[photon] {_authed_name(request)}: {cmd}")
-    return JSONResponse(content={"ok": True})
-
-
-@router.post("/api/photon/stop", dependencies=[Depends(_photon_guard)])
-async def photon_stop(request: Request):
-    from services import photon_bot
-    res = await photon_bot.stop()
-    if res.get("was"):
-        await _discord_notify(f"**{_authed_name(request) or '?'}** stopped the Photon bot")
-    return JSONResponse(content=res)
 # ─── EXTRAS-PATCH-v1: community worlds + what the server has no handler for ──
 @router.get("/api/worlds")
 async def worlds_get():
