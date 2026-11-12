@@ -91,7 +91,8 @@ Check it: `python tools/smoke_test.py http://127.0.0.1:8000 --editor-password <p
 should end with `ALL PASS`.
 
 The editor's Bot tab controls the optional Photon bot. Set `BOT_KEY` to a private
-random value and `PHOTON_APP_ID` to the PUN App ID used in the host's APK. Then
+random value, `BOT_PASSWORD` to a separate password for its controls, and
+`PHOTON_APP_ID` to the PUN App ID used in the host's APK. Then
 configure the PUN app's Photon custom-auth URL to the server's `PUBLIC_BASE_URL`.
 To authenticate game clients on
 Photon Voice too, set the Voice app's custom-auth URL to the same `PUBLIC_BASE_URL`;
@@ -101,6 +102,8 @@ bot to an online player. It provides game, arcade, cleanup, power and effect but
 including Simon Says, Memory Match, Flappy Bird, Minesweeper, two-player Tic-Tac-Toe and
 Connect Four, plus follow, adjustable orbit presets and figure-eight bot movement. It has
 no build, live-talk or view controls.
+The Bot tab prompts for `BOT_PASSWORD` and only keeps it in the current browser
+session. If it is unset, bot controls and bot API routes are disabled.
 Upload an MP4 in the Bot tab to show video frames, or an MP3 for an audio waveform; playback
 uses pillow blocks for the screen or the first sign placed by the tracked player. Media is
 stored in MongoDB, not in the repository.

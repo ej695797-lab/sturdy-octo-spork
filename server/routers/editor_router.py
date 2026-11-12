@@ -64,6 +64,7 @@ EDITOR_ADMINS = set(filter(None, (os.getenv("EDITOR_ADMINS") or "").replace(" ",
 # fresh random secret is used (signed-in editors are signed out on restart).
 EDITOR_SECRET          = os.getenv("EDITOR_SECRET") or __import__("secrets").token_hex(32)
 MODERATION_PASSWORD = os.getenv("MODERATION_PASSWORD", "")
+BOT_PASSWORD = os.getenv("BOT_PASSWORD") or os.getenv("PHOTON_BOT_PASSWORD", "")
 _MODERATION_ACCOUNT_FIELDS = {
     "adminBlocked", "isPermabanned", "isMutebanned", "isIsolated", "shadowBanned",
     "banExpireTimestamp", "banReason", "blockReason", "banCategory",
@@ -127,6 +128,14 @@ def _authed_name(request: Request):
 
 def _editor_host_ok(request) -> bool:
     return bool(_authed_name(request))
+
+
+def _require_bot_password(request: Request) -> None:
+    if not BOT_PASSWORD:
+        raise HTTPException(status_code=503, detail="Set BOT_PASSWORD on the server first")
+    supplied = request.headers.get("X-Bot-Password", "")
+    if not hmac.compare_digest(supplied.encode("utf-8"), BOT_PASSWORD.encode("utf-8")):
+        raise HTTPException(status_code=403, detail="Incorrect bot password")
 
 
 def _require_moderation_password(body: dict) -> None:
@@ -1944,6 +1953,7 @@ async def _bot_target(account_id: str) -> dict:
 async def bot_status(request: Request):
     if not _authed_name(request):
         raise HTTPException(status_code=401, detail="unauthorized")
+    _require_bot_password(request)
     from services.remote import bot_media
     from services.bot_manager import manager
     from services.discord_profile_bot import discord_profile_bot_status
@@ -1971,6 +1981,7 @@ async def bot_status(request: Request):
 async def bot_map_snapshot(request: Request):
     if not _authed_name(request):
         raise HTTPException(status_code=401, detail="unauthorized")
+    _require_bot_password(request)
     try:
         rev = int(request.query_params.get("rev", "-1"))
     except ValueError:
@@ -1985,6 +1996,7 @@ async def bot_link_code(request: Request):
     editor_name = _authed_name(request)
     if not editor_name:
         raise HTTPException(status_code=401, detail="unauthorized")
+    _require_bot_password(request)
     if not os.getenv("DISCORD_BOT_TOKEN", "").strip():
         raise HTTPException(status_code=503, detail="The Discord profile bot is not configured")
     from services.discord_profile_bot import discord_profile_bot_status
@@ -2036,6 +2048,7 @@ async def bot_link_code(request: Request):
 async def bot_start(request: Request):
     if not _authed_name(request):
         raise HTTPException(status_code=401, detail="unauthorized")
+    _require_bot_password(request)
     try:
         body = await request.json()
     except Exception:
@@ -2071,6 +2084,7 @@ async def bot_start(request: Request):
 async def bot_stop(request: Request):
     if not _authed_name(request):
         raise HTTPException(status_code=401, detail="unauthorized")
+    _require_bot_password(request)
     from services.bot_manager import manager
     import asyncio
     return JSONResponse(content=await asyncio.to_thread(manager.stop))
@@ -2080,6 +2094,7 @@ async def bot_stop(request: Request):
 async def bot_action(request: Request):
     if not _authed_name(request):
         raise HTTPException(status_code=401, detail="unauthorized")
+    _require_bot_password(request)
     try:
         body = await request.json()
     except Exception:
@@ -2111,6 +2126,7 @@ async def bot_media_upload(request: Request):
     editor_name = _authed_name(request)
     if not editor_name:
         raise HTTPException(status_code=401, detail="unauthorized")
+    _require_bot_password(request)
     content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
     if content_type not in ("audio/mpeg", "audio/mp3", "video/mp4", "application/octet-stream"):
         raise HTTPException(status_code=415, detail="Upload an MP3 or MP4 file")
@@ -2151,6 +2167,7 @@ async def bot_pixel_art_upload(request: Request):
     editor_name = _authed_name(request)
     if not editor_name:
         raise HTTPException(status_code=401, detail="unauthorized")
+    _require_bot_password(request)
     content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
     if content_type not in ("image/png", "image/jpeg", "image/webp"):
         raise HTTPException(status_code=415, detail="Upload a PNG, JPEG, or WebP image")
@@ -2196,6 +2213,7 @@ async def bot_soundkey_upload(request: Request):
     editor_name = _authed_name(request)
     if not editor_name:
         raise HTTPException(status_code=401, detail="unauthorized")
+    _require_bot_password(request)
     content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
     extensions = {
         "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/wav": "wav", "audio/x-wav": "wav",

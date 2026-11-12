@@ -159,11 +159,23 @@ function toast(t, bad) {
   clearTimeout(toast._t); toast._t = setTimeout(() => m.style.display = "none", 3500);
 }
 async function api(path, opts) {
-  const r = await fetch(API + path, opts || {});
+  opts = { ...(opts || {}) };
+  const isBot = path === "/bot" || path.startsWith("/bot/");
+  if (isBot) {
+    const headers = new Headers(opts.headers || {});
+    headers.set("X-Bot-Password", sessionStorage.getItem("botPassword") || "");
+    opts.headers = headers;
+  }
+  const r = await fetch(API + path, opts);
   if (r.status === 401) { location.href = "/editor/login"; throw new Error("auth"); }
   const txt = await r.text();
   let j; try { j = txt ? JSON.parse(txt) : {}; } catch { j = { raw: txt }; }
-  if (!r.ok) throw new Error(j.detail || j.error || ("HTTP " + r.status));
+  if (!r.ok) {
+    if (isBot && (r.status === 403 || r.status === 503)) sessionStorage.removeItem("botPassword");
+    const error = new Error(j.detail || j.error || ("HTTP " + r.status));
+    error.status = r.status;
+    throw error;
+  }
   return j;
 }
 function askModerationPassword() {
@@ -1180,6 +1192,13 @@ const tabs = {
       ]]
     ];
     view.innerHTML = `
+      <div id="bbot-auth" class="row">
+        <input id="bbot-password" type="password" autocomplete="current-password" placeholder="Bot password" aria-label="Bot password">
+        <button class="go" id="bbot-unlock">Unlock bot controls</button>
+        <span class="muted" id="bbot-auth-message">Enter the separate BOT_PASSWORD from the server environment.</span>
+      </div>
+      <div id="bbot-controls" style="display:none">
+      <div class="row"><button class="blk" id="bbot-lock">Lock bot controls</button></div>
       <div class="bot-layout"><section class="bot-controls">
       <p class="note">Hook YeeperBot to an online player, then place the marker pillow and (for Flappy Bird or Minesweeper) a controller marker when prompted. Memory Match, Simon Says, Tic-Tac-Toe, and Connect Four use grab-to-select board tiles. For Minesweeper, grab reveal or flag mode, then grab a board tile. These are fixed game controls; building, live talk, and view controls are not included.</p>
       <div class="row">
@@ -1230,8 +1249,22 @@ const tabs = {
         <p class="note">Click the viewer to look around. WASD flies, Shift boosts, Space/Ctrl moves vertically, and Esc releases the mouse. This moves the map camera only.</p>
         <button class="blk" id="bot-map-reset" type="button">Reset camera</button>
         <canvas id="bot-map" tabindex="0" aria-label="First-person 3D view of room blocks and players"></canvas>
-      </section></div>`;
+      </section></div></div>`;
     const $ = id => document.getElementById(id);
+    function clearBotTimers() {
+      clearInterval(window._botTimer);
+      clearInterval(window._botPlayersTimer);
+      clearInterval(window._botMapTimer);
+      window._botTimer = window._botPlayersTimer = window._botMapTimer = null;
+    }
+    function lockBotControls(message) {
+      sessionStorage.removeItem("botPassword");
+      clearBotTimers();
+      $("bbot-controls").style.display = "none";
+      $("bbot-auth").style.display = "";
+      $("bbot-password").value = "";
+      $("bbot-auth-message").textContent = message || "Bot controls are locked.";
+    }
       let mapData = null, mapBlocks = [];
       const mapColors = {
         black:"#151515", gray_dark:"#555", gray:"#999", white:"#ececec",
@@ -1496,6 +1529,7 @@ const tabs = {
         } catch (e) {
           const status = $("bmapstate");
           if (status) status.textContent = "Map unavailable: " + e.message;
+          if (e.status === 403 || e.status === 503) lockBotControls(e.message);
         }
       }
     function renderActions(state) {
@@ -1523,7 +1557,11 @@ const tabs = {
       }
     }
     async function refresh() {
-      let s; try { s = await api("/bot"); } catch (e) { $("bstate").textContent = "Error: " + e.message; return; }
+      let s; try { s = await api("/bot"); } catch (e) {
+        $("bstate").textContent = "Error: " + e.message;
+        if (e.status === 403 || e.status === 503) lockBotControls(e.message);
+        return;
+      }
       const st = s.running ? "on" : (s.enabled ? "off" : "unavailable");
       const discordState = s.discordBot && s.discordBot.connected ? "connected"
         : (s.discordBot && s.discordBot.configured ? "configured, offline" : "not configured");
@@ -1626,14 +1664,41 @@ const tabs = {
       catch (e) { toast(e.message, true); }
       refresh();
     };
-    await players();
-    await Promise.all([refresh(), loadBotMap()]);
-    clearInterval(window._botTimer);
-    window._botTimer = setInterval(refresh, 3000);
-    clearInterval(window._botMapTimer);
-    window._botMapTimer = setInterval(loadBotMap, 1000);
-    clearInterval(window._botPlayersTimer);
-    window._botPlayersTimer = setInterval(players, 10000);
+    async function unlockBot(password) {
+      password = password || $("bbot-password").value;
+      if (!password) {
+        $("bbot-auth-message").textContent = "Enter the server's BOT_PASSWORD.";
+        return;
+      }
+      sessionStorage.setItem("botPassword", password);
+      $("bbot-unlock").disabled = true;
+      $("bbot-auth-message").textContent = "Checking password...";
+      try {
+        await api("/bot");
+        $("bbot-auth").style.display = "none";
+        $("bbot-controls").style.display = "";
+        $("bbot-password").value = "";
+        $("bbot-auth-message").textContent = "";
+        clearBotTimers();
+        await players();
+        await Promise.all([refresh(), loadBotMap()]);
+        window._botTimer = setInterval(refresh, 3000);
+        window._botMapTimer = setInterval(loadBotMap, 1000);
+        window._botPlayersTimer = setInterval(players, 10000);
+      } catch (e) {
+        sessionStorage.removeItem("botPassword");
+        $("bbot-auth-message").textContent = e.message;
+        $("bbot-password").focus();
+      } finally {
+        $("bbot-unlock").disabled = false;
+      }
+    }
+    $("bbot-unlock").onclick = () => unlockBot();
+    $("bbot-password").onkeydown = event => { if (event.key === "Enter") unlockBot(); };
+    $("bbot-lock").onclick = () => lockBotControls("Bot controls locked.");
+    clearBotTimers();
+    const savedPassword = sessionStorage.getItem("botPassword");
+    if (savedPassword) unlockBot(savedPassword);
   },
 };
 
