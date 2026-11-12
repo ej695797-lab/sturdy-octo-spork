@@ -64,6 +64,7 @@ EDITOR_ADMINS = set(filter(None, (os.getenv("EDITOR_ADMINS") or "").replace(" ",
 # fresh random secret is used (signed-in editors are signed out on restart).
 EDITOR_SECRET          = os.getenv("EDITOR_SECRET") or __import__("secrets").token_hex(32)
 MODERATION_PASSWORD = os.getenv("MODERATION_PASSWORD", "")
+PHOTON_BOT_PASSWORD = os.getenv("PHOTON_BOT_PASSWORD", "")
 _MODERATION_ACCOUNT_FIELDS = {
     "adminBlocked", "isPermabanned", "isMutebanned", "isIsolated", "shadowBanned",
     "banExpireTimestamp", "banReason", "blockReason", "banCategory",
@@ -135,6 +136,11 @@ async def _photon_ok(request) -> bool:
 async def _photon_guard(request: Request) -> None:
     if not await _photon_ok(request):
         raise HTTPException(status_code=404, detail="Not Found")
+    if not PHOTON_BOT_PASSWORD:
+        raise HTTPException(status_code=503, detail="Set PHOTON_BOT_PASSWORD on the server first")
+    supplied = request.headers.get("X-Photon-Bot-Password", "")
+    if not hmac.compare_digest(supplied.encode("utf-8"), PHOTON_BOT_PASSWORD.encode("utf-8")):
+        raise HTTPException(status_code=403, detail="Incorrect Photon bot password")
 
 
 def _require_moderation_password(body: dict) -> None:

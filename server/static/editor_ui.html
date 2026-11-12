@@ -161,10 +161,18 @@ function toast(t, bad) {
   clearTimeout(toast._t); toast._t = setTimeout(() => m.style.display = "none", 3500);
 }
 async function api(path, opts) {
-  const r = await fetch(API + path, opts || {});
+  opts = { ...(opts || {}) };
+  const isPhoton = path.startsWith("/photon/");
+  if (isPhoton) {
+    const headers = new Headers(opts.headers || {});
+    headers.set("X-Photon-Bot-Password", sessionStorage.getItem("photonBotPassword") || "");
+    opts.headers = headers;
+  }
+  const r = await fetch(API + path, opts);
   if (r.status === 401) { location.href = "/editor/login"; throw new Error("auth"); }
   const txt = await r.text();
   let j; try { j = txt ? JSON.parse(txt) : {}; } catch { j = { raw: txt }; }
+  if (isPhoton && r.status === 403) sessionStorage.removeItem("photonBotPassword");
   if (!r.ok) throw new Error(j.detail || j.error || ("HTTP " + r.status));
   return j;
 }
@@ -1639,17 +1647,35 @@ const tabs = {
   },
   photon: async () => {
     const GROUPS = [
-      ["Powers", [["Rain", "rain"], ["Rain off", "rain off", 1], ["Clean up rain", "rain clean", 1],
-                  ["Lightning hand", "lightning"], ["Freeze hand", "freeze"], ["Thaw everyone", "thaw", 1],
-                  ["Big hands", "godhand big"], ["Big hands (both hands)", "godhand big both"],
-                  ["Hand off", "godhand off", 1],
-                  ["Boom", "boom"], ["Coin planet", "coins planet"], ["Coins off", "coins off", 1],
+      ["Player powers", [["Finger gun", "fingergun"], ["Lightning gun", "lightning"],
+                  ["Freeze gun", "freeze"], ["Pellet effect gun", "pelletfx"],
+                  ["Jumpscare gun", "scare"], ["Finger gun off", "fingergun off", 1],
+                  ["Lightning off", "lightning off", 1], ["Freeze off / thaw", "freeze off", 1],
+                  ["Pellet gun off", "pelletfx off", 1], ["Jumpscare off", "scare off", 1],
                   ["Smite picked player", "@smite"], ["Freeze picked player", "@ice"],
-                  ["Meteor shower", "meteors"], ["Black hole", "blackhole"],
-                  ["Mimic picked player", "@mimic"], ["Stop mimic", "stop", 1],
-                  ["Who's here", "players"]]],
+                  ["Jump scare picked player", "@jumpscare"], ["Mimic picked player", "@mimic"],
+                  ["Copy picked player's look", "@look"], ["Orbit coins around picked player", "@coins"]]],
+      ["Big effects", [["Big hands", "godhand big"], ["Big hands (both hands)", "godhand big both"],
+                  ["Hand off", "godhand off", 1], ["Rain", "rain"], ["Rain off", "rain off", 1],
+                  ["Clean up rain", "rain clean", 1], ["Meteor shower", "meteors"],
+                  ["Black hole", "blackhole"], ["Explosion in front of picked player", "@boom"],
+                  ["Coin planet", "coins planet"], ["Coins off", "coins off", 1],
+                  ["Thaw everyone", "thaw", 1],
+                  ["Bomb type: basic", "bomb basic"], ["Bomb type: impulse", "bomb impulse"],
+                  ["Bomb type: pumpkin", "bomb pumpkin"], ["Bomb type: radiation", "bomb radiation"],
+                  ["Bomb type: off", "bomb off", 1]]],
+      ["Quick actions", [["Who's here", "players"], ["Stop mimic", "stop", 1],
+                  ["Clean firebox spam", "cleanup", 1]]],
     ];
-    view.innerHTML = `<p class="note">Hook the bot onto a player: it joins their room. Then run powers/effects. Stop the bot when done.</p>
+    view.innerHTML = `<p class="note">A separate PHOTON_BOT_PASSWORD is required. Set it in the server environment and enter it here. The password stays in this browser session only.</p>
+      <div id="pbauth" class="row">
+        <input id="pbpw" type="password" autocomplete="current-password" placeholder="Photon bot password" aria-label="Photon bot password">
+        <button class="go" id="pbunlock">Unlock Photon bot</button>
+        <span class="muted" id="pbpwmsg"></span>
+      </div>
+      <div id="pbcontrols" style="display:none">
+      <div class="row"><button class="blk" id="pblock">Lock controls</button></div>
+      <p class="note">Hook the bot onto a player: it joins their room. Use the powers and effects below, or the selected player shortcuts. Building, live talk, and view controls are not included.</p>
       <div class="row"><b>Bot:</b> <span id="pbst" class="muted">checking...</span>
         <button class="del" id="pbstop">Stop bot</button></div>
       <div class="row">
@@ -1662,8 +1688,17 @@ const tabs = {
         btns.map(([label, cmd, off]) => `<button data-cmd="${esc(cmd)}"${off ? ' class="off"' : ""}>${esc(label)}</button>`).join("")}</div>`).join("")}
       <div class="row"><input type="text" id="pbcmd" placeholder="any bot command" style="flex:1">
         <button class="go" id="pbsend">Send</button></div>
-      <pre class="smp" id="pblog"></pre>`;
+      <pre class="smp" id="pblog"></pre></div>`;
     const $ = id => document.getElementById(id);
+    function lock(message) {
+      sessionStorage.removeItem("photonBotPassword");
+      clearInterval(tabs.photon._t);
+      tabs.photon._t = null;
+      $("pbcontrols").style.display = "none";
+      $("pbauth").style.display = "";
+      $("pbpw").value = "";
+      $("pbpwmsg").textContent = message || "";
+    }
     async function players() {
       const sel = $("pbpl");
       try {
@@ -1673,7 +1708,10 @@ const tabs = {
         sel.innerHTML = `<option value="">pick a player (${d.players.length} online)</option>` +
           Object.entries(byRoom).map(([room, ps]) => `<optgroup label="${esc(room)} (${ps.length})">${
             ps.map(p => `<option value="${esc(p.accountID)}">${esc(p.name)}</option>`).join("")}</optgroup>`).join("");
-      } catch (e) { sel.innerHTML = `<option value="">error: ${esc(e.message)}</option>`; }
+      } catch (e) {
+        sel.innerHTML = `<option value="">error: ${esc(e.message)}</option>`;
+        if (!sessionStorage.getItem("photonBotPassword")) lock(e.message);
+      }
     }
     async function status() {
       if (!$("pblog")) { clearInterval(tabs.photon._t); return; }
@@ -1685,7 +1723,10 @@ const tabs = {
         const box = $("pblog"), atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
         box.textContent = s.log || "(no output yet)";
         if (atEnd) box.scrollTop = box.scrollHeight;
-      } catch (e) { $("pbst").textContent = "error: " + e.message; }
+      } catch (e) {
+        $("pbst").textContent = "error: " + e.message;
+        if (!sessionStorage.getItem("photonBotPassword")) lock(e.message);
+      }
     }
     async function send(cmd) {
       try { const r = await api("/photon/cmd", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cmd }) });
@@ -1709,6 +1750,30 @@ const tabs = {
       } else if (c.startsWith("@")) onPicked(c.slice(1));
       else send(c);
     });
+    async function unlock(password) {
+      password = password || $("pbpw").value;
+      if (!password) { $("pbpwmsg").textContent = "Enter the server's Photon bot password."; return; }
+      sessionStorage.setItem("photonBotPassword", password);
+      $("pbunlock").disabled = true;
+      $("pbpwmsg").textContent = "Checking password...";
+      try {
+        await api("/photon/status");
+        $("pbauth").style.display = "none";
+        $("pbcontrols").style.display = "";
+        $("pbpwmsg").textContent = "";
+        $("pbpw").value = "";
+        clearInterval(tabs.photon._t);
+        tabs.photon._t = setInterval(status, 3000);
+        players(); status();
+      } catch (e) {
+        sessionStorage.removeItem("photonBotPassword");
+        $("pbpwmsg").textContent = e.message;
+        $("pbpw").focus();
+      } finally { $("pbunlock").disabled = false; }
+    }
+    $("pbunlock").onclick = () => unlock();
+    $("pbpw").onkeydown = e => { if (e.key === "Enter") unlock(); };
+    $("pblock").onclick = () => lock("Photon bot controls locked.");
     $("pbsend").onclick = () => { const v = $("pbcmd").value.trim(); if (v) { send(v); $("pbcmd").value = ""; } };
     $("pbcmd").onkeydown = e => { if (e.key === "Enter") $("pbsend").click(); };
     $("pbref").onclick = players;
@@ -1729,8 +1794,9 @@ const tabs = {
       $("pbstop").disabled = false; status();
     };
     clearInterval(tabs.photon._t);
-    tabs.photon._t = setInterval(status, 3000);
-    players(); status();
+    tabs.photon._t = null;
+    const savedPassword = sessionStorage.getItem("photonBotPassword");
+    if (savedPassword) unlock(savedPassword);
   },
 };
 
