@@ -4,88 +4,92 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Yeeps Editor</title>
-<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root { color-scheme: dark; --bg:#1d1915; --bg2:#262019; --card:#2d2720; --field:#211c17; --ink:#f1e8d9; --muted:#a8997f; --line:#453c31; --purple:#8c7bc9; --red:#e26a6a; --green:#9b59b6; --maroon:#c05a5a; }
+  :root { color-scheme: dark; --accent: #8b5cf6; --accent-hover: #a78bfa; }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: 'Quicksand', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-         background: var(--bg); color: var(--ink); font-size: 14px; }
-  .app { display: flex; min-height: 100vh; }
-  aside { width: 170px; flex-shrink: 0; background: var(--bg2); border-right: 1px solid var(--line);
-          padding: 12px; display: flex; flex-direction: column; gap: 6px; }
-  aside button { background: var(--card); color: var(--ink); border: 1px solid var(--line); padding: 9px 12px;
-                 border-radius: 6px; cursor: pointer; text-align: left; width: 100%; }
-  aside button.on { background: var(--purple); color: #fff; border-color: var(--purple); }
-  aside a { color: var(--purple); text-decoration: none; font-size: 13px; }
-  .sp { flex: 1; }
-  main { flex: 1; padding: 16px; max-width: 1000px; }
+  body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+         background: #111; color: #ddd; font-size: 14px; }
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+  aside { order: 1; flex-shrink: 0; background: #181818; border-top: 1px solid #333;
+          padding: 8px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px;
+          position: sticky; bottom: 0; z-index: 10; }
+  aside button { background: #222; color: #ccc; border: 1px solid #333; padding: 9px 12px;
+                 border-radius: 6px; cursor: pointer; text-align: center; }
+  aside button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  aside a { color: var(--accent-hover); text-decoration: none; font-size: 13px; align-self: center; padding: 0 6px; }
+  .sp { display: none; }
+  main { order: 0; flex: 1; padding: 16px; width: 100%; max-width: 1032px; margin: 0 auto; }
   .row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-  input[type=text] { background: var(--field); border: 1px solid var(--line); color: var(--ink);
+  input[type=text] { background: #0c0c0c; border: 1px solid #333; color: #ddd;
                      padding: 7px 10px; border-radius: 6px; min-width: 220px; }
-  textarea { width: 100%; height: 55vh; background: var(--field); border: 1px solid var(--line); color: var(--ink);
+  textarea { width: 100%; height: 55vh; background: #0c0c0c; border: 1px solid #333; color: #ddd;
              font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px;
              padding: 10px; border-radius: 6px; }
-  button.go { background: var(--purple); color: #fff; border: 0; padding: 8px 18px; border-radius: 6px;
+  button.go { background: var(--accent); color: #fff; border: 0; padding: 8px 18px; border-radius: 6px;
               cursor: pointer; font-size: 14px; }
-  button.del { background: var(--red); color: #fff; border: 0; padding: 5px 10px; border-radius: 6px;
+  button.del { background: #a33; color: #fff; border: 0; padding: 5px 10px; border-radius: 6px;
                cursor: pointer; }
-  button.blk { background: var(--maroon); color: #fff; border: 0; padding: 8px 14px; border-radius: 6px;
+  button.blk { background: #964b00; color: #fff; border: 0; padding: 8px 14px; border-radius: 6px;
                cursor: pointer; font-size: 14px; }
   ul.list { list-style: none; margin: 0 0 10px; padding: 0; max-height: 220px; overflow: auto;
-            border: 1px solid var(--line); border-radius: 6px; }
-  ul.list li { padding: 7px 10px; border-bottom: 1px solid var(--card); cursor: pointer; }
-  ul.list li:hover { background: var(--bg2); }
+            border: 1px solid #333; border-radius: 6px; }
+  ul.list li { padding: 7px 10px; border-bottom: 1px solid #222; cursor: pointer; }
+  ul.list li:hover { background: #1c1c1c; }
   ul.list li.bli { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: default; }
   ul.list li.bli:hover { background: transparent; }
   li.bli .binfo { min-width: 0; flex: 1 1 auto; }
   li.bli .bname { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  li.bli .bmeta { color: var(--muted); font-size: 11px; margin-top: 2px; word-break: break-word; }
-  li.bli .kperm { color: var(--red); } li.bli .ktimed { color: #b8860b; } li.bli .kshadow { color: var(--purple); }
+  li.bli .bmeta { color: #888; font-size: 11px; margin-top: 2px; word-break: break-word; }
+  li.bli .kperm { color: #e66; } li.bli .ktimed { color: #ec9; } li.bli .kshadow { color: #d7bde2; }
   li.bli button { flex: 0 0 auto; }
   #blist { max-height: 62vh; }
-  .muted { color: var(--muted); }
-  .note { color: var(--muted); margin: 0 0 10px; }
-  #msg { position: fixed; bottom: 16px; right: 16px; background: var(--card); border: 1px solid var(--line);
+  .muted { color: #888; }
+  .note { color: #888; margin: 0 0 10px; }
+  #msg { position: fixed; top: 16px; left: 16px; background: #222; border: 1px solid #444;
          padding: 10px 14px; border-radius: 6px; display: none; max-width: 60vw; }
   table { border-collapse: collapse; font-size: 12px; }
-  td, th { border: 1px solid var(--line); padding: 3px 7px; text-align: left; }
-  details { margin-bottom: 8px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
-  summary { padding: 7px 10px; background: var(--bg2); cursor: pointer; font-weight: 600; }
-  details ul.list { border: 0; border-top: 1px solid var(--line); border-radius: 0; max-height: 300px; }
-  .has { color: var(--green); }
+  td, th { border: 1px solid #333; padding: 3px 7px; text-align: left; }
+  details { margin-bottom: 8px; border: 1px solid #333; border-radius: 6px; overflow: hidden; }
+  summary { padding: 7px 10px; background: #1c1c1c; cursor: pointer; font-weight: 600; }
+  details ul.list { border: 0; border-top: 1px solid #333; border-radius: 0; max-height: 300px; }
+  .has { color: var(--accent-hover); }
   table.errs { width: 100%; }
   table.errs td.msg { font-family: ui-monospace, Menlo, Consolas, monospace; word-break: break-word; cursor: pointer; }
-  table.errs tr:hover td { background: var(--bg2); }
-  .up { color: var(--red); } .down { color: var(--green); }
-  .bars { display: flex; align-items: flex-end; gap: 2px; height: 60px; margin: 8px 0 12px; }
-  .bars div { flex: 1; background: var(--purple); min-height: 1px; }
+  table.errs tr:hover td { background: #1a1a1a; }
+  .up { color: #e66; } .down { color: var(--accent-hover); }
   .pgrp { margin: 0 0 10px; }
   .pgrp .muted { display: block; margin-bottom: 5px; font-size: 12px; }
-  .pgrp button { background: var(--card); color: var(--ink); border: 1px solid var(--line); padding: 7px 11px;
-                 border-radius: 6px; margin: 0 6px 6px 0; cursor: pointer; font-size: 13px; }
-  .pgrp button:hover { border-color: var(--purple); }
-  .pgrp button.off { color: var(--red); }
-  pre.smp { background: var(--field); border: 1px solid var(--line); padding: 8px; border-radius: 6px;
+  .pgrp button { background: #222; color: #ddd; border: 1px solid #9b59b6; padding: 7px 11px;
+                 border-radius: 6px; cursor: pointer; margin: 0 6px 6px 0; }
+  .pgrp button:hover { border-color: var(--accent); }
+  .pgrp button.off { color: #e99; }
+  .bars { display: flex; align-items: flex-end; gap: 2px; height: 60px; margin: 8px 0 12px; }
+  .bars div { flex: 1; background: var(--accent); min-height: 1px; }
+  pre.smp { background: #0c0c0c; border: 1px solid #333; padding: 8px; border-radius: 6px;
             white-space: pre-wrap; word-break: break-word; font-size: 12px; margin: 4px 0 10px; }
-  select { background: var(--field); border: 1px solid var(--line); color: var(--ink); padding: 6px 8px; border-radius: 6px; }
-  input[type=number] { background: var(--field); border: 1px solid var(--line); color: var(--ink); padding: 6px 8px; border-radius: 6px; width: 90px; }
+  select { background: #0c0c0c; border: 1px solid #333; color: #ddd; padding: 6px 8px; border-radius: 6px; }
+  input[type=number] { background: #0c0c0c; border: 1px solid #333; color: #ddd; padding: 6px 8px; border-radius: 6px; width: 90px; }
   .pwhit { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; cursor: default !important; }
   .pwhit .pwname { flex: 1 1 200px; min-width: 0; }
-  .pwhit button { background: var(--card); color: var(--ink); border: 1px solid var(--line); padding: 6px 10px; border-radius: 6px; cursor: pointer; }
-  .pwhit button:hover { border-color: var(--purple); }
+  .pwhit button { background: #222; color: #ddd; border: 1px solid #444; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+  .pwhit button:hover { border-color: var(--accent); }
+  .app.bot-open main { max-width: 1600px; }
+  .bot-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(320px, .7fr); gap: 16px; align-items: start; }
+  .bot-controls { min-width: 0; }
+  .bot-map-panel { min-width: 0; position: sticky; top: 12px; background: #151515; border: 1px solid #333; border-radius: 8px; padding: 10px; }
+  .bot-map-panel h3 { margin: 0 0 4px; font-size: 15px; }
+  .bot-map-panel .muted { display: block; min-height: 18px; font-size: 12px; margin-bottom: 8px; }
+  #bot-map { display: block; width: 100%; height: min(72vh, 760px); min-height: 360px; background: #0c0c0c; border: 1px solid #292929; border-radius: 6px; }
 
-  /* Phones: the side menu becomes a scrolling strip across the top, everything
-     else goes full width, inputs are 16px so iOS doesn't zoom on tap. */
+  /* Phones keep the tab controls in a scrolling strip at the bottom. */
   @media (max-width: 720px) {
     body { font-size: 15px; }
-    .app { flex-direction: column; }
-    aside { width: 100%; flex-direction: row; align-items: center; overflow-x: auto; position: sticky;
-            top: 0; z-index: 10; border-right: 0; border-bottom: 1px solid var(--line); padding: 8px; gap: 6px;
+    aside { flex-wrap: nowrap; justify-content: flex-start; align-items: center; overflow-x: auto;
+            border-top: 1px solid #333; padding: 8px; gap: 6px;
             -webkit-overflow-scrolling: touch; scrollbar-width: none; }
     aside::-webkit-scrollbar { display: none; }
-    aside button { width: auto; flex: 0 0 auto; white-space: nowrap; padding: 9px 13px; }
-    aside .sp { display: none; }
-    aside #who { white-space: nowrap; font-size: 12px; flex: 0 0 auto; }
+    aside button { flex: 0 0 auto; white-space: nowrap; padding: 9px 13px; }
+    aside #ver, aside #who { display: none; }
     aside a { white-space: nowrap; flex: 0 0 auto; padding: 0 6px; }
     main { padding: 12px; max-width: 100%; min-width: 0; }
     .row { gap: 8px; }
@@ -99,32 +103,51 @@
     ul.list li { padding: 11px 10px; }
     ul.list { max-height: 50vh; }
     li.bli { flex-wrap: wrap; }
+    .bot-layout { grid-template-columns: minmax(0, 1fr); }
+    .bot-map-panel { position: static; }
+    #bot-map { height: 55vh; min-height: 300px; }
     table { display: block; overflow-x: auto; max-width: 100%; }
-    pre.smp, #pblog { font-size: 12px; }
-    #msg { left: 12px; right: 12px; bottom: 12px; max-width: none; }
+    pre.smp { font-size: 12px; }
+    #msg { top: 12px; left: 12px; right: 12px; max-width: none; }
   }
+  body.tier-editor .adminonly{display:none!important}
 </style>
 </head>
 <body>
 <div class="app">
+  <main id="view"></main>
   <aside>
     <button data-t="players" class="on">Players</button>
     <button data-t="online">Online</button>
+    <button data-t="bot">Bot</button>
     <button data-t="banned">Banned</button>
+    <button data-t="default">Default</button>
     <button data-t="maps">Maps</button>
-    <button data-t="photon" id="tab-photon">Photon</button>
-    <!--@cut talk-->    <button data-t="talk" id="tab-talk" style="display:none">Talk</button><!--@end talk-->
-    <!--@cut liveview-->    <button data-t="liveview" id="tab-liveview" style="display:none">View</button><!--@end liveview-->
-    <!--@cut roles-->    <button data-t="roles" id="tab-roles" style="display:none">Roles</button><!--@end roles-->
-    <button data-t="extra">Extra</button>
+    <button data-t="disks">Disks</button>
+    <button data-t="worlds">Worlds</button>
+    <button data-t="news">News</button>
+    <button data-t="announce">Announce</button>
+    <button data-t="screens">Screens</button>
+    <button data-t="errors">Errors</button>
+    <button data-t="settings">Settings</button>
     <span class="sp"></span>
-    <a href="https://your-domain.example/" id="backbtn">Back to site</a>
+    <span class="muted" id="ver">Yeeps 1.31.0-yeeper</span>
     <span class="muted" id="who"></span>
     <a href="/editor/logout">Log out</a>
   </aside>
-  <main id="view"></main>
 </div>
 <div id="msg"></div>
+<dialog id="moderation-dialog" style="border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--fg);max-width:400px;width:calc(100% - 32px)">
+  <form method="dialog" id="moderation-form">
+    <h3 style="margin-top:0">Confirm moderation password</h3>
+    <p class="note">Enter the separate password configured as MODERATION_PASSWORD on the server.</p>
+    <input id="moderation-password" type="password" autocomplete="current-password" required style="width:100%;box-sizing:border-box">
+    <div class="row" style="justify-content:flex-end;margin-top:12px">
+      <button type="button" class="blk" id="moderation-cancel">Cancel</button>
+      <button type="submit" class="del" value="authorize">Continue</button>
+    </div>
+  </form>
+</dialog>
 
 <script>
 const API = "/editor/api";
@@ -132,18 +155,49 @@ const view = document.getElementById("view");
 
 function toast(t, bad) {
   const m = document.getElementById("msg");
-  m.textContent = t; m.style.borderColor = bad ? "#a33" : "#9b59b6"; m.style.display = "block";
+  m.textContent = t; m.style.borderColor = bad ? "#a33" : "var(--accent)"; m.style.display = "block";
   clearTimeout(toast._t); toast._t = setTimeout(() => m.style.display = "none", 3500);
 }
-let IS_MOD = false;     // admins + moderators: ban / unban / block
-let IS_ADMIN = false;   // set from /api/me at init; gates admin-only player buttons
 async function api(path, opts) {
-  const r = await fetch(API + path, opts || {});
+  opts = { ...(opts || {}) };
+  const isBot = path === "/bot" || path.startsWith("/bot/");
+  if (isBot) {
+    const headers = new Headers(opts.headers || {});
+    headers.set("X-Bot-Password", sessionStorage.getItem("botPassword") || "");
+    opts.headers = headers;
+  }
+  const r = await fetch(API + path, opts);
   if (r.status === 401) { location.href = "/editor/login"; throw new Error("auth"); }
   const txt = await r.text();
   let j; try { j = txt ? JSON.parse(txt) : {}; } catch { j = { raw: txt }; }
-  if (!r.ok) throw new Error(j.detail || j.error || ("HTTP " + r.status));
+  if (!r.ok) {
+    if (isBot && (r.status === 403 || r.status === 503)) sessionStorage.removeItem("botPassword");
+    const error = new Error(j.detail || j.error || ("HTTP " + r.status));
+    error.status = r.status;
+    throw error;
+  }
   return j;
+}
+function askModerationPassword() {
+  const dialog = document.getElementById("moderation-dialog");
+  const form = document.getElementById("moderation-form");
+  const input = document.getElementById("moderation-password");
+  input.value = "";
+  return new Promise(resolve => {
+    dialog.addEventListener("close", () => {
+      const password = dialog.returnValue === "authorize" ? input.value : null;
+      input.value = "";
+      resolve(password);
+    }, { once: true });
+    form.onsubmit = event => {
+      event.preventDefault();
+      if (!input.value) return;
+      dialog.close("authorize");
+    };
+    document.getElementById("moderation-cancel").onclick = () => dialog.close("cancel");
+    dialog.showModal();
+    input.focus();
+  });
 }
 function pretty(o) { return JSON.stringify(o, null, 2); }
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
@@ -187,19 +241,14 @@ function renderJsonEditor(opts) {
     ${opts.search ? `<div class="row"><input type="text" id="q" placeholder="${opts.hint || "search " + opts.label + "..."}"><button class="go" id="sbtn">Search</button></div><ul class="list" id="list"></ul>` : ""}
     <p class="note" id="sel"></p>
     <textarea id="ed" placeholder="select ${opts.label} above"></textarea>
-    <div class="row" style="margin-top:10px"><button class="go" id="save">Save</button>${opts.kick ? ` <button class="blk" id="kickrow">Kick</button>` : ""}${IS_ADMIN && opts.devreset ? ` <button class="blk" id="devrow">Reset headset lock</button>` : ""}${IS_ADMIN && opts.unlinkDiscord ? ` <button class="blk" id="unlinkrow">Unlink Discord</button>` : ""}${IS_MOD && opts.block ? ` <button class="blk" id="blockrow">Block</button>` : ""}${IS_ADMIN && opts.del ? ` <button class="del" id="delrow">Delete</button>` : ""}</div>`;
+    ${opts.devreset ? `<p class="note">Accounts are locked to the headset they play on. If a player gets "locked to another headset" (new or factory-reset headset, or new internet), select them and press <b>Reset headset lock</b>; their next login sets their headset.</p>` : ""}
+    <div class="row" style="margin-top:10px"><button class="go" id="save">Save</button>${opts.kick ? ` <button class="blk" id="kickrow">Kick</button>` : ""}${opts.devreset ? ` <button class="blk adminonly" id="devrow">Reset headset lock</button>` : ""}${opts.block ? ` <button class="blk adminonly" id="blockrow">Block</button>` : ""}${opts.del ? ` <button class="del adminonly" id="delrow">Delete</button>` : ""}</div>`;
   const ed = document.getElementById("ed");
   const sel = document.getElementById("sel");
   let id = null, run = null, loaded = null;
   function updBlock() {
     const b = document.getElementById("blockrow");
-    if (b) b.textContent = (loaded && (loaded.adminBlocked == 1 || loaded.adminBlocked === true)) ? "Unban" : "Ban (+ IP)";
-    const u = document.getElementById("unlinkrow");
-    if (u) {
-      const link = loaded && (loaded.discordUsername || loaded.discordID);
-      u.textContent = link ? ("Unlink Discord (" + link + ")") : "No Discord linked";
-      u.disabled = !link; u.style.opacity = link ? "1" : "0.5";
-    }
+    if (b) b.textContent = (loaded && (loaded.adminBlocked == 1 || loaded.adminBlocked === true)) ? "Unban" : "Ban";
   }
   async function open(theId) {
     id = theId;
@@ -221,13 +270,24 @@ function renderJsonEditor(opts) {
   } else { open(null); }
   document.getElementById("save").onclick = async () => {
     let obj; try { obj = JSON.parse(ed.value); } catch (e) { return toast("Invalid JSON: " + e.message, true); }
-    try { await opts.save(id, obj); toast("Saved."); } catch (e) { toast(e.message, true); }
+    const moderationFields = ["adminBlocked", "isPermabanned", "isMutebanned", "isIsolated",
+      "shadowBanned", "banExpireTimestamp", "banReason", "blockReason", "banCategory"];
+    const changesBanState = loaded && moderationFields.some(key =>
+      Object.prototype.hasOwnProperty.call(obj, key) && JSON.stringify(obj[key]) !== JSON.stringify(loaded[key]));
+    let moderationPassword;
+    if (changesBanState) {
+      moderationPassword = await askModerationPassword();
+      if (moderationPassword === null) return;
+    }
+    try { await opts.save(id, obj, moderationPassword); toast("Saved."); } catch (e) { toast(e.message, true); }
   };
   const delBtn = document.getElementById("delrow");
   if (delBtn) delBtn.onclick = async () => {
     if (!id) return toast("Select one first", true);
     if (!confirm("Permanently delete " + id + "? This cannot be undone.")) return;
-    try { await opts.del(id); toast("Deleted " + id); id = null; ed.value = ""; sel.textContent = ""; if (run) run(); }
+    const moderationPassword = await askModerationPassword();
+    if (moderationPassword === null) return;
+    try { await opts.del(id, moderationPassword); toast("Deleted " + id); id = null; ed.value = ""; sel.textContent = ""; if (run) run(); }
     catch (e) { toast(e.message, true); }
   };
   const kickBtn = document.getElementById("kickrow");
@@ -235,7 +295,9 @@ function renderJsonEditor(opts) {
     if (!id) return toast("Select a player first", true);
     const reason = prompt("Kick " + ((loaded && loaded.displayName) || id) + "? Optional reason (shown to them):", "");
     if (reason === null) return;
-    try { await opts.kick(id, reason.trim()); toast("Kicked - lands within about a minute"); }
+    const moderationPassword = await askModerationPassword();
+    if (moderationPassword === null) return;
+    try { await opts.kick(id, reason.trim(), moderationPassword); toast("Kicked - lands within about a minute"); }
     catch (e) { toast(e.message, true); }
   };
   const devBtn = document.getElementById("devrow");
@@ -245,23 +307,29 @@ function renderJsonEditor(opts) {
     try { await opts.devreset(id); toast("Headset lock reset - their next login sets the new headset"); }
     catch (e) { toast(e.message, true); }
   };
-  const unlinkBtn = document.getElementById("unlinkrow");
-  if (unlinkBtn) unlinkBtn.onclick = async () => {
-    if (!id) return toast("Select a player first", true);
-    const link = loaded && (loaded.discordUsername || loaded.discordID);
-    if (!link) return toast("That account has no Discord linked", true);
-    if (!confirm("Unlink Discord (" + link + ") from " + ((loaded && loaded.displayName) || id) + "?\nThey won't be able to join until they /link again.")) return;
-    try { const r = await opts.unlinkDiscord(id); toast("Unlinked " + (r && r.unlinked || "")); await open(id); }
-    catch (e) { toast(e.message, true); }
-  };
   const blockBtn = document.getElementById("blockrow");
   if (blockBtn) blockBtn.onclick = async () => {
     if (!id) return toast("Select a player first", true);
     const isBlocked = loaded && (loaded.adminBlocked == 1 || loaded.adminBlocked === true);
+    if (isBlocked) {
+      const moderationPassword = await askModerationPassword();
+      if (moderationPassword === null) return;
+      try {
+        await opts.block(id, false, moderationPassword);
+        toast("Unbanned ÔÇö can connect");
+        await open(id);
+      } catch (e) { toast(e.message, true); }
+      return;
+    }
     try {
-      const r = await opts.block(id, !isBlocked);
-      if (isBlocked) toast("Unbanned — can connect" + (r && r.unbannedIPs && r.unbannedIPs.length ? " (IPs: " + r.unbannedIPs.join(", ") + ")" : ""));
-      else toast("Banned " + (r && r.until ? "until " + r.until : "(permanent)") + (r && r.bannedIPs && r.bannedIPs.length ? " + " + r.bannedIPs.length + " IP(s)" : (r && r.permanent ? " (no IP on record yet)" : "")));
+      const raw = prompt("Ban length ÔÇö e.g. 2h, 3d, 7d, 1w ÔÇö or leave blank for permanent:", "");
+      if (raw === null) return;
+      const hours = parseDur(raw);
+      if (hours === null) return toast("Bad length ÔÇö use e.g. 2h, 3d, 7d, or blank for permanent", true);
+      const moderationPassword = await askModerationPassword();
+      if (moderationPassword === null) return;
+      const r = await opts.block(id, true, moderationPassword, hours);
+      toast("Banned " + (r && r.until ? "until " + r.until : "(permanent)"));
       await open(id);
     } catch (e) { toast(e.message, true); }
   };
@@ -271,108 +339,23 @@ const tabs = {
   players: () => renderJsonEditor({
     label: "players", hint: "search name, Discord username, Discord ID or account ID...",
     search: q => api("/players?limit=100&q=" + encodeURIComponent(q)),
-    id: r => r.accountID, row: r => `${r.displayName || "(no name)"} <span class="muted">${r.accountID}${r.discordUsername ? " · Discord: " + esc(r.discordUsername) : ""} · ${r.currency ?? "?"}c ${r.beans ?? "?"}b</span>`,
+    id: r => r.accountID, row: r => `${r.displayName || "(no name)"} <span class="muted">${r.accountID}${r.discordUsername ? " ┬À Discord: " + esc(r.discordUsername) : ""} ┬À ${r.currency ?? "?"}c ${r.beans ?? "?"}b</span>`,
     load: id => api("/player/" + encodeURIComponent(id)),
-    save: (id, o) => api("/player/" + encodeURIComponent(id), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(o) }),
-    del: id => api("/player/" + encodeURIComponent(id), { method: "DELETE" }),
-    kick: (id, reason) => api("/player/" + encodeURIComponent(id) + "/kick", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }) }),
+    save: (id, o, moderationPassword) => {
+      if (moderationPassword) o.moderationPassword = moderationPassword;
+      return api("/player/" + encodeURIComponent(id), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(o) });
+    },
+    del: (id, moderationPassword) => api("/player/" + encodeURIComponent(id), { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ moderationPassword }) }),
+    kick: (id, reason, moderationPassword) => api("/player/" + encodeURIComponent(id) + "/kick", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason, moderationPassword }) }),
     devreset: id => api("/player/" + encodeURIComponent(id) + "/device-reset", { method: "POST" }),
-    unlinkDiscord: id => api("/player/" + encodeURIComponent(id) + "/unlink-discord", { method: "POST" }),
-    block: (id, blocked) => {
-      if (!blocked) return api("/player/" + encodeURIComponent(id) + "/unban", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ alsoIP: true }) });
-      const raw = prompt("Ban length — e.g. 2h, 3d, 7d, 1w — or leave BLANK for permanent (permanent also IP-bans):", "");
-      if (raw === null) return Promise.reject(new Error("cancelled"));
-      const h = parseDur(raw);
-      if (h === null) return Promise.reject(new Error("Bad length — use e.g. 2h, 3d, 7d, or blank for permanent"));
-      return api("/player/" + encodeURIComponent(id) + "/ban", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ alsoIP: true, durationHours: h }) });
+    block: (id, blocked, moderationPassword, hours) => {
+      const headers = { "Content-Type": "application/json" };
+      if (!blocked) return api("/player/" + encodeURIComponent(id) + "/unban", { method: "POST", headers, body: JSON.stringify({ moderationPassword }) });
+      return api("/player/" + encodeURIComponent(id) + "/ban", { method: "POST", headers, body: JSON.stringify({ durationHours: hours, moderationPassword }) });
     },
   }),
-  /*@cut liveview*/
-  // View (Photon owners): live 3D look at the bot's room, see players move/build and build there.
-  // The page itself is /editor/view (static/editor_view.html); this tab just embeds it.
-  liveview: () => {
-    view.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <h2 style="margin:0">View</h2><a href="/editor/view" target="_blank" rel="noopener">open full screen</a></div>
-      <iframe src="/editor/view" title="Live room view" allow="microphone; autoplay"
-        style="width:100%;height:calc(100vh - 90px);min-height:420px;border:1px solid var(--line);border-radius:8px;background:var(--bg)"></iframe>`;
-  },
-  /*@end liveview*/
-  extra: () => {
-    const items = [
-      ["settings", "Settings", "server toggles (creative, friends, versions)"],
-      ["default", "Default", "the starter account every new player gets"],
-      ["daily", "Daily", "card packs, rewards, daily config"],
-      ["screens", "Screens", "in-game screen / picture images"],
-      ["news", "News", "the news board text"],
-      ["announce", "Announce", "broadcast a message to everyone online"],
-      ["errors", "Errors", "player-reported errors"],
-      ["logs", "Logs", "server + client logs"],
-    ];
-    view.innerHTML = `<p class="note">Less-used setup and tools. Pick one:</p>` +
-      `<div id="extragrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px">` +
-      items.map(([k, label, desc]) =>
-        `<button class="go" data-ex="${k}" style="text-align:left;padding:12px;height:auto;white-space:normal">` +
-        `<b>${label}</b><br><span class="muted" style="font-size:12px">${desc}</span></button>`).join("") +
-      `</div>`;
-    view.querySelectorAll("button[data-ex]").forEach(b => b.onclick = () => { tabs[b.dataset.ex](); view.scrollTop = 0; });
-  },
-  /*@cut roles*/
-  roles: async () => {
-    view.innerHTML = `<p class="note">Who has the special roles, on live and 1.31. Add other role names separated by commas.</p>
-      <div class="row"><input type="text" id="rolesq" value="blaze,frost,frostpack" style="max-width:320px">
-      <button class="go" id="rolesgo">Show</button></div><div id="rolesout">loading...</div>`;
-    async function load() {
-      const box = document.getElementById("rolesout");
-      box.textContent = "loading...";
-      let d; try { d = await api("/roles/holders?roles=" + encodeURIComponent(document.getElementById("rolesq").value)); }
-      catch (e) { box.textContent = "Error: " + e.message; return; }
-      box.innerHTML = Object.entries(d.roles).map(([role, hs]) =>
-        `<h3>${esc(role)} <span class="muted">(${hs.length})</span></h3>` +
-        (hs.length ? `<ul class="list">` + hs.map(h =>
-          `<li class="bli"><div class="binfo"><div class="bname">${esc(h.name || "(no name)")}</div>` +
-          `<div class="bmeta">${esc(h.accountID)}${h.discord ? " · Discord: " + esc(h.discord) : ""} · ${esc(h.servers.join(" + "))}</div></div>` +
-          `<button class="blk" data-rmrole="${esc(role)}" data-rmacct="${esc(h.accountID)}">Remove</button></li>`
-        ).join("") + `</ul>` : `<p class="muted">Nobody has this role.</p>`)
-      ).join("");
-      box.querySelectorAll("button[data-rmrole]").forEach(b => b.onclick = async () => {
-        const role = b.dataset.rmrole, aid = b.dataset.rmacct;
-        if (!confirm("Remove role '" + role + "' from " + aid + "?")) return;
-        try {
-          const r = await api("/roles/remove", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accountID: aid, role }) });
-          toast("Removed " + role + (r.autoGranted ? " — but it's auto-granted, comes back next login" : ""));
-          load();
-        } catch (e) { toast(e.message, true); }
-      });
-    }
-    async function loadBuilders() {
-      let box = document.getElementById("bldbox");
-      if (!box) { box = document.createElement("div"); box.id = "bldbox"; view.insertBefore(box, view.firstChild); }
-      let d; try { d = await api("/builders"); } catch (e) { box.textContent = "Error: " + e.message; return; }
-      box.innerHTML = `<h3>Map builders</h3><p class="note">These players can switch normal maps to creative and their builds save ` +
-        `(from their own headset). Editor admins always can. Needs the live72+ APK for the creative switch to stick.</p>` +
-        `<div class="row"><input type="text" id="bldid" placeholder="account ID (o_...)" style="max-width:260px">` +
-        `<button class="go" id="bldadd">Add</button></div><ul class="list">` +
-        d.always.map(b => `<li class="bli"><div class="binfo"><div class="bname">${esc(b.name || "(no name)")}</div>` +
-          `<div class="bmeta">${esc(b.accountID)} · editor admin</div></div></li>`).join("") +
-        d.builders.map(b => `<li class="bli"><div class="binfo"><div class="bname">${esc(b.name || "(no name)")}</div>` +
-          `<div class="bmeta">${esc(b.accountID)}</div></div><button class="go" data-bldrm="${esc(b.accountID)}">Remove</button></li>`).join("") +
-        `</ul><hr>`;
-      const post = async (aid, add) => {
-        try { await api("/builders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accountID: aid, add }) });
-              toast((add ? "Added " : "Removed ") + aid); loadBuilders(); }
-        catch (e) { toast(e.message, true); }
-      };
-      document.getElementById("bldadd").onclick = () => post(document.getElementById("bldid").value.trim(), true);
-      box.querySelectorAll("button[data-bldrm]").forEach(b => b.onclick = () => { if (confirm("Remove builder " + b.dataset.bldrm + "?")) post(b.dataset.bldrm, false); });
-    }
-    loadBuilders();
-    document.getElementById("rolesgo").onclick = load;
-    document.getElementById("rolesq").onkeydown = e => { if (e.key === "Enter") load(); };
-    load();
-  },
-  /*@end roles*/
   banned: async () => {
-    view.innerHTML = `<p class="note">Players that are currently banned. Click <b>Unban</b> to lift it (also removes any linked IP ban).</p>
+    view.innerHTML = `<p class="note">Players that are currently banned. Click <b>Unban</b> to lift the account and headset bans.</p>
       <div class="row"><button class="go" id="refb">Refresh</button> <span class="muted" id="bcount"></span></div>
       <ul class="list" id="blist"><li>loading...</li></ul>`;
     async function load() {
@@ -386,55 +369,24 @@ const tabs = {
         `<li class="bli"><div class="binfo">` +
           `<div class="bname">${esc(b.name)}</div>` +
           `<div class="bmeta"><span class="${kcls[b.kind] || ""}">${esc(b.kind)}</span>` +
-          `${b.expires ? " until " + esc(b.expires) : ""} · ${esc(b.accountID)}` +
-          `${b.reason ? " · " + esc(b.reason) : ""}</div>` +
+          `${b.expires ? " until " + esc(b.expires) : ""} ┬À ${esc(b.accountID)}` +
+          `${b.reason ? " ┬À " + esc(b.reason) : ""}</div>` +
         `</div><button class="go" data-unban="${esc(b.accountID)}">Unban</button></li>`
       ).join("");
       list.querySelectorAll("button[data-unban]").forEach(btn => btn.onclick = async () => {
         if (!confirm("Unban " + btn.dataset.unban + "?")) return;
+        const moderationPassword = await askModerationPassword();
+        if (moderationPassword === null) return;
         try {
-          await api("/player/" + encodeURIComponent(btn.dataset.unban) + "/unban", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ alsoIP: true }) });
+          await api("/player/" + encodeURIComponent(btn.dataset.unban) + "/unban", {
+            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ moderationPassword })
+          });
           toast("Unbanned " + btn.dataset.unban); load();
         } catch (e) { toast(e.message, true); }
       });
     }
-    document.getElementById("refb").onclick = () => { load(); loadIp(); };
+    document.getElementById("refb").onclick = load;
     load();
-    // Owner only: IP bans on both servers (wrong-password auto-bans etc.) with one-click unban
-    async function loadIp() {
-      let d; try { d = await api("/ipbans/all"); } catch (_) { return; }
-      let box = document.getElementById("ipbox");
-      if (!box) {
-        box = document.createElement("div"); box.id = "ipbox";
-        view.insertBefore(box, view.firstChild);
-      }
-      const bans = d.bans || [];
-      box.innerHTML = `<p class="note"><b>IP bans</b> (both servers). Most are people who typed the editor password wrong 4 times. ` +
-        `<b>Unban</b> lifts it on live and 1.31.</p><input type="text" id="ipq" placeholder="filter by name or IP" style="margin-bottom:6px">` +
-        `<ul class="list" id="iplist"></ul>`;
-      const render = () => {
-        const q = (document.getElementById("ipq").value || "").toLowerCase();
-        const rows = bans.filter(b => !q || b.ip.toLowerCase().includes(q) || b.names.join(" ").toLowerCase().includes(q));
-        document.getElementById("iplist").innerHTML = rows.length ? rows.map(b =>
-          `<li class="bli"><div class="binfo"><div class="bname">${esc(b.names.join(", ") || "(no name typed)")}</div>` +
-          `<div class="bmeta">${esc(b.ip)} · ${esc(b.servers.join(" + "))}${b.at ? " · " + new Date(b.at * 1000).toLocaleString() : ""}` +
-          `${b.reason ? " · " + esc(b.reason) : ""}</div>` +
-          (b.tries && b.tries.length ? `<div class="bmeta">typed: ` + b.tries.map(t =>
-            `<code>${esc(t.typed)}</code>${t.name ? " as " + esc(t.name) : ""}`).join(", ") + `</div>` : "") +
-          `</div>` +
-          `<button class="go" data-ipun="${esc(b.ip)}">Unban</button></li>`).join("") : "<li>No IP bans match.</li>";
-        document.querySelectorAll("button[data-ipun]").forEach(btn => btn.onclick = async () => {
-          try {
-            const r = await api("/ipbans/unban", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ip: btn.dataset.ipun }) });
-            toast("IP unbanned" + (r.unbannedOn && r.unbannedOn.length ? " on " + r.unbannedOn.join(" + ") : ""));
-            loadIp();
-          } catch (e) { toast(e.message, true); }
-        });
-      };
-      document.getElementById("ipq").oninput = render;
-      render();
-    }
-    loadIp();
   },
   default: () => { view.innerHTML = `<p class="note">This is what EVERY new player starts with (owned items, roles, currency...).</p>`;
     const holder = document.createElement("div"); view.appendChild(holder);
@@ -443,70 +395,39 @@ const tabs = {
       save: (_id, o) => api("/default", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(o) }) });
   },
   maps: async () => {
-    view.innerHTML = `<p class="note">Maps in folders. Green = has a saved map. Click a map, then open a section to edit it: <b>Settings</b> (theme/biome, size, floor, liquid, lighting, flags), <b>Blocks</b>, or <b>Danger zone</b>.</p>
+    view.innerHTML = `<p class="note">Maps in folders. Purple = has a saved map. Click a map, then open a section to edit it: <b>Settings</b> (theme/biome, size, floor, liquid, lighting, flags), <b>Blocks</b>, or <b>Danger zone</b>.</p>
       <div class="row"><input type="text" id="pwq" placeholder="find a private world: Meta name, Discord, or player ID">
         <button class="go" id="pwgo">Find</button></div>
       <ul class="list" id="pwres" style="display:none"></ul>
       <p><button class="go" id="ownfix">Give unknown-owner blocks to me</button> <span class="muted" id="ownfixmsg">blocks placed by accounts that aren't in the database (official players, bots) become yours</span></p>
-      <p><button class="go" id="blazefix">Clear BLAZE blocks not placed by blaze role</button> <span class="muted" id="blazefixmsg">removes BLAZE Pillows and BLAZE Screens whose owner doesn't have the blaze role (all maps + private worlds)</span></p>
-      <div id="mmbox" style="display:none;border:1px solid var(--line);border-radius:10px;padding:10px;margin:10px 0">
-        <b>Load a Map Maker map</b> <span class="muted">paste the raw JSON from your-domain.example/mapmaker</span>
-        <textarea id="mmblob" rows="3" style="width:100%;margin-top:6px;font-family:monospace;font-size:11px" placeholder="raw JSON"></textarea>
-        <div class="row"><button class="go" id="mmdec">Read map</button> <span id="mminfo" class="muted"></span></div>
-        <div class="row" id="mmload" style="display:none">
-          <input type="text" id="mmroom" placeholder="room key (e.g. p_o_..._sandbox)">
-          <select id="mmmode"><option value="replace">Replace the map</option><option value="add">Add to the existing map</option></select>
-          <input type="number" id="mmox" placeholder="offset x" style="width:80px"><input type="number" id="mmoy" placeholder="offset y" style="width:80px"><input type="number" id="mmoz" placeholder="offset z" style="width:80px">
-          <label id="mmroomopt" style="display:none"><input type="checkbox" id="mmroomset" checked> also set ground, water, biome + lobby</label>
-          <button class="go" id="mmgo">Load into room</button>
+      <details style="margin:8px 0"><summary>Import a map into a room</summary>
+        <div style="padding:10px 12px">
+          <p class="note">Paste a map's block list (the JSON from YeepsMapLoader / the /map API, or a bare blocks array) or pick a .json file, choose the room, then Import. Blocks that don't exist in 1.31 are left out. The room's current map is replaced.</p>
+          <div class="row" style="align-items:center"><input type="text" id="imroom" placeholder="room key, e.g. official_1" style="min-width:220px">
+            <input type="file" accept=".json,application/json,text/plain" id="imfile"></div>
+          <textarea id="imjson" style="min-height:140px" placeholder='{"ok":true,"roomKey":"...","blocks":[{"name":"1x1_wooden","x":0,"y":0,"z":0,"fwd":0,"up":0,"color":"white","owner":""}]}'></textarea>
+          <div class="row" style="margin-top:8px"><button class="go" id="imgo">Import</button> <span class="muted" id="immsg"></span></div>
         </div>
-      </div>
+      </details>
       <div id="folders" class="muted">loading maps...</div>
       <div id="panel"></div>`;
-    // Map Maker import (admins): raw JSON {blocks:[...]} or a bare block list.
-    if (IS_ADMIN) document.getElementById("mmbox").style.display = "";
-    let mmBlocks = null, mmRoom = null;
-    document.getElementById("mmdec").onclick = () => {
-      const info = document.getElementById("mminfo");
-      let o; try { o = JSON.parse(document.getElementById("mmblob").value.trim()); } catch (e) { info.textContent = "Not valid map JSON: " + e.message; return; }
-      const arr = Array.isArray(o) ? o : o.blocks;
-      if (!Array.isArray(arr) || !arr.length) { info.textContent = "No blocks in that map."; return; }
-      mmBlocks = arr;
-      mmRoom = (!Array.isArray(o) && o.room) ? o.room : null;
-      document.getElementById("mmroomopt").style.display = mmRoom ? "" : "none";
-      const signs = arr.filter(b => b.state).length;
-      info.textContent = arr.length + " blocks" + (o.size ? ", size " + o.size.join(" x ") : "") + (signs ? ", " + signs + " with text/settings" : "") + (o.game === "131" ? " (made for 1.31)" : "");
-      document.getElementById("mmload").style.display = "";
+    document.getElementById("imfile").onchange = async e => {
+      const f = e.target.files[0]; if (!f) return;
+      document.getElementById("imjson").value = await f.text();
     };
-    document.getElementById("mmgo").onclick = async () => {
-      const rk = document.getElementById("mmroom").value.trim();
-      if (!rk || !mmBlocks) return toast("Read a map and enter a room key", true);
-      const ox = +document.getElementById("mmox").value || 0, oy = +document.getElementById("mmoy").value || 0, oz = +document.getElementById("mmoz").value || 0;
-      let arr = mmBlocks.map(b => Object.assign({}, b, { x: (+b.x || 0) + ox, y: (+b.y || 0) + oy, z: (+b.z || 0) + oz }));
-      const mode = document.getElementById("mmmode").value;
-      if (mode === "add") {
-        try { const cur = await api("/map/" + encodeURIComponent(rk)); arr = (cur.blocks || []).concat(arr); }
-        catch (e) { if (!/No map stored/.test(e.message)) return toast("Could not read the current map: " + e.message, true); }
-      }
-      if (!confirm((mode === "add" ? "Add " + mmBlocks.length + " blocks to " : "REPLACE the whole map of ") + rk + "?\n\nThe current map is snapshotted first (undo with Revert).")) return;
-      try { const r = await api("/map/" + encodeURIComponent(rk) + "/blocks",
-              { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ blocks: arr }) });
-            let roomMsg = "";
-            if (mmRoom && document.getElementById("mmroomset").checked) {
-              // Only rooms already in the database: private worlds are generated on the fly and need a full room doc.
-              try {
-                const room = await api("/room/" + encodeURIComponent(rk));
-                if (room && !room._generated && !room.error) {
-                  await api("/room/" + encodeURIComponent(rk), { method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(Object.assign({ floorDepth: +mmRoom.floorDepth || 0, liquidType: +mmRoom.liquidType || 0, liquidLevel: +mmRoom.liquidLevel || 0 },
-                      mmRoom.themeKey ? { themeKey: String(mmRoom.themeKey) } : {},
-                      mmRoom.lobbyDirection != null ? { lobbyDirection: +mmRoom.lobbyDirection } : {})) });
-                  roomMsg = ", ground " + (+mmRoom.floorDepth || 0) + ", water " + (+mmRoom.liquidLevel || 0)
-                    + (mmRoom.themeKey ? ", biome " + mmRoom.themeKey : "") + (mmRoom.lobbyDirection != null ? ", lobby side " + mmRoom.lobbyDirection : "");
-                } else roomMsg = " (room settings not saved yet: open the room's Settings and save once, then load again)";
-              } catch (e) { roomMsg = " (couldn't set ground/water: " + e.message + ")"; }
-            }
-            toast("Saved " + r.blockCount + " blocks to " + rk + (r.skipped ? " (" + r.skipped + " disabled skipped)" : "") + roomMsg); await refresh();
+    document.getElementById("imgo").onclick = async () => {
+      const room = document.getElementById("imroom").value.trim();
+      let map; try { map = JSON.parse(document.getElementById("imjson").value); }
+      catch (e) { return toast("That isn't valid JSON: " + e.message, true); }
+      const rk = room || (map && map.roomKey) || "";
+      if (!rk) return toast("Type the room key to import into", true);
+      if (!confirm("Replace the map of " + rk + " with this one?")) return;
+      try {
+        const r = await api("/map/import", { method: "POST", headers: { "Content-Type": "application/json" },
+                                              body: JSON.stringify({ roomKey: rk, map }) });
+        document.getElementById("immsg").textContent = "Imported " + r.blockCount + " blocks into " + r.roomKey +
+          (r.dropped ? " (" + r.dropped + " left out, e.g. " + (r.droppedKeysSample || []).slice(0, 3).join(", ") + ")" : "");
+        toast("Map imported into " + r.roomKey); await refresh();
       } catch (e) { toast(e.message, true); }
     };
     let rooms = [], mapped = {};
@@ -539,7 +460,7 @@ const tabs = {
       box.innerHTML = ps.map(p => {
         const main = "p_" + p.accountID, sb = main + "_sandbox";
         return `<li class="pwhit"><span class="pwname"><b>${esc((p.displayName || "(no name)").replace(/<[^>]+>/g, ""))}</b>
-          <span class="muted">${esc(p.accountID)}${p.discordUsername ? " · Discord: " + esc(p.discordUsername) : ""}</span></span>
+          <span class="muted">${esc(p.accountID)}${p.discordUsername ? " ┬À Discord: " + esc(p.discordUsername) : ""}</span></span>
           <button data-pw="${esc(main)}">Main world (${tag(main)})</button>
           <button data-pw="${esc(sb)}">Sandbox (${tag(sb)})</button></li>`;
       }).join("");
@@ -548,7 +469,7 @@ const tabs = {
     }
     document.getElementById("pwgo").onclick = findPw;
     document.getElementById("pwq").onkeydown = e => { if (e.key === "Enter") findPw(); };
-    const THEMES = ["suburb","beach","snow","desert","fantasy","backrooms","researchFacility","sandbox","tutorial"];
+    const THEMES = ["suburb","beach","snow","fantasy","backrooms","researchFacility","sandbox","tutorial"];   // no desert in 1.31
     const esc = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
     async function openRoom(rk) {
       const m = mapped[rk];
@@ -568,7 +489,7 @@ const tabs = {
       if (cur && !THEMES.includes(cur)) themeOpts = `<option value="${esc(cur)}" selected>${esc(cur)} (current)</option>` + themeOpts;
 
       document.getElementById("panel").innerHTML = `
-        <p class="note">Editing map: <b>${rk}</b> — ${esc(room.roomName || "")} · ${nblocks}</p>
+        <p class="note">Editing map: <b>${rk}</b> ÔÇö ${esc(room.roomName || "")} ┬À ${nblocks}</p>
 
         <details open><summary>Settings (theme, size, liquid, flags)</summary>
           <div style="padding:10px 12px">
@@ -592,7 +513,7 @@ const tabs = {
               <label><input type="checkbox" id="f_modelock" ${room.isModeLocked ? "checked" : ""}> Mode locked</label>
               <label><input type="checkbox" id="f_devlock" ${room.isDevLocked ? "checked" : ""}> Dev locked</label>
             </div>
-            <details><summary>Advanced — every field (raw JSON)</summary>
+            <details><summary>Advanced ÔÇö every field (raw JSON)</summary>
               <textarea id="f_raw" style="min-height:300px">${pretty(room).replace(/</g,"&lt;")}</textarea>
               <p class="note" style="margin-top:6px">The form fields above override these for theme, name, size, floor, liquid, lighting and the flags.</p>
             </details>
@@ -602,7 +523,7 @@ const tabs = {
 
         <details><summary>Blocks${blocks ? ` (${blocks.length}${stored.blocksTruncated ? ", first 2000 shown" : ""})` : " (empty)"}</summary>
           <div style="padding:10px 12px">
-            <p class="note">${blocks ? "Edit the block JSON, then save to rewrite the room's map." : "This map is empty — paste a block array (or add objects) and save to build it."}</p>
+            <p class="note">${blocks ? "Edit the block JSON, then save to rewrite the room's map." : "This map is empty ÔÇö paste a block array (or add objects) and save to build it."}</p>
             <textarea id="blocksedit" style="min-height:300px" placeholder='[{"name":"1x1_wooden","x":0,"y":0,"z":0,"fwd":0,"up":0,"color":"white","owner":""}]'>${blocks ? pretty(blocks).replace(/</g,"&lt;") : "[]"}</textarea>
             <div class="row" style="margin-top:8px"><button class="go" id="saveblocks">Save edited blocks</button></div>
           </div>
@@ -639,7 +560,7 @@ const tabs = {
         base.isDevLocked = document.getElementById("f_devlock").checked ? 1 : 0;
         delete base.roomKey; delete base._id; delete base._generated; delete base.error;
         try { await api("/room/" + encodeURIComponent(rk), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(base) });
-              toast("Settings saved — theme/biome synced to the map."); await refresh(); openRoom(rk); }
+              toast("Settings saved ÔÇö theme/biome synced to the map."); await refresh(); openRoom(rk); }
         catch (e) { toast(e.message, true); }
       };
       const sb = document.getElementById("saveblocks");
@@ -668,9 +589,9 @@ const tabs = {
             html += `<div class="row" style="margin-top:6px"><button class="go" data-imp="1">Revert to imported official map</button></div>`;
           if (h.history && h.history.length)
             html += `<ul class="list" style="margin-top:8px">` + h.history.map(s =>
-              `<li>${s.savedAt || s.ts} — ${s.bytes} bytes (${s.savedBy || "?"})${s.preRevert ? " [pre-revert]" : ""} <button class="go" data-hid="${s.id}" style="float:right">Restore</button></li>`).join("") + `</ul>`;
+              `<li>${s.savedAt || s.ts} ÔÇö ${s.bytes} bytes (${s.savedBy || "?"})${s.preRevert ? " [pre-revert]" : ""} <button class="go" data-hid="${s.id}" style="float:right">Restore</button></li>`).join("") + `</ul>`;
           else if (!h.hasImported)
-            html += `<p class="note">No snapshots yet — they're captured as the map is saved from now on.</p>`;
+            html += `<p class="note">No snapshots yet ÔÇö they're captured as the map is saved from now on.</p>`;
           const box = document.getElementById("histlist");
           box.innerHTML = html;
           box.querySelectorAll("button[data-hid]").forEach(b => b.onclick = async () => {
@@ -701,48 +622,107 @@ const tabs = {
         toast("Gave " + a.blocks + " blocks to " + a.defaultOwner);
       } catch (e) { toast(e.message, true); }
     };
-    document.getElementById("blazefix").onclick = async () => {
-      const msg = document.getElementById("blazefixmsg");
+    try { await refresh(); } catch (e) { document.getElementById("folders").textContent = e.message; }
+  },
+  worlds: async () => { /* EXTRAS-PATCH-v1 */
+    view.innerHTML = `<p class="note">Community worlds live on this server only. Players enter one by name from the in-game community portal. Create one here (or let players buy one in game), pick its admin, and feature it for the lists.</p>
+      <div class="row" style="align-items:center"><label>World name</label><input type="text" id="wname" placeholder="MYWORLD" maxlength="24">
+        <label>Admin account ID</label><input type="text" id="wadmin" placeholder="o_123..." style="min-width:240px">
+        <button class="go" id="wmake">Create</button></div>
+      <p class="muted" id="wmsg"></p><div id="wtable"></div>
+      <h3 style="margin-top:22px">Calls the server has no handler for</h3>
+      <p class="note">What the game asked for that nothing answers. This is the list of handlers still worth adding.</p><div id="wcalls"></div>`;
+    const $ = id => document.getElementById(id);
+    const load = async () => {
+      const r = await api("/worlds");
+      $("wmsg").textContent = r.enabled ? "" : "Community worlds are OFF (EXTRAS_COMMUNITY=0).";
+      $("wtable").innerHTML = r.worlds.length ? `<table><tr><th>World</th><th>Admin</th><th>Visits</th><th>Featured</th><th></th></tr>` +
+        r.worlds.map(w => `<tr><td>${esc(w.worldName)}</td><td>${esc(w.adminName || "")} <span class="muted">${esc(w.adminAccountID)}</span></td>
+          <td>${w.visitCount || 0}</td><td><input type="checkbox" data-f="${esc(w.worldKey)}" ${w.featured ? "checked" : ""}></td>
+          <td><button class="del" data-d="${esc(w.worldKey)}">Delete</button></td></tr>`).join("") + `</table>` : `<p class="muted">No worlds yet.</p>`;
+      document.querySelectorAll("[data-f]").forEach(c => c.onchange = async () => { try { await api("/worlds/" + c.dataset.f + "/feature", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ featured: c.checked }) }); } catch (e) { toast(e.message, true); } });
+      document.querySelectorAll("[data-d]").forEach(b => b.onclick = async () => { if (!confirm("Delete " + b.dataset.d + "? Its blocks stay in the database.")) return; try { await api("/worlds/" + b.dataset.d, { method: "DELETE" }); load(); } catch (e) { toast(e.message, true); } });
+      const c = await api("/extras/calls");
+      $("wcalls").innerHTML = c.unknown.length ? `<table><tr><th>Name</th><th>Times</th><th>Last seen (UTC)</th><th>Last request</th></tr>` +
+        c.unknown.map(u => `<tr><td>${esc(u.fn)}</td><td>${u.count}</td><td>${esc(u.lastAt || "")}</td><td class="muted">${esc(JSON.stringify(u.lastBody || {}).slice(0, 160))}</td></tr>`).join("") + `</table>` : `<p class="muted">Nothing yet.</p>`;
+    };
+    $("wmake").onclick = async () => {
       try {
-        const r = await api("/maps/clear-blaze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ apply: false }) });
-        const skip = (r.skipped || []).map(c => (c.roomKey || c.mapKey) + " (" + (c.blocks || "?") + "): " + c.why).join("\n");
-        if (!r.maps) { msg.textContent = "Nothing to remove: every BLAZE block was placed by a blaze-role account." + (skip ? " Skipped: " + skip : ""); return; }
-        const list = r.changed.slice(0, 12).map(c => c.roomKey + " (" + c.blocks + ")").join(", ");
-        if (!confirm("Remove " + r.blocks + " BLAZE blocks in " + r.maps + " maps?\n\n" + list + (r.changed.length > 12 ? ", ..." : "") +
-                     (skip ? "\n\nSkipped (has signs/teleporters, fix by hand):\n" + skip : "") + "\n\nEach map is snapshotted first (undo with Revert).")) return;
-        const a = await api("/maps/clear-blaze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ apply: true }) });
-        msg.textContent = "Done: removed " + a.blocks + " BLAZE blocks from " + a.maps + " maps" + (a.skipped.length ? " (" + a.skipped.length + " skipped)" : "");
-        toast("Removed " + a.blocks + " BLAZE blocks");
+        await api("/worlds", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: $("wname").value, adminAccountID: $("wadmin").value }) });
+        toast("World created"); $("wname").value = ""; load();
       } catch (e) { toast(e.message, true); }
     };
-    try { await refresh(); } catch (e) { document.getElementById("folders").textContent = e.message; }
+    try { await load(); } catch (e) { $("wmsg").textContent = e.message; }
+  },
+  disks: async () => {
+    view.innerHTML = `<p class="note">Your own music on the game's record disks, for everyone, with no new APK. Pick a record, pick an audio file (mp3, ogg, wav, ...), Upload. Players hear it the next time they start the game. Files are converted to mono WAV in your browser (OGG files are sent as they are); about 4 minutes fit.</p>
+      <div class="row" style="align-items:center"><select id="drec" style="min-width:240px"></select>
+        <input type="file" accept="audio/*,.ogg,.mp3,.wav,.m4a,.flac" id="dfile">
+        <button class="go" id="dgo">Upload</button> <span class="muted" id="dmsg"></span></div>
+      <h3 style="margin-top:18px">Records with your music</h3><ul class="list" id="dlist"><li class="muted">loading...</li></ul>`;
+    const sel = document.getElementById("drec");
+    let recs = [];
+    try { const d = await api("/default"); recs = ((d.value || d).ownedPatterns || []).filter(k => k.startsWith("record_")).sort(); } catch (_) {}
+    if (!recs.length) recs = ["record_suburbTheme", "record_snowTheme", "record_oceanTheme", "record_fantasyTheme"];
+    sel.innerHTML = recs.map(r => `<option value="${esc(r)}">${esc(r.slice(7))}</option>`).join("");
+    async function load() {
+      const ul = document.getElementById("dlist");
+      try {
+        const d = (await api("/disks")).disks || [];
+        ul.innerHTML = d.length ? "" : '<li class="muted">none yet</li>';
+        d.forEach(x => {
+          const li = document.createElement("li");
+          li.innerHTML = `<b>${esc(x.clip)}</b> <span class="muted">${esc(x.ext)}, ${Math.round((x.size || 0) / 1024)} KB, by ${esc(x.by || "?")}</span> <button class="del">Remove</button>`;
+          li.querySelector("button").onclick = async () => {
+            if (!confirm("Put the original music back on " + x.clip + "?")) return;
+            try { await api("/disks/" + encodeURIComponent(x.clip), { method: "DELETE" }); toast("Removed " + x.clip); load(); }
+            catch (e) { toast(e.message, true); }
+          };
+          ul.appendChild(li);
+        });
+      } catch (e) { ul.innerHTML = `<li class="muted">${esc(e.message)}</li>`; }
+    }
+    function wav16(samples, rate) {            // mono Float32 -> 16-bit PCM WAV
+      const buf = new ArrayBuffer(44 + samples.length * 2), v = new DataView(buf);
+      const w = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+      w(0, "RIFF"); v.setUint32(4, 36 + samples.length * 2, true); w(8, "WAVE"); w(12, "fmt ");
+      v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true);
+      v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data");
+      v.setUint32(40, samples.length * 2, true);
+      for (let i = 0; i < samples.length; i++) { const x = Math.max(-1, Math.min(1, samples[i])); v.setInt16(44 + i * 2, x < 0 ? x * 0x8000 : x * 0x7fff, true); }
+      return new Blob([buf], { type: "audio/wav" });
+    }
+    document.getElementById("dgo").onclick = async () => {
+      const f = document.getElementById("dfile").files[0], msg = document.getElementById("dmsg");
+      if (!f) return toast("Pick an audio file first", true);
+      let body = f, ext = "ogg";
+      try {
+        if (!/\.ogg$/i.test(f.name)) {
+          msg.textContent = "converting...";
+          const rate = 22050, ac = new AudioContext();
+          const src = await ac.decodeAudioData(await f.arrayBuffer()); ac.close();
+          const off = new OfflineAudioContext(1, Math.ceil(src.duration * rate), rate);
+          const node = off.createBufferSource(); node.buffer = src; node.connect(off.destination); node.start();
+          body = wav16((await off.startRendering()).getChannelData(0), rate); ext = "wav";
+        }
+        if (body.size > 11.5 * 1024 * 1024) { msg.textContent = ""; return toast("Too long (over ~4 minutes). Trim it, or upload an .ogg.", true); }
+        msg.textContent = "uploading...";
+        const r = await api("/disks/" + encodeURIComponent(document.getElementById("drec").value) + "?ext=" + ext,
+                            { method: "POST", body });
+        msg.textContent = ""; toast("Music set on " + r.clip + " (" + Math.round(r.bytes / 1024) + " KB)"); load();
+      } catch (e) { msg.textContent = ""; toast(e.message, true); }
+    };
+    load();
   },
   news: async () => {
     view.innerHTML = `<p class="note">In-game news / announcement. This text shows to players in the game. Supports line breaks.</p>
       <textarea id="newstext" style="min-height:200px" placeholder="loading..."></textarea>
-      <div class="row" style="margin-top:10px"><button class="go" id="savenews">Save news</button></div>
-      <h3 style="margin-top:24px">News popup</h3>
-      <p class="note">A popup every player sees once each time they launch the game (live APK). Editing the text shows it again to everyone. Use | for a new line.</p>
-      <textarea id="poptext" style="min-height:120px" placeholder="popup text"></textarea>
-      <div class="row" style="margin-top:8px;align-items:center">
-        <label><input type="checkbox" id="popon"> Popup on</label>
-        <label style="margin-left:12px">Seconds on screen <input type="number" id="popsec" min="3" max="60" value="15" style="width:70px"></label>
-        <button class="go" id="savepop" style="margin-left:12px">Save popup</button></div>`;
+      <div class="row" style="margin-top:10px"><button class="go" id="savenews">Save news</button></div>`;
     const ta = document.getElementById("newstext");
-    try { const p = await api("/news/popup"); document.getElementById("poptext").value = p.text || "";
-          document.getElementById("popon").checked = !!p.enabled; document.getElementById("popsec").value = p.seconds || 15; }
-    catch (e) { toast(e.message, true); }
-    document.getElementById("savepop").onclick = async () => {
-      try { const r = await api("/news/popup", { method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ text: document.getElementById("poptext").value, enabled: document.getElementById("popon").checked,
-                                     seconds: +document.getElementById("popsec").value || 15 }) });
-            toast(r.enabled ? "Popup saved - players see it next launch (within ~30 s if online)." : "Popup turned off."); }
-      catch (e) { toast(e.message, true); }
-    };
     try { ta.value = (await api("/news")).message || ""; } catch (e) { toast(e.message, true); }
     document.getElementById("savenews").onclick = async () => {
       try { await api("/news", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: ta.value }) });
-            toast("News updated — players will see it in-game."); }
+            toast("News updated ÔÇö players will see it in-game."); }
       catch (e) { toast(e.message, true); }
     };
   },
@@ -750,12 +730,12 @@ const tabs = {
     view.innerHTML = `<p class="note">Players online right now. Kick = a one-time boot (not a ban); they can relaunch and rejoin. It lands within about a minute.</p>
       <div class="row" style="align-items:center"><input type="text" id="kreason" placeholder="kick reason (optional)" style="min-width:320px">
         <button class="go" id="orefresh">Refresh</button></div>
-      <div class="row"><button class="blk" id="kwrong">Kick everyone on a wrong APK</button> <button class="del" id="kall">Kick everyone</button></div>
-      <div class="row" style="align-items:center;margin-top:6px">
+      <div class="row adminonly"><button class="blk" id="kwrong">Kick everyone on a wrong APK</button> <button class="del" id="kall">Kick everyone</button></div>
+      <div class="row adminonly" style="align-items:center;margin-top:6px">
         <span id="rbstate" class="muted">Require newest build: ...</span>
         <button class="del" id="rbon">Require newest build (kick old)</button>
         <button class="go" id="rboff">Allow all builds</button></div>
-      <p class="note">Testing switch. "Require newest build" shows everyone not on the newest APK an "Outdated version" message and kicks them out (frees player slots). Turn it back off when you're done so they can rejoin.</p>
+      <p class="note">Only the newest APK can play: older builds always get the "Outdated version" screen telling them to install the APK again. "Require newest build" also kicks anyone online on an older APK right away.</p>
       <p class="note" id="ocount"></p><ul class="list" id="olist" style="max-height:62vh"></ul>`;
     const reason = () => document.getElementById("kreason").value.trim();
     const post = (path, body) => api(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
@@ -772,7 +752,9 @@ const tabs = {
         }).join("") || `<li class="muted" style="cursor:default">nobody online</li>`;
         ul.querySelectorAll("button[data-k]").forEach(b => b.onclick = async () => {
           if (!confirm("Kick " + b.dataset.n + "?")) return;
-          try { await post("/player/" + encodeURIComponent(b.dataset.k) + "/kick", { reason: reason() }); toast("Kicked " + b.dataset.n); }
+          const moderationPassword = await askModerationPassword();
+          if (moderationPassword === null) return;
+          try { await post("/player/" + encodeURIComponent(b.dataset.k) + "/kick", { reason: reason(), moderationPassword }); toast("Kicked " + b.dataset.n); }
           catch (e) { toast(e.message, true); }
         });
       } catch (e) { ul.innerHTML = `<li>${esc(e.message)}</li>`; }
@@ -780,15 +762,19 @@ const tabs = {
     document.getElementById("orefresh").onclick = load;
     document.getElementById("kall").onclick = async () => {
       if (!confirm("Kick EVERYONE who is online (except you)?")) return;
+      const moderationPassword = await askModerationPassword();
+      if (moderationPassword === null) return;
       try { const me = await api("/me"), on = await api("/online");
             const mine = on.players.filter(p => (p.displayName || "").replace(/<[^>]+>/g, "").toLowerCase() === (me.name || "").toLowerCase()).map(p => p.accountID);
-            const r = await post("/kick_all", { reason: reason(), exclude: mine });
+            const r = await post("/kick_all", { reason: reason(), exclude: mine, moderationPassword });
             toast("Kicked " + (r.kicked != null ? r.kicked : (r.accountIDs || []).length) + " player(s)"); load(); }
       catch (e) { toast(e.message, true); }
     };
     document.getElementById("kwrong").onclick = async () => {
       if (!confirm("Kick everyone who is not on the current APK?")) return;
-      try { const r = await post("/kick_wrong_build", { reason: reason() }); toast("Kicked " + r.kicked + " player(s) on a wrong APK"); load(); }
+      const moderationPassword = await askModerationPassword();
+      if (moderationPassword === null) return;
+      try { const r = await post("/kick_wrong_build", { reason: reason(), moderationPassword }); toast("Kicked " + r.kicked + " player(s) on a wrong APK"); load(); }
       catch (e) { toast(e.message, true); }
     };
     async function loadRB() {
@@ -802,7 +788,9 @@ const tabs = {
     }
     document.getElementById("rbon").onclick = async () => {
       if (!confirm("Require the newest build? Everyone on an older APK gets 'Outdated version' and is kicked until you turn this off.")) return;
-      try { const r = await post("/require_build", { on: true }); toast("Require newest build ON - kicked " + r.kicked + " player(s)"); loadRB(); load(); }
+      const moderationPassword = await askModerationPassword();
+      if (moderationPassword === null) return;
+      try { const r = await post("/require_build", { on: true, moderationPassword }); toast("Require newest build ON - kicked " + r.kicked + " player(s)"); loadRB(); load(); }
       catch (e) { toast(e.message, true); }
     };
     document.getElementById("rboff").onclick = async () => {
@@ -824,11 +812,10 @@ const tabs = {
       <div class="row"><button class="go" id="ansend">Send announcement</button> <button class="del" id="anclear">Stop all</button></div>
       <h3 style="margin-top:18px">Still being sent</h3><ul class="list" id="anlist"></ul>
       <h3 style="margin-top:24px">Floating video</h3>
-      <p class="note">Plays a video on a panel in front of every player, with sound. It plays once and then disappears, or loops until you press Stop if you tick Loop. Pick an mp4, webm or mov (up to 120 seconds). Your browser shrinks it first, so only a few MB get uploaded. On APK 131b9+ it starts and stops within a few seconds (older APKs: up to 30 seconds).</p>
+      <p class="note">Plays a video on a panel in front of every player, with sound, looping until you press Stop. Pick an mp4, webm or mov (up to 120 seconds). Your browser shrinks it first, so only a few MB get uploaded. On APK 131b9+ it starts and stops within a few seconds (older APKs: up to 30 seconds).</p>
       <div id="vidstatus" class="muted">checking...</div>
       <div class="row" style="align-items:center;margin-top:8px">
         <input type="file" accept="video/*,image/gif" id="vidfile">
-        <label style="margin:0 6px"><input type="checkbox" id="vidloop"> Loop</label>
         <button class="go" id="vidload">Load &amp; play</button>
         <button class="del" id="vidstop">Stop video</button>
       </div>
@@ -868,7 +855,7 @@ const tabs = {
         const r = await api("/video");
         if (r.playing && r.video) {
           const v = r.video, dur = Math.round((v.durationMs || 0) / 1000);
-          s.innerHTML = `Now playing: <b>${esc(v.name || "video")}</b> &mdash; ${v.w}x${v.h}, ${dur}s, ${v.frames} frames, ${Math.round(v.size / 1024)} KB${v.audioFmt ? ", with sound" : ", no sound"}, ${v.loop ? "looping" : "plays once"}. Set by ${esc(v.by || "?")}.`;
+          s.innerHTML = `Now playing: <b>${esc(v.name || "video")}</b> &mdash; ${v.w}x${v.h}, ${dur}s, ${v.frames} frames, ${Math.round(v.size / 1024)} KB${v.audioFmt ? ", with sound" : ", no sound"}, looping. Set by ${esc(v.by || "?")}.`;
         } else { s.textContent = "No video playing."; }
       } catch (e) { s.textContent = e.message; }
     }
@@ -953,7 +940,7 @@ const tabs = {
     }
     function packVideo(name, segs, n, wav, gen) {   // "BVID" u32 headerLen  header  segs...  wav
       const enc = new TextEncoder(), hdr = enc.encode(JSON.stringify({ name, w: VW, h: VH, fps: VFPS, frames: n,
-        segFrames: VSEG, segs: segs.map(s => s.length), audioFmt: wav ? "wav" : "", audioLen: wav ? wav.length : 0, loop: !!(document.getElementById("vidloop") || {}).checked, gen }));
+        segFrames: VSEG, segs: segs.map(s => s.length), audioFmt: wav ? "wav" : "", audioLen: wav ? wav.length : 0, loop: true, gen }));
       const lenB = new Uint8Array(4); new DataView(lenB.buffer).setUint32(0, hdr.length, true);
       return new Blob([enc.encode("BVID"), lenB, hdr, ...segs].concat(wav ? [wav] : []));
     }
@@ -974,7 +961,7 @@ const tabs = {
         } catch (e) {
           if (vidCancel || /cancelled|stopped while converting/.test(e.message)) throw e;
           vstat("Browser couldn't convert it - uploading the file for the server to convert (slower)...");
-          r = await api("/video?loop=" + ((document.getElementById("vidloop") || {}).checked ? 1 : 0) + "&gen=" + gen + "&name=" + encodeURIComponent(f.name.slice(0, 80)),
+          r = await api("/video?loop=1&gen=" + gen + "&name=" + encodeURIComponent(f.name.slice(0, 80)),
             { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: f });
         }
         toast("Video playing (" + r.video.frames + " frames)");
@@ -988,108 +975,84 @@ const tabs = {
     };
     load(); loadVid();
   },
-  daily: async () => {
-    view.innerHTML = `<p class="note">The in-game <b>daily tab</b> (daily challenges) and the <b>card pack</b> price. By default the daily challenges come from <b>live Yeeps</b> (fetched once per day, resets 08:00 UTC). You can replace them with your own; players see changes the next time their game re-checks.</p>
-      <div id="dyhead" class="muted">loading...</div>
-      <div id="dygroups" style="margin-top:10px"></div>
-      <div class="row" style="margin-top:8px;align-items:center">
-        <input id="dynewg" placeholder="new group (e.g. easy, hard, cardChallenges, login)" style="max-width:320px">
-        <button id="dyaddg">Add group</button>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <button class="go" id="dysave">Save as custom challenges</button>
-        <button id="dylive">Use live Yeeps (automatic)</button>
-        <button id="dyrefresh">Refresh from live now</button>
-      </div>
-      <h3 style="margin-top:24px">Card economy</h3>
-      <div id="dyecon"></div>
-      <div class="row" style="margin-top:8px"><button class="go" id="dyecsave">Save economy</button> <button id="dyecreset">Reset to defaults</button></div>`;
-    let groups = {};
-    function draw() {
-      const box = document.getElementById("dygroups");
-      box.innerHTML = Object.keys(groups).map(g => `
-        <div style="border:1px solid #333;border-radius:8px;padding:8px;margin-bottom:8px">
-          <div class="row" style="align-items:center"><b>${esc(g)}</b><span class="sp"></span><button class="del" data-dg="${esc(g)}">Remove group</button></div>
-          ${groups[g].map((r, i) => `<div class="row" style="align-items:center;margin-top:4px">
-            <input data-g="${esc(g)}" data-i="${i}" data-f="key" value="${esc(r.key)}" placeholder="challenge key (e.g. eatPizza)" style="flex:1">
-            <label>goal <input type="number" data-g="${esc(g)}" data-i="${i}" data-f="value" value="${+r.value || 0}" style="width:90px"></label>
-            <button class="del" data-dr="${esc(g)}" data-i="${i}">x</button></div>`).join("")}
-          <button data-ar="${esc(g)}" style="margin-top:6px">+ challenge</button>
-        </div>`).join("") || `<p class="muted">no challenges</p>`;
-      box.querySelectorAll("input[data-g]").forEach(el => el.oninput = () => {
-        const r = groups[el.dataset.g][+el.dataset.i];
-        r[el.dataset.f] = el.dataset.f === "value" ? (+el.value || 0) : el.value;
-      });
-      box.querySelectorAll("[data-dg]").forEach(b => b.onclick = () => { delete groups[b.dataset.dg]; draw(); });
-      box.querySelectorAll("[data-dr]").forEach(b => b.onclick = () => { groups[b.dataset.dr].splice(+b.dataset.i, 1); draw(); });
-      box.querySelectorAll("[data-ar]").forEach(b => b.onclick = () => { groups[b.dataset.ar].push({ key: "", value: 50 }); draw(); });
-    }
-    async function load() {
-      try {
-        const r = await api("/daily");
-        groups = JSON.parse(JSON.stringify(r.itemKeys || {}));
-        const src = { custom: "your custom challenges", live: "live Yeeps", fallback: "built-in fallback (live unavailable)" }[r.source] || r.source;
-        document.getElementById("dyhead").innerHTML = `Showing: <b>${esc(src)}</b> - today's window ${esc(r.startTime)} to ${esc(r.expireTime)} UTC`;
-        draw();
-        const ec = document.getElementById("dyecon");
-        ec.innerHTML = Object.entries(r.economy || {}).map(([k, e]) =>
-          `<label style="display:block;margin:4px 0">${esc(e.label)} <input type="number" data-ek="${esc(k)}" value="${e.value}" style="width:140px"> <span class="muted" style="font-size:11px">${e.custom ? "custom" : "default"} (default ${e.default})</span></label>`).join("");
-      } catch (e) { document.getElementById("dyhead").textContent = e.message; }
-    }
-    document.getElementById("dyaddg").onclick = () => {
-      const g = document.getElementById("dynewg").value.trim();
-      if (!g) return toast("Type a group name", true);
-      if (!groups[g]) groups[g] = [{ key: "", value: 50 }];
-      document.getElementById("dynewg").value = ""; draw();
-    };
-    document.getElementById("dysave").onclick = async () => {
-      try {
-        await api("/daily", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "custom", itemKeys: groups }) });
-        toast("Custom daily challenges saved"); load();
-      } catch (e) { toast(e.message, true); }
-    };
-    document.getElementById("dylive").onclick = async () => {
-      try { await api("/daily", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "live" }) });
-        toast("Back to live Yeeps daily challenges"); load(); } catch (e) { toast(e.message, true); }
-    };
-    document.getElementById("dyrefresh").onclick = async () => {
-      try { const r = await api("/daily/refresh", { method: "POST" }); toast("Refreshed (" + (r.source || "?") + ")"); load(); } catch (e) { toast(e.message, true); }
-    };
-    document.getElementById("dyecsave").onclick = async () => {
-      const body = {};
-      document.querySelectorAll("[data-ek]").forEach(el => body[el.dataset.ek] = el.value);
-      try { await api("/economy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); toast("Economy saved"); load(); }
-      catch (e) { toast(e.message, true); }
-    };
-    document.getElementById("dyecreset").onclick = async () => {
-      const body = {};
-      document.querySelectorAll("[data-ek]").forEach(el => body[el.dataset.ek] = null);
-      try { await api("/economy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); toast("Economy reset to defaults"); load(); }
-      catch (e) { toast(e.message, true); }
-    };
-    load();
-  },
   settings: async () => {
     view.innerHTML = `<p class="note">Server switches. Changes apply within about 30 seconds (the game's feed) or on next launch.</p>
       <details open><summary>Everyone is a friend</summary><div style="padding:10px">
         <p class="note">APK 131b6+: everyone online counts as a friend, so friends-only private worlds can be joined.</p>
         <label><input type="checkbox" id="setfe"> on</label> <button class="go" id="savefe">Save</button></div></details>
+      <details open><summary>Unrestricted game objects</summary><div style="padding:10px">
+        <p class="note">When enabled, room item restrictions are removed, including restrictions used by dispensers and receivers. Login, account privacy, room boundaries, and server safety checks stay on.</p>
+        <label><input type="checkbox" id="setunrestricted"> Remove game-object item restrictions</label>
+        <button class="go" id="saveunrestricted">Save</button></div></details>
       <details open><summary>Maintenance mode</summary><div style="padding:10px">
         <p class="note">Anything typed here is shown to every player as a fatal error and stops them playing. Leave it empty and save to turn it off.</p>
         <textarea id="setmaint" style="height:80px" maxlength="300" placeholder="e.g. Server maintenance, back in 10 minutes"></textarea>
-        <div class="row" style="margin-top:8px"><button class="del" id="savemaint">Save maintenance message</button> <button class="go" id="clearmaint">Turn off maintenance</button></div></div></details>`;
+        <div class="row" style="margin-top:8px"><button class="del" id="savemaint">Save maintenance message</button> <button class="go" id="clearmaint">Turn off maintenance</button></div></div></details>
+      <details><summary>Download link</summary><div style="padding:10px">
+        <p class="note">What <b>/download</b> gives players: upload the APK here, or point the link at a file hosted somewhere else. The upload is stored on this server, so it is lost when the service restarts or redeploys; an external link always works.</p>
+        <p id="dlstat" class="muted">Loading...</p>
+        <div class="row" style="align-items:center;margin:8px 0">
+          <input type="file" id="dlfile" accept=".apk,application/vnd.android.package-archive">
+          <button class="go" id="dlup">Upload APK</button>
+          <button class="del" id="dlclear">Remove</button>
+          <a id="dlopen" href="/download" target="_blank" class="muted">Open /download</a>
+        </div>
+        <progress id="dlprog" value="0" max="100" style="width:100%;display:none"></progress>
+        <div class="row" style="align-items:center;margin-top:8px">
+          <input id="dlurl" placeholder="https://github.com/.../Yeeps.apk" style="flex:1;min-width:260px">
+          <button class="go" id="dlsave">Use this link</button>
+        </div>
+        <p class="note">With a link set, /download redirects there instead of using the uploaded file. Clear the box and save to go back to the uploaded file.</p>
+      </div></details>`;
     const post = b => api("/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) });
-    try { const r = await api("/settings"); document.getElementById("setfe").checked = r.friends_everyone; document.getElementById("setmaint").value = r.maintenance; }
+    try { const r = await api("/settings"); document.getElementById("setfe").checked = r.friends_everyone;
+      document.getElementById("setunrestricted").checked = r.unrestricted_gameplay;
+      document.getElementById("setmaint").value = r.maintenance; }
     catch (e) { toast(e.message, true); }
     document.getElementById("savefe").onclick = async () => { try { await post({ friends_everyone: document.getElementById("setfe").checked }); toast("Saved"); } catch (e) { toast(e.message, true); } };
+    document.getElementById("saveunrestricted").onclick = async () => {
+      const on = document.getElementById("setunrestricted").checked;
+      if (on && !confirm("Remove item restrictions for game objects in every room?")) return;
+      try { await post({ unrestricted_gameplay: on }); toast(on ? "Game-object restrictions removed" : "Game-object restrictions restored"); }
+      catch (e) { toast(e.message, true); }
+    };
     document.getElementById("savemaint").onclick = async () => {
       const m = document.getElementById("setmaint").value.trim();
       if (m && !confirm("Turn ON maintenance? Every player will be blocked from playing.")) return;
       try { await post({ maintenance: m }); toast(m ? "Maintenance ON" : "Maintenance OFF"); } catch (e) { toast(e.message, true); } };
     document.getElementById("clearmaint").onclick = async () => { try { await post({ maintenance: "" }); document.getElementById("setmaint").value = ""; toast("Maintenance OFF"); } catch (e) { toast(e.message, true); } };
+    const dlfmt = s => s > 1048576 ? (s / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(s / 1024)) + " KB";
+    const dlshow = s => {
+      if (!s || !s.filename) { document.getElementById("dlstat").textContent = "Nothing set up: /download returns 404."; }
+      else { document.getElementById("dlstat").textContent = "File: " + s.filename + " (" + dlfmt(s.size) + ")" + (s.present ? "" : " - missing from disk, upload again") + (s.url ? " - /download redirects to " + s.url : ""); }
+      document.getElementById("dlurl").value = (s && s.url) || "";
+    };
+    try { dlshow(await api("/download")); } catch (e) { document.getElementById("dlstat").textContent = e.message; }
+    document.getElementById("dlup").onclick = () => {
+      const f = document.getElementById("dlfile").files[0];
+      if (!f) return toast("Pick the APK first", true);
+      const bar = document.getElementById("dlprog"), btn = document.getElementById("dlup");
+      bar.style.display = "block"; bar.value = 0; btn.disabled = true; btn.textContent = "Uploading...";
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", API + "/download?name=" + encodeURIComponent(f.name));
+      xhr.upload.onprogress = e => { if (e.lengthComputable) { bar.value = Math.round(e.loaded * 100 / e.total); btn.textContent = "Uploading " + Math.round(e.loaded * 100 / e.total) + "%"; } };
+      xhr.onload = () => { btn.disabled = false; btn.textContent = "Upload APK"; bar.style.display = "none";
+        let j = {}; try { j = JSON.parse(xhr.responseText); } catch (_) {}
+        if (xhr.status >= 200 && xhr.status < 300) { dlshow(j); toast("APK is live at /download"); }
+        else toast(j.detail || ("Upload failed (" + xhr.status + ")"), true); };
+      xhr.onerror = () => { btn.disabled = false; btn.textContent = "Upload APK"; bar.style.display = "none"; toast("Upload failed", true); };
+      xhr.send(f);
+    };
+    document.getElementById("dlsave").onclick = async () => {
+      try { const s = await post({ url: document.getElementById("dlurl").value.trim() }); dlshow(s); toast(s.url ? "Redirecting /download to that link" : "Using the uploaded file"); }
+      catch (e) { toast(e.message, true); } };
+    document.getElementById("dlclear").onclick = async () => {
+      if (!confirm("Remove the download file and link?")) return;
+      try { await api("/download", { method: "DELETE" }); dlshow({ filename: "", size: 0, ts: 0, by: "", url: "", present: false }); toast("Removed"); }
+      catch (e) { toast(e.message, true); } };
   },
   screens: async () => {
-    view.innerHTML = `<p class="note">Pictures shown on the screen blocks. Upload a PNG, JPG, GIF (animated is fine) or WebP. Every placed copy of that block, in every room, shows it within about 30 seconds. Pictures are fitted to the block with black bars if needed; long GIFs are cut down to about 50 frames at the same speed. Needs APK 131b3 or newer. The 3x3 Screen is currently disabled (it crashed big rooms).</p><div id="scr"></div>`;
+    view.innerHTML = `<p class="note">Pictures shown on the screen blocks. Upload a PNG, JPG, GIF (animated is fine) or WebP. Every placed copy of that block, in every room, shows it within about 30 seconds. Pictures are fitted to the block with black bars if needed; long GIFs are cut down to about 50 frames at the same speed. Needs APK 131b3 or newer. The 3x3 Screen isn't in this build; the 3x2 Screen block (larp role) is.</p><div id="scr"></div>`;
     async function load() {
       const box = document.getElementById("scr");
       try {
@@ -1120,38 +1083,6 @@ const tabs = {
         });
       } catch (e) { box.textContent = e.message; }
     }
-    load();
-  },
-  logs: async () => {
-    view.innerHTML = `<p class="note">Test-build logs. <b>Sent from game</b> = reports players send with the in-game debug button. <b>Live game log</b> = every log line, error and crash the 2.31.0-blaze test build uploads automatically (newest at the bottom).</p>
-      <div class="row" style="align-items:center">
-        <select id="lkind"><option value="live">Live game log</option><option value="sent">Sent from game</option></select>
-        <input id="lq" placeholder="filter (e.g. Error, a player id)" style="flex:1">
-        <select id="ln"><option>200</option><option selected>500</option><option>2000</option></select>
-        <button class="go" id="lrefresh">Refresh</button>
-      </div>
-      <pre id="lout" style="white-space:pre-wrap;max-height:70vh;overflow:auto;font-size:12px"></pre>`;
-    const out = document.getElementById("lout");
-    async function load() {
-      out.textContent = "Loading...";
-      const kind = document.getElementById("lkind").value, q = document.getElementById("lq").value.trim(), n = document.getElementById("ln").value;
-      try {
-        if (kind === "live") {
-          const r = await api("/devlog?lines=" + n + "&q=" + encodeURIComponent(q));
-          out.textContent = r.lines.join("\n") || "(nothing yet)";
-          out.scrollTop = out.scrollHeight;
-        } else {
-          const rows = (await api("/debug?limit=50")).filter(r => !q || JSON.stringify(r).toLowerCase().includes(q.toLowerCase()));
-          out.innerHTML = rows.map(r => {
-            const p = r.payload || {};
-            const full = r.reportFile ? ` <a href="api/debug/report?name=${encodeURIComponent(r.reportFile)}" target="_blank">full log (${r.reportLines} lines, ${r.reportErrors} errors)</a>` : "";
-            return `<b>=== ${esc(r.at || "")} ${esc(p.accountID || "")} ${esc(String(p._clientBuildTag || "").split(".")[0])}</b>${full}\n` + esc(p.logs || JSON.stringify(p));
-          }).join("\n\n") || "(nothing yet)";
-        }
-      } catch (e) { out.textContent = e.message; }
-    }
-    document.getElementById("lrefresh").onclick = load;
-    document.getElementById("lkind").onchange = load;
     load();
   },
   errors: async () => {
@@ -1207,486 +1138,602 @@ const tabs = {
     document.getElementById("erefresh").onclick = load;
     load();
   },
-
-  
-  // Photon bot control: hook the bot onto a player, then run games/effects.
-  photon: async () => {
+  bot: async () => {
+    document.querySelector(".app").classList.add("bot-open");
     const GROUPS = [
-      ["Games", [["King of the Hill", "koth"], ["KOTH off", "koth off", 1], ["Hot potato", "potato"], ["Potato off", "potato off", 1],
-                 ["Boss", "boss"], ["Boss pause", "boss pause"], ["Boss resume", "boss resume"], ["Boss off", "boss off", 1],
-                 ["Hill map", "map"], ["Map off", "map off", 1]]],
-      ["Arcade (the hooked player places a 1x1 pillow for the board, then one for the controller)",
-                [["Tetris", "tetris"], ["Snake", "snake"], ["Pong", "pong"], ["Pong 2 players", "pong 2p"],
-                 ["Paint canvas", "canvas"], ["Canvas off", "canvas off", 1], ["Game off", "game off", 1]]],
-      ["Bad Apple (plays with the song on the wall the hooked player faces, or on their Screen if they made one)",
-                [["Bad Apple", "apple"], ["Bad Apple small", "apple small"], ["Bad Apple no sound", "apple mute"],
-                 ["Stop Bad Apple", "apple off", 1], ["Bad Apple Sign", "applesign"], ["Remove Apple Signs", "applesign off", 1], ["Make a Screen", "screen"], ["Small Screen", "screen small"],
-                 ["Screen off", "screen off", 1]]],
-      ["Cleanup (delete every block the firebox spam bot placed in the room the bot is in)",
-                [["Clean up firebox spam", "cleanup"]]],
-      ["Powers (finger gun + pull the trigger; Hand buttons give it to the hooked player, the others hit the picked player)",
-                [["Lightning hand", "lightning"], ["Freeze hand", "freeze"], ["Finger gun", "fingergun"],
-                 ["Powers off", "fingergun off", 1], ["Smite picked player", "@smite"],
-                 ["Freeze picked player", "@ice"], ["Thaw everyone", "thaw", 1],
-                 ["Jump scare hand", "scare"], ["Jump scare picked player", "@jumpscare"], ["Scare off", "scare off", 1]]],
-      ["Big effects (on the hooked player)",
-                [["Hands of God", "godhand both"], ["Hands off", "godhand off", 1],
-                 ["Black hole", "blackhole"], ["Meteor shower", "meteors"],
-                 ["Giant builder", "bigbuild"], ["Giant builder off", "bigbuild off", 1]]],
-      ["Skelly (a dancing skeleton in front of the hooked player, facing them, dancing 15 loops; players on live62+ see it)",
-                [["Random dance", "skel dance"], ["Gangnam Style", "skel dance gangnam_style"],
-                 ["Chicken Dance", "skel dance chicken_dance"], ["Flair", "skel dance flair"],
-                 ["Breakdance 1990", "skel dance breakdance_1990"], ["Spawn skelly (salsa)", "skel"], ["Fast", "skel fast"], ["Slow-mo", "skel slow"], ["Spin", "skel spin"],
-                 ["Skelly party (8 around, random dances)", "skel party"]]],
-      ["Build (real blocks, in front of the hooked player)",
-                [["Only Up full map", "onlyup"], ["Only Up small climb", "onlyup simple"], ["Remove Only Up", "onlyup clear", 1]]],
-      ["Effects (on the hooked player)",
-                [["Rain", "rain"], ["Rain off", "rain off", 1], ["Clean up rain", "rain clean", 1],
-                 ["Boom", "boom"],
-                 ["Coin planet", "coins planet"], ["Coins off", "coins off", 1],
-                 ["Mimic picked player", "@mimic"], ["Stop mimic", "stop", 1], ["Who's here", "players"]]],
+      ["Games", [
+        ["Start disco", "disco-start"],
+        ["King of the Hill", "koth-start"], ["KOTH off", "koth-stop", 1],
+        ["Hot potato", "potato-start"], ["Potato off", "potato-stop", 1],
+        ["Boss", "boss-start"], ["Boss pause", "boss-pause"], ["Boss resume", "boss-resume"],
+        ["Boss off", "boss-stop", 1], ["Hill map", "map-start"], ["Map off", "map-stop", 1]
+      ]],
+      ["Arcade", [
+        ["Tetris", "tetris"], ["Snake", "snake"], ["Pong", "pong"], ["Pong 2 players", "pong-2p"],
+        ["Flappy Bird", "flappy-bird"], ["Minesweeper", "minesweeper"],
+        ["Tic-Tac-Toe (2 player)", "tic-tac-toe"], ["Connect Four (2 player)", "connect-four"],
+        ["Memory Match", "memory-match"], ["Simon Says", "simon-says"],
+        ["Paint canvas", "canvas"], ["Canvas off", "canvas-stop", 1], ["Game off", "game-stop", 1]
+      ]],
+      ["Bad Apple", [
+        ["Bad Apple waveform", "apple", 0, 1], ["Bad Apple small", "apple-small", 0, 1],
+        ["Bad Apple no sound", "apple-mute", 0, 1], ["Stop Bad Apple", "apple-stop", 1, 1],
+        ["Silent Bad Apple on first sign", "applesign", 0, 1], ["Stop sign playback", "applesign-stop", 1, 1]
+      ]],
+      ["Pixel art and SoundKey", [
+        ["Place uploaded pixel art", "pixel-art"], ["Remove pixel art", "pixel-art-off", 1],
+        ["Play uploaded SoundKey audio", "soundkey-play"], ["Stop SoundKey audio", "soundkey-stop", 1]
+      ]],
+      ["Cleanup", [["Clean up firebox spam", "cleanup"]]],
+      ["Guns", [
+        ["Explosive finger gun", "finger-gun"], ["Explosive gun off", "powers-off", 1],
+        ["Lightning gun", "lightning-hand"], ["Lightning gun off", "lightning-off", 1],
+        ["Freeze gun", "freeze-hand"], ["Freeze gun off", "freeze-hand-off", 1],
+        ["Pellet effect gun", "pellet-gun"], ["Pellet effect gun off", "pellet-gun-off", 1],
+        ["Jumpscare gun", "scare-hand"], ["Jumpscare gun off", "scare-off", 1]
+      ]],
+      ["Tracked player powers", [
+        ["Directional right-trigger flight", "tracked-fly"], ["Flight off", "tracked-fly-off", 1],
+        ["Smite picked player", "smite", 0, 0, 1],
+        ["Freeze picked player", "freeze-player", 0, 0, 1], ["Thaw everyone", "thaw", 1],
+        ["Jump scare picked player", "jumpscare", 0, 0, 1]
+      ]],
+      ["Big effects", [
+        ["Hand of god", "godhand"], ["Hand of god (both hands)", "godhand-both"],
+        ["Hand off", "godhand-off", 1], ["Black hole", "blackhole"], ["Meteor shower", "meteors"]
+      ]],
+      ["Effects", [
+        ["Rain", "rain"], ["Rain off", "rain-off", 1], ["Clean up rain", "rain-clean", 1],
+        ["Boom", "boom"],
+        ["Coin planet", "coins-planet"], ["Coins off", "coins-off", 1],
+        ["Mimic picked player", "mimic", 0, 0, 1], ["Stop mimic", "mimic-stop", 1],
+        ["Who's here", "players"]
+      ]],
+      ["Bot movement", [
+        ["Follow hooked player", "follow-start"],
+        ["Orbit (default)", "orbit-start"],
+        ["Orbit (tight)", "orbit-tight"], ["Orbit (wide)", "orbit-wide"],
+        ["Orbit (fast)", "orbit-fast"], ["Orbit (slow)", "orbit-slow"],
+        ["Figure-eight orbit", "figure-eight"], ["Stop movement", "orbit-stop", 1]
+      ]]
     ];
-    view.innerHTML = `<p class="note">Hook the bot onto a player: it joins their room and follows them to other rooms
-      (tick <b>Stay</b> to keep it in that room). Then start games or effects. The bot uses one of the 20 Photon
-      slots while it's on, so stop it when you're done.</p>
-      <div class="row"><b>Bot:</b> <span id="pbst" class="muted">checking...</span>
-        <button class="del" id="pbstop">Stop bot</button></div>
-      <div class="row">
-        <select id="pbpl" style="min-width:260px"><option value="">loading players...</option></select>
-        <label class="muted"><input type="checkbox" id="pbstay"> Stay in that room</label>
-        <button class="go" id="pbhook">Hook on</button>
-        <button class="blk" id="pbref">Refresh players</button>
+    view.innerHTML = `
+      <div id="bbot-auth" class="row">
+        <input id="bbot-password" type="password" autocomplete="current-password" placeholder="Bot password" aria-label="Bot password">
+        <button class="go" id="bbot-unlock">Unlock bot controls</button>
+        <span class="muted" id="bbot-auth-message">Enter the separate BOT_PASSWORD from the server environment.</span>
       </div>
-      <div class="pgrp"><span class="muted">Record RPCs (everything players do in the bot's room, for Claude to read)</span>
-        <input type="text" id="reclabel" placeholder="name, e.g. reskin_bench" style="min-width:180px">
-        <button class="go" id="recstart">Start recording</button>
-        <button class="del" id="recstop">Stop and save</button>
-        <span class="muted" id="recst"></span></div>
-      <pre id="reclive" style="display:none;max-height:260px;overflow:auto;font-size:11px;background:#111;color:#d7bde2;padding:6px;border-radius:6px;white-space:pre-wrap"></pre>
-      <div id="reclist" class="muted" style="font-size:12px"></div>
-      ${GROUPS.map(([title, btns]) => `<div class="pgrp"><span class="muted">${esc(title)}</span>${
-        btns.map(([label, cmd, off]) => `<button data-cmd="${esc(cmd)}"${off ? ' class="off"' : ""}>${esc(label)}</button>`).join("")}</div>`).join("")}
-      <div class="row"><input type="text" id="pbcmd" placeholder="any bot command, e.g. rain 200 10" style="flex:1">
-        <button class="go" id="pbsend">Send</button></div>
-      <pre class="smp" id="pblog"></pre>`;
+      <div id="bbot-controls" style="display:none">
+      <div class="row"><button class="blk" id="bbot-lock">Lock bot controls</button></div>
+      <div class="bot-layout"><section class="bot-controls">
+      <p class="note">Hook YeeperBot to an online player, then place the marker pillow and (for Flappy Bird or Minesweeper) a controller marker when prompted. Memory Match, Simon Says, Tic-Tac-Toe, and Connect Four use grab-to-select board tiles. For Minesweeper, grab reveal or flag mode, then grab a board tile. These are fixed game controls; building, live talk, and view controls are not included.</p>
+      <div class="row">
+        <select id="bhook" style="min-width:260px"><option value="">loading online players...</option></select>
+        <button class="go" id="bstart">Hook bot to player</button>
+        <button class="blk" id="bstop">Stop bot</button>
+        <button class="go" id="bref">Refresh</button>
+      </div>
+      <div class="row">
+        <label class="muted" for="btarget">Picked player for targeted powers:</label>
+        <select id="btarget" style="min-width:260px"><option value="">pick an online player</option></select>
+      </div>
+      <p class="note" id="bstate">ÔÇª</p>
+      <div class="row">
+        <label for="bappleaudio">Bad Apple MP3 or MP4 (12 MB max)</label>
+        <input type="file" id="bappleaudio" accept="audio/mpeg,.mp3,video/mp4,.mp4">
+        <button class="go" id="bappleupload">Upload or replace</button>
+        <span class="muted" id="bapplestatus"></span>
+      </div>
+      <p class="note">MP4 shows its video; MP3 provides only an audio waveform. Media is kept in MongoDB, not in the repository.</p>
+      <div class="row">
+        <label for="bpixelimage">Pixel-art image (PNG, JPEG, or WebP; 8 MB max)</label>
+        <input type="file" id="bpixelimage" accept="image/png,image/jpeg,image/webp">
+        <button class="go" id="bpixelupload">Upload or replace</button>
+        <span class="muted" id="bpixelstatus"></span>
+      </div>
+      <p class="note">After uploading, choose ÔÇ£Place uploaded pixel artÔÇØ and place a 1x1 pillow to mark the bottom center. The image is resized to fit a pillow grid.</p>
+      <div class="row">
+        <label for="bsoundkeyaudio">SoundKey audio (MP3, WAV, OGG, or M4A; 12 MB max)</label>
+        <input type="file" id="bsoundkeyaudio" accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4,.mp3,.wav,.ogg,.m4a">
+        <button class="go" id="bsoundkeyupload">Upload or replace</button>
+        <span class="muted" id="bsoundkeystatus"></span>
+      </div>
+      <p class="note">SoundKey plays through the botÔÇÖs Photon voice connection. The server must have a valid Photon Voice App ID configured.</p>
+      <div class="row">
+        <label for="bdusername">Yeeps username to link:</label>
+        <input type="text" id="bdusername" maxlength="80" placeholder="Exact in-game username">
+        <button class="go" id="bdlinkcode">Generate pairing code</button>
+        <code id="bdcode"></code>
+      </div>
+      <p class="note">Verify the player before issuing a code, then share it privately. It is one-use, account-specific, and expires in 10 minutes.</p>
+      <div id="bactions"></div>
+      <div class="muted">Log</div>
+      <pre id="blog" class="smp" style="max-height:160px;overflow:auto"></pre>
+      </section><section class="bot-map-panel" aria-label="Live room map">
+        <h3>Live room map</h3>
+        <span class="muted" id="bmapstate">Waiting for the botÔÇª</span>
+        <p class="note">Click the viewer to look around. WASD flies, Shift boosts, Space/Ctrl moves vertically, and Esc releases the mouse. This moves the map camera only.</p>
+        <button class="blk" id="bot-map-reset" type="button">Reset camera</button>
+        <canvas id="bot-map" tabindex="0" aria-label="First-person 3D view of room blocks and players"></canvas>
+      </section></div></div>`;
     const $ = id => document.getElementById(id);
-    const recRefresh = async () => {
-      try { const r = await api("/photon/recordings");
-            $("recst").textContent = r.recording ? ("recording '" + r.recording.label + "'...") : "";
-            $("reclist").innerHTML = (r.files || []).map(f => esc(f.name) + " (" + f.kb + " KB)").join("<br>"); }
-      catch (e) {}
-    };
-    $("recstart").onclick = async () => {
-      try { const r = await api("/photon/record/start", { method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ label: $("reclabel").value }) });
-            toast("Recording '" + r.label + "' - do the thing in game, then Stop and save"); recRefresh(); }
-      catch (e) { toast(e.message, true); }
-    };
-    $("recstop").onclick = async () => {
-      try { const r = await api("/photon/record/stop", { method: "POST" });
-            toast("Saved " + r.file + " (" + r.events + " events, " + r.seconds + " s) - tell Claude the name");
-            $("recst").textContent = "saved " + r.file + ": " + r.top.map(t => t[0] + " x" + t[1]).join(", ");
-            recRefresh(); }
-      catch (e) { toast(e.message, true); }
-    };
-    let recLast = 0, recTimer = null;
-    const recPoll = async () => {
-      if (!document.getElementById("reclive")) { clearInterval(recTimer); recTimer = null; return; }
-      try {
-        const r = await api("/photon/record/live?after=" + recLast);
-        const box = $("reclive");
-        if (!r.recording) { box.style.display = "none"; return; }
-        box.style.display = "block";
-        if (r.events.length) {
-          const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 20;
-          box.textContent += r.events.map(e => new Date(e.t * 1000).toLocaleTimeString() + "  " + e.txt).join("\n") + "\n";
-          recLast = r.events[r.events.length - 1].t;
-          const lines = box.textContent.split("\n"); if (lines.length > 600) box.textContent = lines.slice(-500).join("\n");
-          if (atBottom) box.scrollTop = box.scrollHeight;
+    function clearBotTimers() {
+      clearInterval(window._botTimer);
+      clearInterval(window._botPlayersTimer);
+      clearInterval(window._botMapTimer);
+      window._botTimer = window._botPlayersTimer = window._botMapTimer = null;
+    }
+    function lockBotControls(message) {
+      sessionStorage.removeItem("botPassword");
+      clearBotTimers();
+      $("bbot-controls").style.display = "none";
+      $("bbot-auth").style.display = "";
+      $("bbot-password").value = "";
+      $("bbot-auth-message").textContent = message || "Bot controls are locked.";
+    }
+      let mapData = null, mapBlocks = [];
+      const mapColors = {
+        black:"#151515", gray_dark:"#555", gray:"#999", white:"#ececec",
+        red_dark:"#8f3035", red:"#dc373c", orange:"#ed8b32", orange_light:"#f2a45d",
+        yellow:"#eed64b", yellow_light:"#f3e5a0", green_dark:"#34703b",
+        green:"#57a34a", green_light:"#83c76a", cyan:"#48b5c2", cyan_light:"#90dce1",
+        blue_dark:"#405b9f", blue:"#527fcd", blue_light:"#8bb4ea", blue_turquoise:"#48b5a2",
+        purple:"#8956b5", purple_light:"#b68bd7", pink:"#df87b8", brown:"#835d42",
+        brown_dark:"#604332", brown_light:"#b68a64", teal:"#4d9b91",
+        blurple:"#7766ca", lavender:"#aa9bd4", olive:"#788545", olive_light:"#a8b56b",
+        mocha:"#9b755c"
+      };
+      function mapColor(key) {
+        const hex = mapColors[key] || "";
+        if (hex) return [parseInt(hex.slice(1, 3), 16) / 255, parseInt(hex.slice(3, 5), 16) / 255, parseInt(hex.slice(5, 7), 16) / 255];
+        let hash = 0;
+        for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) | 0;
+        const h = Math.abs(hash) % 360 / 60, c = 0.58 * 0.48, x = c * (1 - Math.abs(h % 2 - 1)), m = 0.58 - c / 2;
+        const rgb = h < 1 ? [c, x, 0] : h < 2 ? [x, c, 0] : h < 3 ? [0, c, x]
+          : h < 4 ? [0, x, c] : h < 5 ? [x, 0, c] : [c, 0, x];
+        return rgb.map(v => v + m);
+      }
+      const canvas = $("bot-map");
+      const gl = canvas.getContext("webgl", { antialias: true, alpha: false });
+      let shaderProgram = null, positionBuffer = null, playerBuffer = null, gridBuffer = null, renderError = "";
+      let positionCount = 0, playerCount = 0, gridCount = 0, cameraPosition = [0, 6, 0];
+      let cameraYaw = 0, cameraPitch = 0, cameraRoom = "", cameraActor = null, gridDimensions = "";
+      let frameRequest = 0, lastFrameTime = 0;
+      const cameraKeys = new Set();
+      const shader = (type, source) => {
+        const value = gl.createShader(type);
+        gl.shaderSource(value, source); gl.compileShader(value);
+        if (!gl.getShaderParameter(value, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(value));
+        return value;
+      };
+      if (gl) {
+        try {
+          const vertex = shader(gl.VERTEX_SHADER, `
+            attribute vec3 aPosition; attribute vec3 aColor;
+            uniform vec3 uCamera; uniform vec3 uRight; uniform vec3 uUp; uniform vec3 uForward;
+            uniform float uAspect; uniform float uFocal;
+            varying vec3 vColor;
+            void main() {
+              vec3 d = aPosition - uCamera;
+              float depth = dot(d, uForward);
+              gl_Position = vec4(dot(d, uRight) * uFocal / uAspect, dot(d, uUp) * uFocal,
+                depth * 1.0002 - 0.20002, depth);
+              vColor = aColor;
+            }`);
+          const fragment = shader(gl.FRAGMENT_SHADER, `
+            precision mediump float; varying vec3 vColor;
+            void main() { gl_FragColor = vec4(vColor, 1.0); }`);
+          shaderProgram = gl.createProgram();
+          gl.attachShader(shaderProgram, vertex); gl.attachShader(shaderProgram, fragment);
+          gl.linkProgram(shaderProgram);
+          if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(shaderProgram));
+          gl.useProgram(shaderProgram);
+          shaderProgram.position = gl.getAttribLocation(shaderProgram, "aPosition");
+          shaderProgram.color = gl.getAttribLocation(shaderProgram, "aColor");
+          shaderProgram.camera = gl.getUniformLocation(shaderProgram, "uCamera");
+          shaderProgram.right = gl.getUniformLocation(shaderProgram, "uRight");
+          shaderProgram.up = gl.getUniformLocation(shaderProgram, "uUp");
+          shaderProgram.forward = gl.getUniformLocation(shaderProgram, "uForward");
+          shaderProgram.aspect = gl.getUniformLocation(shaderProgram, "uAspect");
+          shaderProgram.focal = gl.getUniformLocation(shaderProgram, "uFocal");
+          gl.enableVertexAttribArray(shaderProgram.position);
+          gl.enableVertexAttribArray(shaderProgram.color);
+          positionBuffer = gl.createBuffer(); playerBuffer = gl.createBuffer(); gridBuffer = gl.createBuffer();
+          gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.disable(gl.CULL_FACE);
+          gl.clearColor(0.035, 0.035, 0.04, 1);
+        } catch (e) {
+          renderError = e.message || "WebGL setup failed";
+          shaderProgram = null;
+          gl.getExtension("WEBGL_lose_context")?.loseContext();
         }
-      } catch (e) {}
-    };
-    const recLiveOn = () => { recLast = 0; $("reclive").textContent = ""; if (!recTimer) recTimer = setInterval(recPoll, 2000); recPoll(); };
-    $("recstart").addEventListener("click", () => setTimeout(recLiveOn, 300));
-    $("recstop").addEventListener("click", () => setTimeout(() => { if (recTimer) { clearInterval(recTimer); recTimer = null; } }, 300));
-    recRefresh();
-    api("/photon/recordings").then(r => { if (r.recording) recLiveOn(); }).catch(() => {});
+      } else {
+        renderError = "This browser does not support WebGL";
+      }
+      function pushQuad(out, a, b, c, d, color) {
+        for (const v of [a, b, c, a, c, d]) out.push(v[0], v[1], v[2], color[0], color[1], color[2]);
+      }
+      function pushBox(out, x, y, z, w, h, d, base) {
+        const top = base.map(v => Math.min(1, v * 1.12 + 0.035));
+        const sideA = base.map(v => v * 0.72), sideB = base.map(v => v * 0.86);
+        pushQuad(out, [x, y + h, z], [x + w, y + h, z], [x + w, y + h, z + d], [x, y + h, z + d], top);
+        pushQuad(out, [x + w, y, z], [x + w, y, z + d], [x + w, y + h, z + d], [x + w, y + h, z], sideA);
+        pushQuad(out, [x, y, z + d], [x + w, y, z + d], [x + w, y + h, z + d], [x, y + h, z + d], sideB);
+        pushQuad(out, [x, y, z], [x, y, z + d], [x, y + h, z + d], [x, y + h, z], sideA);
+        pushQuad(out, [x + w, y, z], [x, y, z], [x, y + h, z], [x + w, y + h, z], sideB);
+        pushQuad(out, [x, y, z], [x + w, y, z], [x + w, y, z + d], [x, y, z + d], base.map(v => v * 0.5));
+      }
+      function upload(buffer, values, usage) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(values), usage);
+        return values.length / 6;
+      }
+      function updateBlockGeometry() {
+        if (!gl || !positionBuffer) return;
+        const vertices = [];
+        for (const b of mapBlocks) {
+          const x = Number(b[1]), y = Number(b[2]), z = Number(b[3]);
+          if (![x, y, z].every(Number.isFinite)) continue;
+          pushBox(vertices, x, y, z, Math.max(1, Number(b[7]) || 1), Math.max(1, Number(b[8]) || 1),
+            Math.max(1, Number(b[9]) || 1), mapColor(String(b[6] || "")));
+        }
+        positionCount = upload(positionBuffer, vertices, gl.STATIC_DRAW);
+      }
+      function updatePlayers() {
+        if (!gl || !playerBuffer) return;
+        const vertices = [];
+        for (const p of (mapData?.players || [])) {
+          if (p.a === cameraActor) continue;
+          const x = Number(p.x), y = Number(p.y), z = Number(p.z);
+          if (![x, y, z].every(Number.isFinite)) continue;
+          const color = p.t || p.me ? [0.98, 0.82, 0.35] : [0.68, 0.53, 0.96];
+          pushBox(vertices, x - 0.36, y + 0.9, z - 0.28, 0.72, 1.15, 0.56, color);
+          pushBox(vertices, x - 0.27, y + 2.12, z - 0.27, 0.54, 0.54, 0.54, color.map(v => Math.min(1, v * 1.12)));
+          pushBox(vertices, x - 0.62, y + 1.0, z - 0.18, 0.22, 1.05, 0.36, color.map(v => v * 0.9));
+          pushBox(vertices, x + 0.4, y + 1.0, z - 0.18, 0.22, 1.05, 0.36, color.map(v => v * 0.9));
+          pushBox(vertices, x - 0.31, y, z - 0.22, 0.26, 0.9, 0.44, color.map(v => v * 0.72));
+          pushBox(vertices, x + 0.05, y, z - 0.22, 0.26, 0.9, 0.44, color.map(v => v * 0.72));
+        }
+        playerCount = upload(playerBuffer, vertices, gl.DYNAMIC_DRAW);
+      }
+      function updateGrid() {
+        if (!gl || !gridBuffer) return;
+        const [dx0, , dz0] = mapData?.dims || [];
+        const dx = Math.max(1, Number(dx0) || 96), dz = Math.max(1, Number(dz0) || 96);
+        const signature = `${dx}:${dz}`;
+        if (signature === gridDimensions) return;
+        gridDimensions = signature;
+        const values = [], color = [0.15, 0.16, 0.18];
+        const line = (a, b) => { values.push(...a, ...color, ...b, ...color); };
+        for (let x = 0; x <= dx; x += 8) line([x, 0.01, 0], [x, 0.01, dz]);
+        for (let z = 0; z <= dz; z += 8) line([0, 0.01, z], [dx, 0.01, z]);
+        gridCount = upload(gridBuffer, values, gl.STATIC_DRAW);
+      }
+      function resetBotCamera() {
+        const players = mapData?.players || [];
+        const p = players.find(x => x.me && !x.hidden && Number(x.y) >= 0) || players.find(x => x.t) ||
+          players.find(x => x.me && !x.hidden && Number(x.y) >= 0) || players[0];
+        if (p) {
+          cameraActor = p.a;
+          cameraPosition = [Number(p.x) || 0, (Number(p.y) || 0) + 1.55, Number(p.z) || 0];
+          cameraYaw = Number(p.yaw) || 0;
+        } else {
+          cameraActor = null;
+          const [dx, , dz] = mapData?.dims || [];
+          cameraPosition = [(Number(dx) || 96) / 2, 8, (Number(dz) || 96) / 2];
+          cameraYaw = Math.PI;
+        }
+        cameraPitch = 0;
+      }
+      function drawBuffer(buffer, count, mode) {
+        if (!count) return;
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.vertexAttribPointer(shaderProgram.position, 3, gl.FLOAT, false, 24, 0);
+        gl.vertexAttribPointer(shaderProgram.color, 3, gl.FLOAT, false, 24, 12);
+        gl.drawArrays(mode, 0, count);
+      }
+      function renderBotMap(now) {
+        if (!gl || !shaderProgram) return;
+        const dt = lastFrameTime ? Math.min((now - lastFrameTime) / 1000, 0.05) : 0;
+        lastFrameTime = now;
+        if (document.pointerLockElement === canvas) {
+          const forward = (cameraKeys.has("KeyW") ? 1 : 0) - (cameraKeys.has("KeyS") ? 1 : 0);
+          const side = (cameraKeys.has("KeyD") ? 1 : 0) - (cameraKeys.has("KeyA") ? 1 : 0);
+          const vertical = (cameraKeys.has("Space") || cameraKeys.has("KeyE") ? 1 : 0) -
+            (cameraKeys.has("ControlLeft") || cameraKeys.has("ControlRight") || cameraKeys.has("KeyQ") ? 1 : 0);
+          const length = Math.hypot(forward, side, vertical) || 1;
+          const speed = cameraKeys.has("ShiftLeft") || cameraKeys.has("ShiftRight") ? 24 : 6;
+          cameraPosition[0] += (Math.sin(cameraYaw) * forward + Math.cos(cameraYaw) * side) * speed * dt / length;
+          cameraPosition[2] += (Math.cos(cameraYaw) * forward - Math.sin(cameraYaw) * side) * speed * dt / length;
+          cameraPosition[1] += vertical * speed * dt / length;
+        }
+        const rect = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+        const w = Math.max(1, Math.round(rect.width * dpr)), h = Math.max(1, Math.round(rect.height * dpr));
+        if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+        gl.viewport(0, 0, w, h);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.useProgram(shaderProgram);
+        const cp = Math.cos(cameraPitch), sp = Math.sin(cameraPitch), cy = Math.cos(cameraYaw), sy = Math.sin(cameraYaw);
+        gl.uniform3fv(shaderProgram.camera, cameraPosition);
+        gl.uniform3fv(shaderProgram.right, [cy, 0, -sy]);
+        gl.uniform3fv(shaderProgram.up, [-sy * sp, cp, -cy * sp]);
+        gl.uniform3fv(shaderProgram.forward, [sy * cp, sp, cy * cp]);
+        gl.uniform1f(shaderProgram.aspect, w / h);
+        gl.uniform1f(shaderProgram.focal, 1 / Math.tan(75 * Math.PI / 360));
+        drawBuffer(gridBuffer, gridCount, gl.LINES);
+        drawBuffer(positionBuffer, positionCount, gl.TRIANGLES);
+        drawBuffer(playerBuffer, playerCount, gl.TRIANGLES);
+        frameRequest = requestAnimationFrame(renderBotMap);
+      }
+      function cameraMouseMove(event) {
+        if (document.pointerLockElement !== canvas) return;
+        cameraYaw += event.movementX * 0.0025;
+        cameraPitch = Math.max(-1.5, Math.min(1.5, cameraPitch - event.movementY * 0.0025));
+      }
+      const movementCodes = new Set(["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "KeyQ", "Space",
+        "ControlLeft", "ControlRight", "ShiftLeft", "ShiftRight"]);
+      function cameraKeyDown(event) {
+        if (document.pointerLockElement !== canvas || !movementCodes.has(event.code)) return;
+        cameraKeys.add(event.code); event.preventDefault();
+      }
+      function cameraKeyUp(event) { cameraKeys.delete(event.code); }
+      function cameraLockChanged() { if (document.pointerLockElement !== canvas) cameraKeys.clear(); }
+      function cameraClick() {
+        if (!gl) return;
+        canvas.focus();
+        if (canvas.requestPointerLock) {
+          const result = canvas.requestPointerLock();
+          if (result && result.catch) result.catch(e => {
+            $("bmapstate").textContent = "Could not capture mouse: " + e.message;
+          });
+        }
+      }
+      canvas.addEventListener("click", cameraClick);
+      document.addEventListener("mousemove", cameraMouseMove);
+      document.addEventListener("keydown", cameraKeyDown);
+      document.addEventListener("keyup", cameraKeyUp);
+      document.addEventListener("pointerlockchange", cameraLockChanged);
+      $("bot-map-reset").onclick = resetBotCamera;
+      window._botMapCleanup = () => {
+        if (document.pointerLockElement === canvas) document.exitPointerLock();
+        canvas.removeEventListener("click", cameraClick);
+        document.removeEventListener("mousemove", cameraMouseMove);
+        document.removeEventListener("keydown", cameraKeyDown);
+        document.removeEventListener("keyup", cameraKeyUp);
+        document.removeEventListener("pointerlockchange", cameraLockChanged);
+        cancelAnimationFrame(frameRequest); cameraKeys.clear();
+      };
+      if (gl && shaderProgram) frameRequest = requestAnimationFrame(renderBotMap);
+      async function loadBotMap() {
+        const params = new URLSearchParams();
+        if (mapData && mapData.sid) {
+          params.set("sid", mapData.sid);
+          params.set("rev", String(mapData.blocksRev));
+        }
+        try {
+          const s = await api("/bot/map?" + params.toString());
+          if (!s.available) {
+            mapBlocks = [];
+            mapData = { ...s, players: [], blocks: [] };
+            cameraRoom = "";
+            updateBlockGeometry(); updatePlayers();
+          } else {
+            if (s.blocks !== null) {
+              mapBlocks = s.blocks || [];
+              updateBlockGeometry();
+            }
+            const oldRoom = mapData && `${mapData.sid}:${mapData.room}`;
+            mapData = { ...s, players: s.players || [], blocks: mapBlocks };
+            const room = `${s.sid}:${s.room}`;
+            if (room !== oldRoom) { cameraRoom = room; resetBotCamera(); }
+            updatePlayers(); updateGrid();
+          }
+          const status = $("bmapstate");
+          if (status) status.textContent = renderError ? "3D viewer unavailable: " + renderError
+            : !s.available ? "Waiting for the bot to connectÔÇª"
+            : `${esc(s.room || s.rk || "Room")} ┬À ${mapBlocks.length.toLocaleString()} blocks ┬À ${(s.players || []).length} players` +
+              (s.loaded ? "" : " ┬À map data loading");
+        } catch (e) {
+          const status = $("bmapstate");
+          if (status) status.textContent = "Map unavailable: " + e.message;
+          if (e.status === 403 || e.status === 503) lockBotControls(e.message);
+        }
+      }
+    function renderActions(state) {
+      $("bactions").innerHTML = GROUPS.map(([title, buttons]) =>
+        `<div class="pgrp"><span class="muted">${esc(title)}</span>${buttons.map(([label, action, off, media, needsTarget]) =>
+          `<button data-action="${esc(action)}" data-target="${needsTarget ? "1" : "0"}"${off ? ' class="off"' : ""}` +
+          `${(media && !state.badAppleAvailable) || (action === "pixel-art" && !state.pixelArtAvailable) ||
+            (action === "soundkey-play" && !state.soundKeyAvailable) ? " disabled" : ""}>${esc(label)}</button>`).join("")}</div>`
+      ).join("");
+      $("bactions").querySelectorAll("button[data-action]").forEach(b => b.onclick = () =>
+        sendAction(b.dataset.action, b.dataset.target === "1"));
+    }
     async function players() {
-      const sel = $("pbpl");
-      try {
-        const d = await api("/photon/players");
-        const byRoom = {};
-        d.players.forEach(p => (byRoom[p.roomName || p.roomKey || "?"] ||= []).push(p));
-        sel.innerHTML = `<option value="">pick a player (${d.players.length} online)</option>` +
-          Object.entries(byRoom).map(([room, ps]) => `<optgroup label="${esc(room)} (${ps.length})">${
-            ps.map(p => `<option value="${esc(p.accountID)}">${esc(p.name)}</option>`).join("")}</optgroup>`).join("");
-      } catch (e) { sel.innerHTML = `<option value="">error: ${esc(e.message)}</option>`; }
+      for (const id of ["bhook", "btarget"]) {
+        const select = $(id), previous = select.value;
+        try {
+          const d = await api("/online");
+          const options = (d.players || []).map(p =>
+            `<option value="${esc(p.accountID)}">${esc(p.displayName)}${p.roomKey ? " ÔÇö " + esc(p.roomKey) : ""}</option>`).join("");
+          select.innerHTML = `<option value="">${id === "bhook" ? "pick a player to follow" : "pick an online player"}</option>` + options;
+          if (previous && [...select.options].some(o => o.value === previous)) select.value = previous;
+        } catch (e) {
+          select.innerHTML = `<option value="">error: ${esc(e.message)}</option>`;
+        }
+      }
     }
-    async function status() {
-      if (!$("pblog")) { clearInterval(tabs.photon._t); return; }
-      try {
-        const s = await api("/photon/status");
-        $("pbst").textContent = s.running
-          ? `on - hooked to ${s.targetName || s.target || "?"}${s.stay ? " (staying in that room)" : " (following)"}`
-          : "off";
-        const box = $("pblog"), atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
-        box.textContent = s.log || "(no output yet)";
-        if (atEnd) box.scrollTop = box.scrollHeight;
-      } catch (e) { $("pbst").textContent = "error: " + e.message; }
+    async function refresh() {
+      let s; try { s = await api("/bot"); } catch (e) {
+        $("bstate").textContent = "Error: " + e.message;
+        if (e.status === 403 || e.status === 503) lockBotControls(e.message);
+        return;
+      }
+      const st = s.running ? "on" : (s.enabled ? "off" : "unavailable");
+      const discordState = s.discordBot && s.discordBot.connected ? "connected"
+        : (s.discordBot && s.discordBot.configured ? "configured, offline" : "not configured");
+      $("bstate").innerHTML = `<b>${esc(st)}</b>` +
+        (s.targetName ? ` ┬À following <b>${esc(s.targetName)}</b>` : "") +
+        (s.room ? ` ┬À room <b>${esc(s.room)}</b>` : "") +
+        ` ┬À Discord profile bot ${esc(discordState)}` +
+        (s.uptime ? ` ┬À up ${s.uptime}s` : "") +
+        (s.error ? ` ┬À <span style="color:#f85149">${esc(s.error)}</span>` : "") +
+        (!s.available ? ` ┬À <span style="color:#f85149">${esc(s.reason || "")}</span>` : "");
+      $("blog").textContent = (s.log || []).join("\n");
+      $("blog").scrollTop = $("blog").scrollHeight;
+      renderActions(s);
+      $("bapplestatus").textContent = s.badAppleSize
+        ? `Uploaded ${String(s.badAppleType || "MP3").toUpperCase()} (${(s.badAppleSize / 1024 / 1024).toFixed(1)} MB)`
+        : (s.badAppleAvailable ? "Media available" : "No media uploaded");
+      $("bpixelstatus").textContent = s.pixelArtSize
+        ? `Uploaded image (${(s.pixelArtSize / 1024 / 1024).toFixed(1)} MB)`
+        : (s.pixelArtAvailable ? "Image available" : "No image uploaded");
+      $("bsoundkeystatus").textContent = s.soundKeySize
+        ? `Uploaded ${String(s.soundKeyType || "audio").toUpperCase()} (${(s.soundKeySize / 1024 / 1024).toFixed(1)} MB)`
+        : (s.soundKeyAvailable ? "Audio available" : "No audio uploaded");
     }
-    async function send(cmd) {
-      try { const r = await api("/photon/cmd", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cmd }) });
-            toast(r.reloading ? "Updating the bot first - '" + cmd + "' runs when it's back in the room" : "Sent: " + cmd);
-            setTimeout(status, 1200); }
-      catch (e) { toast(e.message, true); }
-    }
-    async function mimic() {
-      const target = $("pbpl").value;
-      if (!target) { toast("Pick a player in the list first", true); return; }
+    async function sendAction(action, needsTarget) {
+      const body = { action };
+      if (needsTarget) {
+        body.target = $("btarget").value;
+        if (!body.target) { toast("Pick a player first", true); return; }
+      }
       try {
-        const r = await api("/photon/mimic", { method: "POST", headers: { "Content-Type": "application/json" },
-                                               body: JSON.stringify({ target }) });
-        toast(r.moved ? `Bot going to ${r.name}'s room - it starts mimicking once it's in`
-                      : `Mimicking ${r.name}`);
+        await api("/bot/action", { method: "POST", headers: { "Content-Type": "application/json" },
+                                   body: JSON.stringify(body) });
+        toast("Action sent");
       } catch (e) { toast(e.message, true); }
-      setTimeout(status, 1200);
+      setTimeout(refresh, 900);
     }
-    function onPicked(word) {
-      const target = $("pbpl").value;
-      if (!target) { toast("Pick a player in the list first", true); return; }
-      send(word + " " + target);
-    }
-    view.querySelectorAll("button[data-cmd]").forEach(b => b.onclick = () => {
-      const c = b.dataset.cmd;
-      if (c === "@mimic") mimic();
-      else if (c.startsWith("@")) onPicked(c.slice(1));
-      else send(c);
-    });
-    $("pbsend").onclick = () => { const v = $("pbcmd").value.trim(); if (v) { send(v); $("pbcmd").value = ""; } };
-    $("pbcmd").onkeydown = e => { if (e.key === "Enter") $("pbsend").click(); };
-    $("pbref").onclick = players;
-    $("pbhook").onclick = async () => {
-      const target = $("pbpl").value;
-      if (!target) { toast("Pick a player first", true); return; }
-      $("pbhook").disabled = true; $("pbst").textContent = "starting (stopping the old one first can take a bit)...";
-      try { await api("/photon/start", { method: "POST", headers: { "Content-Type": "application/json" },
-                                         body: JSON.stringify({ target, stay: $("pbstay").checked }) });
-            toast("Bot hooked on"); }
-      catch (e) { toast(e.message, true); }
-      $("pbhook").disabled = false; status();
-    };
-    $("pbstop").onclick = async () => {
-      $("pbstop").disabled = true;   // avoid stacking stop requests on repeated clicks
-      $("pbst").textContent = "stopping...";
-      try { const r = await api("/photon/stop", { method: "POST" }); toast(r.was ? "Bot stopped" : "It wasn't running"); }
-      catch (e) { toast(e.message, true); }
-      const b = $("pbstop"); if (b) b.disabled = false;
-      status();
-    };
-    clearInterval(tabs.photon._t);
-    tabs.photon._t = setInterval(status, 3000);
-    players(); status();
-  },
-
-  
-  /*@cut talk*/
-  // Live talk through the Photon bot: your mic plays at the hooked player's face,
-  // and you hear everyone in their room. Drives the bot itself (/photon start+cmd).
-  talk: async () => {
-    view.innerHTML = `<p class="note">Talk to players live through the Photon bot. Pick a player and press
-      <b>Start talking</b>: the bot joins their room (and follows them). Your voice plays right in front of
-      that player's face, so they hear you clearly and people near them hear it too, and you hear everyone
-      talking in the room. Use headphones so the players don't hear themselves back.</p>
-      <div class="row">
-        <select id="tkpl" style="min-width:260px"><option value="">loading players...</option></select>
-        <button class="go" id="tkref">Refresh players</button>
-        <button class="go" id="tkstart">Start talking</button>
-        <button class="del" id="tkstop">Stop</button>
-      </div>
-      <div class="row"><b>Status:</b> <span id="tkst" class="muted"></span></div>
-      <div class="row">
-        <button id="tkptt" class="go" style="font-size:20px;padding:18px 30px;touch-action:none;user-select:none">Hold to talk</button>
-        <label class="muted"><input type="checkbox" id="tkopen"> Mic always on</label>
-        <span class="muted">(or hold Space)</span>
-        <span>Mic <span id="tkmeter" style="display:inline-block;width:140px;height:10px;background:#8883;vertical-align:middle;border-radius:5px;overflow:hidden"><i style="display:block;height:100%;width:0;background:#9b59b6"></i></span></span>
-      </div>
-      <div class="row"><label>Players' volume <input type="range" id="tkvol" min="0" max="4" step="0.1"></label>
-        <span>Players <span id="tkin" style="display:inline-block;width:140px;height:10px;background:#8883;vertical-align:middle;border-radius:5px;overflow:hidden"><i style="display:block;height:100%;width:0;background:#39f"></i></span></span></div>
-      <div class="row"><b>Talking now:</b> <span id="tkspk" class="muted"></span></div>
-      <div class="row"><label><input type="checkbox" id="tkstt"> Show what players say as text</label>
-        <span id="tksttst" class="muted"></span></div>
-      <pre class="smp" id="tklog" style="max-height:300px;overflow:auto;white-space:pre-wrap"></pre>`;
-    const $ = id => document.getElementById(id);
-    const T = TALK;
-    $("tkvol").value = T.vol;
-    $("tkopen").checked = T.open;
-    async function players() {
-      const sel = $("tkpl");
+    $("bref").onclick = refresh;
+    $("bappleupload").onclick = async () => {
+      const file = $("bappleaudio").files[0];
+      if (!file) { toast("Choose an MP3 or MP4 file first", true); return; }
+      if (file.size > 12 * 1024 * 1024) { toast("Media file must be 12 MB or smaller", true); return; }
       try {
-        const d = await api("/photon/players");
-        const byRoom = {};
-        d.players.forEach(p => (byRoom[p.roomName || p.roomKey || "?"] ||= []).push(p));
-        sel.innerHTML = `<option value="">pick a player (${d.players.length} online)</option>` +
-          Object.entries(byRoom).map(([room, ps]) => `<optgroup label="${esc(room)} (${ps.length})">${
-            ps.map(p => `<option value="${esc(p.accountID)}"${p.accountID === T.target ? " selected" : ""}>${esc(p.name)}</option>`).join("")}</optgroup>`).join("");
-      } catch (e) { sel.innerHTML = `<option value="">error: ${esc(e.message)}</option>`; }
-    }
-    $("tkref").onclick = players;
-    $("tkstart").onclick = async () => {
-      const target = $("tkpl").value;
-      if (!target) { toast("Pick a player first", true); return; }
-      $("tkstart").disabled = true;
-      try { await talkStart(target); }
-      catch (e) {
-        const why = e && e.name === "NotAllowedError"
-          ? "Microphone blocked. Click the lock icon next to the address, allow the microphone, then press Start talking again."
-          : e && e.name === "NotFoundError" ? "No microphone found on this device."
-          : (e && e.message) || String(e);
-        talkStop(false); TALK.status = why; toast(why, true);
-      }
-      $("tkstart").disabled = false;
+        const result = await api("/bot/media", { method: "POST",
+          headers: { "Content-Type": file.type || (file.name.toLowerCase().endsWith(".mp4") ? "video/mp4" : "audio/mpeg") }, body: file });
+        toast(result.restartRequired ? "Uploaded; stop and restart the bot to load it" : "Bad Apple media uploaded");
+        refresh();
+      } catch (e) { toast(e.message, true); }
     };
-    $("tkstop").onclick = () => talkStop(true);
-    const ptt = $("tkptt");
-    ptt.onpointerdown = e => { e.preventDefault(); T.held = true; ptt.setPointerCapture?.(e.pointerId); };
-    ptt.onpointerup = ptt.onpointercancel = ptt.onlostpointercapture = () => { T.held = false; };
-    $("tkopen").onchange = e => { T.open = e.target.checked; };
-    $("tkvol").oninput = e => { T.vol = +e.target.value; if (T.gain) T.gain.gain.value = T.vol; };
-    $("tkstt").checked = T.stt;
-    $("tkstt").onchange = e => { T.stt = e.target.checked; if (T.stt) { T.sttState = T.asr ? "on" : "loads when someone talks"; talkRunJobs(); }
-                                 else { T.seg = {}; T.jobs = []; T.sttState = ""; } };
-    let shown = -1;
-    clearInterval(tabs.talk._t);
-    tabs.talk._t = setInterval(() => {
-      if (!$("tkst")) { clearInterval(tabs.talk._t); return; }
-      $("tkst").textContent = T.status;
-      ptt.style.opacity = T.ws ? 1 : 0.5;
-      ptt.textContent = talkLive() ? "Talking..." : "Hold to talk";
-      $("tkmeter").firstElementChild.style.width = Math.min(100, Math.round(T.level * 400)) + "%";
-      const now = performance.now();
-      const on = Object.entries(T.heard).filter(([, t]) => now - t < 400).map(([k]) => T.names[k] || ("player " + k));
-      $("tkspk").textContent = T.ws ? (on.length ? on.join(", ") : "nobody") : "";
-      $("tkin").firstElementChild.style.width = Math.min(100, Math.round(T.inLevel * 400)) + "%";
-      T.inLevel *= 0.7;
-      $("tksttst").textContent = T.stt ? T.sttState : "";
-      if (shown !== T.linesVer) {
-        shown = T.linesVer;
-        const box = $("tklog"), atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
-        box.textContent = T.lines.join("\n") || (T.stt ? "(what players say shows up here)" : "");
-        if (atEnd) box.scrollTop = box.scrollHeight;
+    $("bpixelupload").onclick = async () => {
+      const file = $("bpixelimage").files[0];
+      if (!file) { toast("Choose a PNG, JPEG, or WebP image first", true); return; }
+      if (file.size > 8 * 1024 * 1024) { toast("Image must be 8 MB or smaller", true); return; }
+      const contentType = file.type || ({
+        png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp"
+      }[file.name.split(".").pop().toLowerCase()] || "");
+      if (!contentType) { toast("Upload a PNG, JPEG, or WebP image", true); return; }
+      try {
+        await api("/bot/pixel-art", { method: "POST", headers: { "Content-Type": contentType }, body: file });
+        toast("Pixel-art image uploaded");
+        refresh();
+      } catch (e) { toast(e.message, true); }
+    };
+    $("bsoundkeyupload").onclick = async () => {
+      const file = $("bsoundkeyaudio").files[0];
+      if (!file) { toast("Choose an audio file first", true); return; }
+      if (file.size > 12 * 1024 * 1024) { toast("Audio must be 12 MB or smaller", true); return; }
+      const contentType = file.type || ({
+        mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg", m4a: "audio/mp4"
+      }[file.name.split(".").pop().toLowerCase()] || "");
+      if (!contentType) { toast("Upload an MP3, WAV, OGG, or M4A audio file", true); return; }
+      try {
+        const result = await api("/bot/soundkey", { method: "POST", headers: { "Content-Type": contentType }, body: file });
+        toast(result.restartRequired ? "Uploaded; stop and restart the bot to load this audio type" : "SoundKey audio uploaded");
+        refresh();
+      } catch (e) { toast(e.message, true); }
+    };
+    $("bdlinkcode").onclick = async () => {
+      const username = $("bdusername").value.trim();
+      if (!username) { toast("Enter the exact Yeeps username", true); return; }
+      $("bdcode").textContent = "GeneratingÔÇª";
+      try {
+        const result = await api("/bot/link-code", { method: "POST",
+          headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username }) });
+        $("bdcode").textContent = `${result.username}: ${result.code} (10 minutes)`;
+        toast("Pairing code generated; share it privately");
+      } catch (e) { $("bdcode").textContent = ""; toast(e.message, true); }
+    };
+    $("bstart").onclick = async () => {
+      const target = $("bhook").value;
+      if (!target) { toast("Pick a player to hook the bot to", true); return; }
+      try {
+        await api("/bot/start", { method: "POST", headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ target }) });
+        toast("Bot joining the player's room");
+      } catch (e) { toast(e.message, true); }
+      setTimeout(refresh, 900);
+    };
+    $("bstop").onclick = async () => {
+      try { await api("/bot/stop", { method: "POST" }); toast("Bot stopped"); }
+      catch (e) { toast(e.message, true); }
+      refresh();
+    };
+    async function unlockBot(password) {
+      password = password || $("bbot-password").value;
+      if (!password) {
+        $("bbot-auth-message").textContent = "Enter the server's BOT_PASSWORD.";
+        return;
       }
-    }, 150);
-    players();
+      sessionStorage.setItem("botPassword", password);
+      $("bbot-unlock").disabled = true;
+      $("bbot-auth-message").textContent = "Checking password...";
+      try {
+        await api("/bot");
+        $("bbot-auth").style.display = "none";
+        $("bbot-controls").style.display = "";
+        $("bbot-password").value = "";
+        $("bbot-auth-message").textContent = "";
+        clearBotTimers();
+        await players();
+        await Promise.all([refresh(), loadBotMap()]);
+        window._botTimer = setInterval(refresh, 3000);
+        window._botMapTimer = setInterval(loadBotMap, 1000);
+        window._botPlayersTimer = setInterval(players, 10000);
+      } catch (e) {
+        sessionStorage.removeItem("botPassword");
+        $("bbot-auth-message").textContent = e.message;
+        $("bbot-password").focus();
+      } finally {
+        $("bbot-unlock").disabled = false;
+      }
+    }
+    $("bbot-unlock").onclick = () => unlockBot();
+    $("bbot-password").onkeydown = event => { if (event.key === "Enter") unlockBot(); };
+    $("bbot-lock").onclick = () => lockBotControls("Bot controls locked.");
+    clearBotTimers();
+    const savedPassword = sessionStorage.getItem("botPassword");
+    if (savedPassword) unlockBot(savedPassword);
   },
-  /*@end talk*/
 };
 
-// ─── Live talk session (see tabs.talk) ──────────────────────────────────────
-const TALK = { ws: null, ctx: null, stream: null, node: null, gain: null, target: "", status: "off",
-               held: false, space: false, open: false, vol: 1.5, level: 0, names: {}, heard: {}, play: {},
-               acc: new Int16Array(960), accN: 0, rs: { pos: 0, last: 0 },
-               inLevel: 0, stt: false, sttState: "", asr: null, seg: {}, jobs: [], busy: false, lines: [], linesVer: 0 };
-function talkLive() { return !!TALK.ws && (TALK.held || TALK.space || TALK.open); }
-document.addEventListener("keydown", e => {
-  if (e.code !== "Space" || !TALK.ws || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || "")
-      || !document.getElementById("tkptt")) return;
-  e.preventDefault(); TALK.space = true;
-});
-document.addEventListener("keyup", e => { if (e.code === "Space") TALK.space = false; });
 
-function talkMic(f32) {
-  const T = TALK;
-  let sum = 0;
-  for (let i = 0; i < f32.length; i++) sum += f32[i] * f32[i];
-  T.level = T.level * 0.6 + Math.sqrt(sum / f32.length) * 0.4;
-  const ratio = T.ctx.sampleRate / 48000;
-  const push = v => {
-    const live = talkLive();
-    T.acc[T.accN++] = live ? Math.max(-32768, Math.min(32767, Math.round(v * 32767))) : 0;
-    if (T.accN === 960) {
-      if (live && T.ws && T.ws.readyState === 1 && T.ws.bufferedAmount < 48000) T.ws.send(T.acc.slice(0).buffer);
-      T.accN = 0;
-    }
-  };
-  if (ratio === 1) { for (let i = 0; i < f32.length; i++) push(f32[i]); return; }
-  let pos = T.rs.pos, last = T.rs.last;
-  for (let i = 0; i < f32.length; i++) {
-    const cur = f32[i];
-    while (pos <= 1) { push(last + (cur - last) * pos); pos += ratio; }
-    pos -= 1; last = cur;
-  }
-  T.rs.pos = pos; T.rs.last = last;
-}
-
-function talkHear(buf) {
-  const T = TALK, u8 = new Uint8Array(buf);
-  if (u8[0] !== 1 || !T.ctx) return;
-  const who = u8[1] | (u8[2] << 8);
-  const pcm = new Int16Array(buf.slice(3));
-  if (!pcm.length) return;
-  const ab = T.ctx.createBuffer(1, pcm.length, 24000), ch = ab.getChannelData(0);
-  for (let i = 0; i < pcm.length; i++) ch[i] = pcm[i] / 32768;
-  const src = T.ctx.createBufferSource();
-  src.buffer = ab; src.connect(T.gain);
-  const now = T.ctx.currentTime;
-  let at = T.play[who] || 0;
-  if (at < now + 0.05 || at > now + 1.0) at = now + 0.12;
-  src.start(at);
-  T.play[who] = at + ab.duration;
-  T.heard[who] = performance.now();
-  let sum = 0;
-  for (let i = 0; i < ch.length; i++) sum += ch[i] * ch[i];
-  T.inLevel = Math.max(T.inLevel, Math.sqrt(sum / ch.length));
-  if (T.stt) talkSeg(who, ch, Math.sqrt(sum / ch.length));
-}
-
-// What players say, as text (Whisper base.en via transformers.js, cached after first load).
-const STT_LIB = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2/dist/transformers.min.js";
-function talkSeg(who, f32, rms) {
-  const T = TALK, now = performance.now();
-  const s = T.seg[who] || (T.seg[who] = { parts: [], len: 0, voiced: 0, quiet: 0, last: now });
-  const ms = f32.length / 24;
-  s.last = now;
-  if (rms > 0.015) { s.voiced += ms; s.quiet = 0; } else if (s.len) s.quiet += ms;
-  if (rms > 0.015 || s.len) { s.parts.push(f32); s.len += f32.length; }
-  if (s.len && (s.quiet >= 700 || s.len >= 24000 * 12)) talkSegEnd(who);
-}
-function talkSegEnd(who) {
-  const T = TALK, s = T.seg[who];
-  if (!s || !s.len) return;
-  delete T.seg[who];
-  if (s.voiced < 400) return;
-  const all = new Float32Array(s.len);
-  let o = 0;
-  for (const p of s.parts) { all.set(p, o); o += p.length; }
-  T.jobs.push({ name: T.names[who] || ("player " + who), audio: all, at: new Date() });
-  talkRunJobs();
-}
-setInterval(() => {
-  const now = performance.now();
-  for (const who of Object.keys(TALK.seg)) if (now - TALK.seg[who].last > 800) talkSegEnd(who);
-}, 300);
-async function talkAsr() {
-  const T = TALK;
-  if (T.asr) return T.asr;
-  T.sttState = "loading the speech model (about 80 MB the first time)...";
-  const { pipeline } = await import(STT_LIB);
-  T.asr = await pipeline("automatic-speech-recognition", "Xenova/whisper-base.en", { dtype: "q8" });
-  T.sttState = "on";
-  return T.asr;
-}
-async function talkRunJobs() {
-  const T = TALK;
-  if (T.busy || !T.jobs.length || !T.stt) return;
-  T.busy = true;
-  try {
-    const asr = await talkAsr();
-    while (T.jobs.length && T.stt) {
-      if (T.jobs.length > 6) T.jobs.splice(0, T.jobs.length - 6);
-      const j = T.jobs.shift();
-      const n = Math.floor(j.audio.length * 2 / 3), a16 = new Float32Array(n);
-      for (let i = 0; i < n; i++) {
-        const x = i * 1.5, k = Math.floor(x), f = x - k;
-        a16[i] = j.audio[k] * (1 - f) + (j.audio[k + 1] || 0) * f;
-      }
-      const r = await asr(a16);
-      const text = String((r && r.text) || "").trim();
-      if (!text || /^[\[(].*[\])]$/.test(text) || /^(thank you\.?|thanks for watching!?|you\.?|\.+)$/i.test(text)) continue;
-      const hh = j.at.toTimeString().slice(0, 8);
-      T.lines.push(`${hh}  ${j.name}: ${text}`);
-      if (T.lines.length > 300) T.lines.splice(0, T.lines.length - 300);
-      T.linesVer++;
-    }
-  } catch (e) { T.sttState = "speech to text failed: " + (e && e.message || e); }
-  T.busy = false;
-  if (T.jobs.length && T.stt) setTimeout(talkRunJobs, 50);
-}
-
-async function talkStart(target) {
-  const T = TALK;
-  if (T.ws) talkStop(false);
-  T.target = target;
-  if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
-    throw new Error("This browser can't use a microphone here. Open the editor in Chrome or Edge at https://live.your-domain.example/editor");
-  T.status = "asking for your microphone...";
-  T.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true,
-                                                                autoGainControl: true, channelCount: 1 } });
-  try { T.ctx = new AudioContext({ sampleRate: 48000 }); } catch (_) { T.ctx = new AudioContext(); }
-  await T.ctx.resume();
-  if (!T.ctx.audioWorklet) throw new Error("This browser can't record audio for live talk. Use Chrome or Edge.");
-  T.status = "starting the bot...";
-  const code = `class Cap extends AudioWorkletProcessor { process(inp) { const c = inp[0] && inp[0][0];
-    if (c) this.port.postMessage(c.slice(0)); return true; } } registerProcessor("cap", Cap);`;
-  await T.ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([code], { type: "application/javascript" })));
-  T.node = new AudioWorkletNode(T.ctx, "cap");
-  T.node.port.onmessage = e => talkMic(e.data);
-  const mute = T.ctx.createGain(); mute.gain.value = 0;
-  T.ctx.createMediaStreamSource(T.stream).connect(T.node);
-  T.node.connect(mute); mute.connect(T.ctx.destination);
-  T.gain = T.ctx.createGain(); T.gain.gain.value = T.vol; T.gain.connect(T.ctx.destination);
-  T.rs = { pos: 0, last: 0 }; T.accN = 0; T.play = {}; T.heard = {}; T.names = {}; T.seg = {};
-  const s = await api("/photon/status");
-  if (!s.running || s.target !== target) {
-    T.status = "hooking the bot onto the player...";
-    await api("/photon/start", { method: "POST", headers: { "Content-Type": "application/json" },
-                                 body: JSON.stringify({ target, stay: false }) });
-  }
-  await api("/photon/cmd", { method: "POST", headers: { "Content-Type": "application/json" },
-                             body: JSON.stringify({ cmd: "talk" }) });
-  T.status = "connecting...";
-  const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + API + "/photon/talk");
-  ws.binaryType = "arraybuffer";
-  T.ws = ws;
-  ws.onmessage = e => {
-    if (typeof e.data !== "string") { talkHear(e.data); return; }
-    try { const m = JSON.parse(e.data);
-          if (m.type === "status") T.status = m.msg;
-          else if (m.type === "speakers") T.names = m.names || {}; } catch (_) {}
-  };
-  ws.onclose = () => { if (T.ws === ws) { T.ws = null; T.status = "disconnected - press Start talking again"; } };
-}
-
-function talkStop(tellBot) {
-  const T = TALK;
-  const ws = T.ws; T.ws = null;
-  try { ws && ws.close(); } catch (_) {}
-  try { T.stream && T.stream.getTracks().forEach(t => t.stop()); } catch (_) {}
-  try { T.ctx && T.ctx.close(); } catch (_) {}
-  T.stream = T.ctx = T.node = T.gain = null; T.level = 0; T.status = "off";
-  if (tellBot) api("/photon/cmd", { method: "POST", headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ cmd: "talk off" }) }).catch(() => {});
-}
-
-// Version switch (bottom left): 1.31.0 and 2.31.0-blaze each have their own editor
-// server (same editor code, separate sign-in). Full URLs, so it works from both.
 document.querySelectorAll("aside button[data-t]").forEach(b => b.onclick = () => {
+  clearInterval(window._botTimer);
+  clearInterval(window._botPlayersTimer);
+  clearInterval(window._botMapTimer);
+  if (window._botMapCleanup) {
+    window._botMapCleanup();
+    window._botMapCleanup = null;
+  }
+  document.querySelector(".app").classList.remove("bot-open");
   document.querySelectorAll("aside button[data-t]").forEach(x => x.classList.remove("on"));
   b.classList.add("on"); tabs[b.dataset.t]();
 });
 
 (async () => {
   try { const me = await api("/me");
-        IS_ADMIN = !!me.roleAdmin;
-        IS_MOD = !!me.canBan;
         document.getElementById("who").textContent = "signed in as " + me.name;
-        if (me.roleAdmin) document.getElementById("tab-roles").style.display = "";   // editor admins only
-        if (me.photon) { document.getElementById("tab-photon").style.display = "";   // reveal Photon + Talk + View
-                         document.getElementById("tab-talk").style.display = ""; }
-        if (me.view) document.getElementById("tab-liveview").style.display = "";      // owner only
-        // owner only: the current editor code (it isn't posted anywhere any more)
-        try { await api("/editor_code");      // owner only: click to view (hidden for screen sharing)
-              const who = document.getElementById("who");
-              const b = document.createElement("button");
-              b.textContent = "show editor code"; b.style.marginLeft = "8px"; b.style.fontSize = "12px";
-              let t = null;
-              b.onclick = async () => {
-                if (b.dataset.on) { b.textContent = "show editor code"; delete b.dataset.on; clearTimeout(t); return; }
-                try { const c = await api("/editor_code");
-                      b.textContent = "editor code " + c.code + " (changes in " + c.minutesLeft + " min) - click to hide";
-                      b.dataset.on = "1";
-                      t = setTimeout(() => { b.textContent = "show editor code"; delete b.dataset.on; }, 20000); } catch (_) {}
-              };
-              who.after(b); } catch (_) {} }
+        document.getElementById("ver").title = "database: " + (me.db || "?");
+        // normal data editors (not "hi lol" admins): Players, Online, Announce only
+        if (me.tier === "editor") {
+          document.body.classList.add("tier-editor");
+          const okTabs = new Set(["players", "online", "announce"]);
+          document.querySelectorAll("[data-t]").forEach(b => { if (!okTabs.has(b.dataset.t)) b.style.display = "none"; });
+          document.getElementById("who").textContent += " (data editor)";
+        }
+        }
   catch (e) { return; }
   tabs.players();
 })();
