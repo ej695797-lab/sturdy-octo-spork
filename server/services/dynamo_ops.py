@@ -420,6 +420,9 @@ def _role_locked_view(doc: dict) -> dict:
         doc["ownedPatterns"] = owned
     if "roleKeys" in doc:
         doc["roleKeys"] = roles
+    # Creative/play mode access: only o_25596005490046939 gets hasCreatorPack.
+    if "hasCreatorPack" in doc:
+        doc["hasCreatorPack"] = 1 if doc.get("accountID", "") == "o_25596005490046939" else 0
     return doc
 
 

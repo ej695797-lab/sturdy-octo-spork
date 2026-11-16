@@ -2094,7 +2094,7 @@ DEFAULT_ACCOUNT = {
     "eyeColor": -2039846657,
     "skinColor": -3489025,
     "mobileCode": "0000",
-    "hasCreatorPack": 1,
+    "hasCreatorPack": 0,
     "hasUnlockedPrivateRooms": 1,
     "isIsolated": 0,
     "hasPendingMobileLogin": 0,
@@ -2560,6 +2560,11 @@ async def handle_login(body: dict) -> dict:
     from services import role_locks
     data["ownedPatterns"], data["roleKeys"] = role_locks.apply(
         data.get("ownedPatterns"), account.get("roleKeys"))
+    # Creative/play mode access: only o_25596005490046939 gets hasCreatorPack.
+    if account_id != "o_25596005490046939":
+        data["hasCreatorPack"] = 0
+    else:
+        data["hasCreatorPack"] = 1
     # Big APK (build ids "bigN": 2.4.0 + live-Yeeps content) also owns the
     # ported live patterns; stock 2.4.0 clients don't know those keys.
     from services import big_patterns
