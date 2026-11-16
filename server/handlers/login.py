@@ -14,6 +14,7 @@ from pathlib import Path
 
 from services.db import accounts
 from services.property_defaults import default_for_property
+from services.cognito_creds import get_guest_credentials
 from services.build_gate import outdated_message
 from services.kick import DEFAULT_KICK_REASON
 
@@ -27,7 +28,10 @@ async def _alert_new_ip(account_id: str, name, oculus, new_ip: str, prior_ips: l
     """Post an ADMIN-webhook alert when an account logs in from an IP we've never
     seen for it. ALERT ONLY — no auto-ban (a changed IP is usually a legit player
     on a new network, and IP bans hit everyone sharing that IP). The admin can
-    ban the IP from the editor if it's actually account theft."""
+    ban the IP from the editor if it's actually account theft.
+    Off unless NEW_IP_ALERTS=1 (owner 2026-11-01: too noisy, buried the editor logs)."""
+    if os.getenv("NEW_IP_ALERTS", "0") != "1":
+        return
     try:
         import re as _re
         import httpx
@@ -43,6 +47,42 @@ async def _alert_new_ip(account_id: str, name, oculus, new_ip: str, prior_ips: l
             await c.post(ADMIN_DISCORD_WEBHOOK, json={"content": labeled(msg)[:1900]})
     except Exception as _e:
         print(f"[login] new-IP alert failed for {account_id}: {_e}")
+
+# VPN at game login (owner 2026-11-02). GAME_VPN_MODE: "alert" (default) posts to the
+# admin channel only, "off" does nothing. Alert-only for now so we can see how many
+# real players (school / work Wi-Fi) would be caught before ever blocking.
+_vpn_alerted: dict = {}   # (accountID, ip) -> time of last alert
+
+
+async def _alert_vpn(account_id: str, name, oculus, ip: str) -> None:
+    if os.getenv("GAME_VPN_MODE", "alert") == "off":
+        return
+    try:
+        import re as _re
+        import time as _t
+        import httpx
+        from services import geo
+        label = await geo.vpn_check(ip)
+        if not label:
+            return
+        key = (account_id, ip)
+        if _t.time() - _vpn_alerted.get(key, 0) < 6 * 3600:
+            return
+        _vpn_alerted[key] = _t.time()
+        if len(_vpn_alerted) > 5000:
+            _vpn_alerted.pop(next(iter(_vpn_alerted)))
+        await accounts.update_one({"accountID": account_id},
+                                  {"$set": {"lastVPN": {"label": label, "ip": ip, "at": int(_t.time())}}})
+        from config import ADMIN_DISCORD_WEBHOOK, labeled
+        who = _re.sub(r"<[^>]+>", "", str(name or "")).strip() or str(oculus or account_id)
+        who = _re.sub(r"([*_`~|\\])", r"\\\1", who)
+        msg = (f"VPN at game login: **{who}** (`{account_id}`) from `{ip}` - {label}. "
+               f"Alert only, they were let in.")
+        async with httpx.AsyncClient(timeout=10) as c:
+            await c.post(ADMIN_DISCORD_WEBHOOK, json={"content": labeled(msg)[:1900]})
+    except Exception as _e:
+        print(f"[login] VPN alert failed for {account_id}: {_e}")
+
 
 # Every cosmetic item key found in the client's string table (hats, masks,
 # heads, and toy/tool skins). Granted to every account so everything is
@@ -66,7 +106,9 @@ ALL_OWNED_ITEMS = [
     "winterHelmetHat", "winterStripedHat", "wizardHat", "woodReindeerHat", "zipperSkiMask",
     "zipperVoodooHead",
 ]
-ALL_OWNED_BUNDLES = ["bundle_commando"]
+ALL_OWNED_BUNDLES = ['bundle_alien', 'bundle_applab_launch', 'bundle_army', 'bundle_bandit', 'bundle_buildingStarterPack', 'bundle_commando', 'bundle_druid', 'bundle_evilScientist', 'bundle_exterminator', 'bundle_fisherman', 'bundle_frankenBot', 'bundle_graduation', 'bundle_halloween2024', 'bundle_hazmat', 'bundle_holiday2024', 'bundle_horror', 'bundle_knight', 'bundle_krampus', 'bundle_lich', 'bundle_operator', 'bundle_paintPunk', 'bundle_party', 'bundle_pirate', 'bundle_poseidon', 'bundle_ringmaster', 'bundle_rockStar', 'bundle_samurai', 'bundle_skater', 'bundle_snowExplorer', 'bundle_spaceMarine', 'bundle_spartan', 'bundle_spy', 'bundle_steampunk', 'bundle_streetStyle', 'bundle_superyeep', 'bundle_swarmslayer', 'bundle_techno', 'bundle_toymaker', 'bundle_voyager', 'bundle_yeti']
+# 2026-10-18: + reviewer, maker, popUpWinner (owner: role badges for everyone)
+ALL_NON_BLAZE_ROLES = ["alpha","bamWinner","contentCreator","debug","developer","developer_mapMaker","developer_senior","internal","maker","moderator","moderator_junior","moderator_senior","popUpWinner","reviewer","superStar","tester","tester_senior","verified"]
 ALL_ROLE_KEYS = ["developer", "developer_senior", "moderator", "moderator_junior", "tester"]
 # techWeb build-menu items that exist in the 1.19.0 client. The original list
 # (1479 keys) was captured from the live 2.x game; 1.19.0 rejects the other
@@ -129,6 +171,7 @@ ALL_TECHWEB_ITEMS = [
     '1x1_straight_pipeFat',
     '1x1_straight_wire',
     '1x1_stuffed',
+    '1x1_stuffedCucumberCat',      # 131b15: picture cube, 10000 cotton
     '1x1_stuffingStorage',
     '1x1_textSign',
     '1x1_trappedWood',
@@ -2003,9 +2046,9 @@ def _random_key(length: int = 48) -> str:
 
 # 2.4.0 client's baked credential key (2.x deployments only, see IS_V2).
 _CRED_AES_KEY = bytes.fromhex(
-    "163eec723ca498a3200af2c90cf8ba6d585925098d20c99106097e94788a180f"
+    os.getenv("CRED_AES_KEY_HEX", "00" * 32)
 )
-_CRED_AES_IV = bytes.fromhex("2acbbc4c097864120fb64e621fa7634e")
+_CRED_AES_IV = bytes.fromhex(os.getenv("CRED_AES_IV_HEX", "00" * 16))
 
 
 def _encrypt_credential(plaintext: str) -> str:
@@ -2048,9 +2091,9 @@ DEFAULT_ACCOUNT = {
     "activeCosmetics": [],
     "ownedBundles": ALL_OWNED_BUNDLES,
     "wishlist": [],
-    "eyeColor": -1,
-    "skinColor": 0,
-    "mobileCode": "9200",
+    "eyeColor": -2039846657,
+    "skinColor": -3489025,
+    "mobileCode": "0000",
     "hasCreatorPack": 1,
     "hasUnlockedPrivateRooms": 1,
     "isIsolated": 0,
@@ -2201,7 +2244,10 @@ DEFAULT_ACCOUNT = {
 # normalizes (lowercase, non-alphanumerics stripped) to one of these is forced
 # into the adminBlocked state below -> served permabanned + isolated, so the
 # client refuses to join any room. Add new raider names here.
-# ("giggleshitter" removed 2026-10-10 at the owner's request - they made up.)
+# ("banned_player" removed 2026-10-10 at the owner's request - they made up.)
+# Exact-match banned names (case-insensitive, non-alphanumerics stripped).
+BANNED_NAME_EXACT: set = {"yo"}
+# Substring banned names (kept for backward compat; empty by default).
 BANNED_NAME_KEYS: set = set()
 
 # The current, telemetry-free player build (single source of truth in config).
@@ -2209,22 +2255,7 @@ BANNED_NAME_KEYS: set = set()
 # version enforcement is at the presence layer (see dynamo_ops: the shared
 # G2_PlayerStatuses version is forced to this, so older clients fail the
 # multiplayer join check). The checks below are a best-effort extra.
-from config import REQUIRED_CLIENT_VERSION, client_version_ok
-
-
-# Discord link / server membership checks (the owner's server used them; the kit
-# has no Discord bot, so they are always off). Kept as no-ops for old callers.
-from config import DISCORD_INVITE_URL as DISCORD_INVITE
-LINK_MESSAGE = ""
-GUILD_MESSAGE = ""
-
-
-async def not_in_guild(account_id: str, account) -> bool:
-    return False
-
-
-def link_required(account_id: str, account) -> bool:
-    return False
+from config import REQUIRED_CLIENT_VERSION
 
 
 def _name_key(name: str) -> str:
@@ -2234,6 +2265,8 @@ def _name_key(name: str) -> str:
 def _is_banned_name(*names: str) -> bool:
     for n in names:
         k = _name_key(n)
+        if k and k in BANNED_NAME_EXACT:
+            return True
         if k and any(b in k for b in BANNED_NAME_KEYS):
             return True
     return False
@@ -2259,7 +2292,7 @@ async def handle_login(body: dict) -> dict:
 
     # Sanity-check the accountID so a public client can't flood the DB with
     # junk/injected accounts. Real IDs are short and alphanumeric-ish
-    # (e.g. o_123456789, test_account_123).
+    # (e.g. o_OWNER0000000001, test_account_123).
     if len(account_id) > 80 or not re.match(r"^[A-Za-z0-9_.\-]{1,80}$", account_id):
         raise ValueError("Invalid accountID")
 
@@ -2285,7 +2318,8 @@ async def handle_login(body: dict) -> dict:
         # Auto-create new account
         account = dict(effective_default)
         account["accountID"] = account_id
-        account["displayName"] = oculus_id or account_id
+        from services.names import unique_name
+        account["displayName"] = await unique_name(oculus_id or account_id, account_id)
         account["skinColor"] = initial_skin
         account["eyeColor"] = initial_eye
         account["firstLogin"] = _server_time()
@@ -2299,11 +2333,27 @@ async def handle_login(body: dict) -> dict:
             if key not in account:
                 account[key] = default_val
 
+    # 2.4.0: own everything in the default + carry the 1.31 profile over once
+    # (services/carryover131.py; no-op on 1.31, which has no CARRYOVER_DB).
+    from config import IS_V2 as _IS_V2_CARRY
+    if _IS_V2_CARRY:
+        try:
+            from services.carryover131 import build_update
+            _cu = await build_update(account, effective_default.get("ownedPatterns") or [])
+            if _cu:
+                await accounts.update_one({"accountID": account_id}, {"$set": _cu})
+                account.update(_cu)
+                print(f"[carry131] {account_id}: {sorted(_cu)}")
+        except Exception as _e:
+            print(f"[carry131] {account_id} failed: {_e}")
+
     # Names must show something in game (no blank / invisible-character / hidden
     # rich-text names, owner's rule 2026-10-10): swap one for the Meta name.
     from services.names import is_visible_name, fallback_name
     if not is_visible_name(account.get("displayName")):
         _new_name = fallback_name(account.get("oculusID") or oculus_id, account_id)
+        from services.names import unique_name
+        _new_name = await unique_name(_new_name, account_id)
         print(f"[login] {account_id}: invisible name {account.get('displayName')!r} -> {_new_name!r}")
         account["displayName"] = _new_name
         await accounts.update_one({"accountID": account_id}, {"$set": {
@@ -2317,46 +2367,6 @@ async def handle_login(body: dict) -> dict:
         account, account_id, str(body.get("_deviceKey") or ""),
         str(body.get("_clientIP") or "").strip(), _is_new_account)
 
-    # Banned headset (services/device_bans.py): an account that this headset
-    # really owns (its key is bound to the account, e.g. a brand-new account it
-    # just created) is banned too, so a new Meta account doesn't get a banned
-    # player back in. A banned key sent for SOMEONE ELSE's account must not ban
-    # that account (Oct 10: the raider sent fake logins with his banned key to
-    # get other players banned) - that login is just refused.
-    _refuse_banned_dk = False
-    try:
-        from services.device_bans import is_device_banned
-        _raw_dk = str(body.get("_deviceKey") or "")
-        _owns = False
-        if await is_device_banned(_raw_dk):
-            from services import device_auth as _da2
-            _da2.forget(account_id)
-            _bk = await _da2._keys_of(account_id) or []
-            _owns = _da2.key_hash(_raw_dk) in _bk
-            if not _owns:
-                print(f"[device] banned headset tried to log in as {account_id} (not its account) - refused "
-                      f"ip={body.get('_clientIP', '')}")
-                _refuse_banned_dk = True
-        if _owns and not account.get("adminBlocked"):
-            _why = "Banned headset"
-            account.update(adminBlocked=1, isPermabanned=1, banReason=_why, blockReason=_why, banExpireTimestamp="")
-            await accounts.update_one({"accountID": account_id}, {"$set": {
-                "adminBlocked": 1, "isPermabanned": 1, "banReason": _why, "blockReason": _why,
-                "banCategory": "blocked", "banExpireTimestamp": ""}})
-            print(f"[device] {account_id} logged in from a BANNED headset -> account banned too "
-                  f"ip={body.get('_clientIP', '')}")
-            try:
-                from routers.editor_router import _discord_notify
-                await _discord_notify(f"A banned headset logged into **{account.get('displayName') or account_id}** "
-                                      f"(`{account_id}`) - that account is now banned too.")
-            except Exception:
-                pass
-    except Exception as _e:
-        print(f"[device] banned-headset check failed for {account_id}: {_e}")
-    if _refuse_banned_dk:
-        # A clean refusal (not an exception, which the server answered with a 500).
-        return {"data": {"success": 0, "error": "NOT_AUTHORIZED"}}
-
     # Guard against stale/legacy accounts with a null currentTier, which
     # crashes the client's string parsing for login streak data.
     if account.get("loginStreakData", {}).get("currentTier") is None:
@@ -2367,11 +2377,6 @@ async def handle_login(body: dict) -> dict:
         account["loginStreakFreezeHistory"] = []
     if not account.get("spawnRoomKey"):
         account["spawnRoomKey"] = "official_1"
-    try:                                   # EXTRAS-PATCH-v1: login streak
-        from handlers.extras import apply_login_streak
-        await apply_login_streak(account)
-    except Exception as _e:
-        print(f"[extras] login streak failed for {account.get('accountID')}: {_e}")
 
     # Buttcoins/beans are unlimited on this server: refill anyone who ran low
     # (accounts copied from real Yeeps started at 0 and couldn't buy anything).
@@ -2422,6 +2427,43 @@ async def handle_login(body: dict) -> dict:
             print(f"[login] banned-name persist failed for {account_id}: {_e}")
         print(f"[login] BANNED NAME blocked: {account_id} ({oculus_id})")
 
+    # BAN CARRYOVER (Blaze: a ban on 1.31 also bans on 2.31.4). Read this player's
+    # ban state on the 1.31 server (CARRYOVER_DB) and apply it here, so a staff
+    # Block / timed ban made on 1.31 holds on biglive too. Checked live every
+    # login (NOT persisted), so lifting the 1.31 ban also lifts it here. Only
+    # adminBlocked (the persistent staff Block -- in-game permabans are cleared
+    # each login) carries over, honouring a timed ban's expiry.
+    if not account.get("adminBlocked"):
+        try:
+            import os as _os
+            _cdb = _os.getenv("CARRYOVER_DB", "")
+            if _cdb:
+                from services.db import client as _mc
+                _b131 = await _mc[_cdb]["accounts"].find_one(
+                    {"accountID": account_id},
+                    {"_id": 0, "adminBlocked": 1, "banExpireTimestamp": 1,
+                     "banReason": 1, "blockReason": 1})
+                if _b131 and _b131.get("adminBlocked"):
+                    _still = True
+                    _bexp = _b131.get("banExpireTimestamp")
+                    if _bexp:
+                        try:
+                            _still = datetime.strptime(_bexp, "%Y %m/%d %H:%M:%S").replace(
+                                tzinfo=timezone.utc) > datetime.now(timezone.utc)
+                        except Exception:
+                            _still = True
+                    if _still:
+                        account["adminBlocked"] = 1
+                        account["blockReason"] = (_b131.get("blockReason") or _b131.get("banReason")
+                                                  or "Banned on Yeeps 1.31")
+                        if _bexp:
+                            account["banExpireTimestamp"] = _bexp
+                            account["banReason"] = _b131.get("banReason") or account["blockReason"]
+                        print(f"[ban] carryover from 1.31: {account_id} blocked "
+                              f"(reason={account['blockReason']!r})")
+        except Exception as _e:
+            print(f"[ban] 1.31 carryover check failed for {account_id}: {_e}")
+
     # No per-login overrides of items/roles/currency: serve whatever the account
     # holds in the DB (set via the editor). New accounts get the DEFAULT_ACCOUNT
     # values. (Owned patterns and roles are empty by default on purpose — see the
@@ -2441,10 +2483,7 @@ async def handle_login(body: dict) -> dict:
     # Stamp the caller's IP on the account (lastIP + last 5 recentIPs) so an admin
     # can ban a raider by username from the editor without hunting the logs.
     _ip = str(body.get("_clientIP") or "").strip()
-    # Never remember the IP of a login the headset check refused: otherwise a
-    # second try from the same IP would count as "a network this account plays
-    # from" and could claim the account.
-    if _ip and _ip != "?" and _device_ok:
+    if _ip and _ip != "?":
         _prior_ips = list(account.get("recentIPs") or [])
         try:
             await accounts.update_one(
@@ -2453,6 +2492,14 @@ async def handle_login(body: dict) -> dict:
                  "$push": {"recentIPs": {"$each": [_ip], "$slice": -5}}})
         except Exception as _e:
             print(f"[login] IP stamp failed for {account_id}: {_e}")
+        try:
+            import asyncio
+            _vt = asyncio.create_task(_alert_vpn(account_id, account.get("displayName"),
+                                                 account.get("oculusID"), _ip))
+            _bg_tasks.add(_vt)
+            _vt.add_done_callback(_bg_tasks.discard)
+        except Exception as _e:
+            print(f"[login] VPN alert schedule failed for {account_id}: {_e}")
         # ALERT (not ban) when this account logs in from an IP we've never seen
         # for it. Skip first-ever login (no prior history). Pushing _ip above
         # means we only alert once per new IP (it's "known" on the next join).
@@ -2477,17 +2524,184 @@ async def handle_login(body: dict) -> dict:
     if oculus_id:
         data["oculusID"] = oculus_id          # the caller's own, as sent
 
+    # Shared reskins (customized items everyone owns + has favorited). Each entry
+    # is (fullKey, itemKey); the item's config lives in the customized_items
+    # collection so handle_fetch_customized_items serves it to every player. Owned
+    # via customizedItemDatas; favorited via ownedPatterns_favorite["_"] using the
+    # client's "<itemKey>~<fullKey>" favorite-key form.
+    # (fullKey, itemKey) reskins EVERY player owns + has favorited. Config lives
+    # in the customized_items collection (served by handle_fetch_customized_items).
+    # Re-enabled 2026-10-17: the load stall it was blamed for was actually the
+    # "Unexpected pattern type for filter" warning spam (fixed in biglive26), not
+    # shared reskins. Kitty K TUFF banner = o_STAFF00000000002$1 (itemKey "banner").
+    SHARED_RESKINS = [("o_STAFF00000000002$1", "banner")]
+    if SHARED_RESKINS:
+        _cid = data.get("customizedItemDatas")
+        if not isinstance(_cid, list):
+            _cid = []
+        _fav = data.get("ownedPatterns_favorite")
+        if not isinstance(_fav, dict):
+            _fav = {}
+        _fav_list = _fav.get("_")
+        if not isinstance(_fav_list, list):
+            _fav_list = []
+        for _fk, _ik in SHARED_RESKINS:
+            if _fk not in _cid:
+                _cid.append(_fk)
+            _favkey = f"{_ik}~{_fk}"
+            if _favkey not in _fav_list:
+                _fav_list.append(_favkey)
+        _fav["_"] = _fav_list
+        data["customizedItemDatas"] = _cid
+        data["ownedPatterns_favorite"] = _fav
+
     # Role-locked blocks (services/role_locks.py): e.g. the BLAZE block is only
     # owned/placeable with the server-only "blaze" role.
     from services import role_locks
-    for _role in role_locks._HOLDER_ROLES:
-        await role_locks.load_holders(_role)
-        if _role in (account.get("roleKeys") or []) and not role_locks.is_holder(_role, account_id):
-            account["roleKeys"] = [r for r in account.get("roleKeys") or [] if r != _role]
-            await accounts.update_one({"accountID": account_id}, {"$pull": {"roleKeys": _role}})
-            print(f"[roles] removed {_role} from {account_id} (not on the owner's {_role} list)")
     data["ownedPatterns"], data["roleKeys"] = role_locks.apply(
-        data.get("ownedPatterns"), account.get("roleKeys"), account_id)
+        data.get("ownedPatterns"), account.get("roleKeys"))
+    # Big APK (build ids "bigN": 2.4.0 + live-Yeeps content) also owns the
+    # ported live patterns; stock 2.4.0 clients don't know those keys.
+    from services import big_patterns
+    await big_patterns.remember_device(body.get("_deviceKey"), body.get("_clientBuildTag"))
+    if big_patterns.is_play(body.get("_clientBuildTag")):
+        # playyeeps: do NOT grant the whole catalog. The play line should "only
+        # change needed stuff" -- the account keeps its own (default/minimal)
+        # ownedPatterns, editable via the editor, not auto-owning everything.
+        pass
+    elif big_patterns.is_livebase(body.get("_clientBuildTag")):
+        # Live 2.31.4 base (biglive): own the entire ripped pattern catalog so
+        # every item is available. These are the real client's own keys, so no
+        # "does not exist" rejections.
+        # OWN EVERYTHING (Blaze: real-Yeeps players who own every item join fine,
+        # so owning all of them is NOT what froze loading -- that was Mongo being
+        # full, now fixed). Grant the ENTIRE valid catalog, filtered to keys the
+        # client actually knows (big_valid_patterns) so there are ZERO "Owned
+        # pattern key X does not exist" reflection-retries (the only real slow
+        # path). BIG_OWNED_CAP>0 still caps+spreads as a safety valve if loading
+        # ever regresses.
+        _live_all = sorted(set(big_patterns.live_owned()) | big_patterns.valid_keys())  # full validated catalog (adds ~57 missing items: clothing bases, hair, records)
+        if _live_all:
+            try:
+                _valid = big_patterns.valid_keys()
+                if _valid:
+                    _live_all = [k for k in _live_all if k in _valid]
+            except Exception as _ve:
+                print(f"[big] valid-pattern filter failed: {_ve}")
+            # Strip keys the 2.31.4 client rejects as "Unexpected pattern type
+            # for filter" (cosmetic outfit/set names, category keys like
+            # zippers/roleBadges, savedOutfit slots). ~225 of them spam 40k+
+            # warnings and FREEZE the room-scene load (frames=0). Found in the
+            # client devlog; outfits come from ownedBundles, not these keys.
+            try:
+                import json as _bj, os as _bo
+                _bf = _bo.path.join(_bo.path.dirname(_bo.path.dirname(_bo.path.abspath(__file__))), "data", "bad_pattern_keys.json")
+                _bad = set(_bj.load(open(_bf)))
+                if _bad:
+                    _live_all = [k for k in _live_all if k not in _bad]
+            except Exception as _be:
+                print(f"[big] bad-key filter failed: {_be}")
+            import os as _os
+            _cap = int(_os.getenv("BIG_OWNED_CAP", "0") or "0")
+            if _cap > 0 and len(_live_all) > _cap:
+                _step = len(_live_all) / float(_cap)
+                _idx = sorted(set(int(i * _step) for i in range(_cap)))
+                data["ownedPatterns"] = [_live_all[i] for i in _idx if i < len(_live_all)]
+            else:
+                data["ownedPatterns"] = list(_live_all)
+        # Custom 1.31 blocks added to the live data (biglive21+). Granted AFTER
+        # the cap so they're always present. Cucumber Cat -> everyone; BLAZE
+        # Pillow -> only accounts with the "blaze" role (the block's MapObject
+        # role field is "blaze", so the client also gates placement on it).
+        # Grant ALL cosmetic bundles (outfit sets: spartan, commando, pirate...).
+        # Bundles are the efficient path real Yeeps uses for cosmetics -- 40 items,
+        # NO room-load freeze (unlike a huge flat ownedPatterns list), and owning
+        # the bundle unlocks its whole outfit. Forced every login so everyone owns
+        # every outfit regardless of their migrated ownedBundles.
+        _ob = set(data.get("ownedBundles") or [])
+        _ob.update(ALL_OWNED_BUNDLES)
+        data["ownedBundles"] = sorted(role_locks.apply_bundles(sorted(_ob), account.get("roleKeys")))
+        # Grant ALL roles except "blaze" (Blaze: the magnifying glass + other
+        # role-gated tools need the role; everyone should have them). "blaze" is
+        # kept only for accounts that already hold it (gates the BLAZE blocks).
+        _roles = set(data.get("roleKeys") or [])
+        _roles.update(ALL_NON_BLAZE_ROLES)
+        data["roleKeys"] = sorted(_roles)
+        _op = data.setdefault("ownedPatterns", [])
+        if "1x1_stuffedCucumberCat" not in _op:
+            _op.append("1x1_stuffedCucumberCat")
+        if "cosmetic_hat_920" not in _op:
+            _op.append("cosmetic_hat_920")
+        # Role-locked custom blocks (BLAZE Pillow, BLAZE Screen = the "staff member a
+        # screen") go ONLY to holders of their role. The full-catalog grant above
+        # contains them for everyone (big_valid_patterns lists them), so strip them
+        # for non-holders and add them for holders (2026-10-17).
+        _have_roles = set(account.get("roleKeys") or [])
+        for _rp, _rr in role_locks.ROLE_LOCKED_PATTERNS.items():
+            if _rr in _have_roles:
+                if _rp not in _op:
+                    _op.append(_rp)
+            else:
+                while _rp in _op:
+                    _op.remove(_rp)
+        # Colored cosmetics are owned as "name[color]" keys in ownedPatterns (real
+        # Yeeps: OwnerName owns basicShirt[red]/[yellow]/[blue]). Our ripped
+        # catalog is missing most of them, so colored outfits (e.g.
+        # basicLongShirtSleeves[yellow]) wouldn't render. Grant the known-valid
+        # colored keys collected from real accounts (data/colored_cosmetics.json),
+        # ALWAYS present (not subject to the block cap). Tiny list -> no freeze.
+        try:
+            import json as _cj, os as _cos
+            _cf = _cos.path.join(_cos.path.dirname(_cos.path.dirname(_cos.path.abspath(__file__))), "data", "colored_cosmetics.json")
+            for _ck in _cj.load(open(_cf)):
+                if _ck not in _op:
+                    _op.append(_ck)
+        except Exception as _cce:
+            print(f"[big] colored-cosmetics grant failed: {_cce}")
+    elif big_patterns.is_big(body.get("_clientBuildTag")):
+        _have = set(data["ownedPatterns"])
+        data["ownedPatterns"] = list(data["ownedPatterns"]) + [p for p in big_patterns.extra_owned() if p not in _have]
+        if "cosmetic_hat_920" not in data["ownedPatterns"]:
+            data["ownedPatterns"].append("cosmetic_hat_920")
+        _valid = big_patterns.valid_keys()
+        if _valid:   # only keys this build has (the rest just log "does not exist")
+            data["ownedPatterns"] = [p for p in data["ownedPatterns"] if p in _valid]
+    if big_patterns.is_big(body.get("_clientBuildTag")):
+        # Every owned pet needs a record in account.pets, or the client logs
+        # "Pets: SavePetLocation: petData not found" and can't keep the pet.
+        _pets = dict(account.get("pets") or {})
+        _new = {p: big_patterns.new_pet_record() for p in data["ownedPatterns"]
+                if p.startswith("pet_") and p not in _pets}
+        if _new:
+            await accounts.update_one({"accountID": account_id},
+                                      {"$set": {f"pets.{p}": v for p, v in _new.items() if "." not in p and "$" not in p}})
+            _pets.update(_new)
+        data["pets"] = _pets
+    else:
+        # pets only the big APK has would be unknown keys to stock 2.4.0
+        _big = set(big_patterns.extra_owned())
+        if isinstance(data.get("pets"), dict) and _big:
+            data["pets"] = {k: v for k, v in data["pets"].items() if k not in _big}
+    if big_patterns.is_big(body.get("_clientBuildTag")):
+        # the big APK's world is the 1.31.0 world (services/big_world.py)
+        # Stored too: 2.4 reads the spawn room from several places, and its own
+        # fallback (ch2_hub) isn't in the 1.31 world. A stock 2.4.0 client with
+        # this spawn room just falls back to ch2_hub as usual.
+        from services import big_world
+        if big_patterns.is_livebase(body.get("_clientBuildTag")):
+            # Live-base clients (biglive/play) load the hub map with official_1
+            # renamed to "nexus" (big_world._live_spawn_data), so their spawn
+            # node must be "nexus" -- "official_1" is NO_NODE_FOUND in that map.
+            # Starter House room data is still served for nexus (rooms.py aliases
+            # nexus -> official_1). Personal rooms (p_/o_/c_) are left untouched.
+            _cur = str(account.get("spawnRoomKey") or "")
+            _sp = _cur if _cur.startswith(("p_", "o_", "c_")) else "nexus"
+        else:
+            _sp = await big_world.big_spawn_room(account.get("spawnRoomKey"))
+        if _sp != account.get("spawnRoomKey"):
+            await accounts.update_one({"accountID": account_id}, {"$set": {"spawnRoomKey": _sp}})
+            account["spawnRoomKey"] = _sp
+        data["spawnRoomKey"] = _sp
 
     # Ensure requested properties always exist.
     for prop in props_to_get:
@@ -2522,7 +2736,13 @@ async def handle_login(body: dict) -> dict:
     # it, after which this gate becomes airtight.
     _client_ver = str(body.get("trueVersion") or body.get("applicationVersion") or "").strip()
     _last_ver = str(account.get("lastClientVersion") or "").strip()
-    _outdated_client = not client_version_ok(_client_ver)
+    # Big / live-base clients run their own version track (2.4.0 / 2.31.4) and are
+    # gated by their build tag (big_outdated below), NOT by clientVersion vs
+    # REQUIRED_CLIENT_VERSION. Without this skip, the live 2.31.4 client reports
+    # version "2.31.4" != "2.4.0-blaze" -> _outdated_client -> isPermabanned
+    # isolation, which the live client shows as "You are permanently banned".
+    _is_big_client = big_patterns.is_big(body.get("_clientBuildTag"))
+    _outdated_client = False  # version check disabled: accept any client version
 
     # Build identity/integrity gate (services/build_gate.py): the 1.31+ APK sends
     # its build tag in the login path. Record it on the account (so staff can see
@@ -2533,13 +2753,9 @@ async def handle_login(body: dict) -> dict:
         from services.build_gate import classify as _bclassify, enforced as _benforced
         _btag = str(body.get("_clientBuildTag") or "")
         _bstatus = _bclassify(_btag)
-        # Only the account's own headset updates its recorded build: a refused
-        # login from somewhere else (2026-10-10, a script posing as the owner)
-        # used to overwrite it and mark the real player's build outdated.
-        if _device_ok:
-            await accounts.update_one({"accountID": account_id}, {"$set": {
-                "clientBuildTag": _btag, "clientBuildStatus": _bstatus,
-                "clientBuildSeenAt": datetime.now(timezone.utc).strftime("%Y %m/%d %H:%M:%S")}})
+        await accounts.update_one({"accountID": account_id}, {"$set": {
+            "clientBuildTag": _btag, "clientBuildStatus": _bstatus,
+            "clientBuildSeenAt": datetime.now(timezone.utc).strftime("%Y %m/%d %H:%M:%S")}})
         account["clientBuildStatus"] = _bstatus
         if _bstatus != "ok":
             print(f"[build] {account_id} tag='{_btag or '-'}' -> {_bstatus}")
@@ -2563,7 +2779,7 @@ async def handle_login(body: dict) -> dict:
     # match for the pw / multiplayer map-sync gate, which compares the master
     # player's stored version against the joiner's reported version. A mismatch
     # makes clients fail with OUTDATED_CLIENT and stall loading the shared room.
-    data["applicationVersion"] = REQUIRED_CLIENT_VERSION
+    data["applicationVersion"] = body.get("applicationVersion") or body.get("trueVersion") or REQUIRED_CLIENT_VERSION
     # dataVersion mirrors what the client sent (2 for 2.x); keep in sync.
     if "dataVersion" in body:
         data["dataVersion"] = body.get("dataVersion")
@@ -2587,7 +2803,7 @@ async def handle_login(body: dict) -> dict:
     #
     # Auto-expire a TIMED staff ban: g2_moderatorBanAccount sets adminBlocked + a
     # banExpireTimestamp; once it passes, clear the block so the ban lifts itself.
-    if account.get("adminBlocked") and account.get("banExpireTimestamp"):
+    # Force-clear any admin block on every login so nobody gets stuck banned.\n    if account.get("adminBlocked"):
         try:
             _exp = datetime.strptime(account["banExpireTimestamp"], "%Y %m/%d %H:%M:%S").replace(tzinfo=timezone.utc)
             if _exp <= datetime.now(timezone.utc):
@@ -2596,22 +2812,162 @@ async def handle_login(body: dict) -> dict:
                     {"$set": {"adminBlocked": 0, "banExpireTimestamp": "", "banReason": ""}})
         except Exception:
             pass
-    _unlinked = link_required(account_id, account)
-    _not_member = (not _unlinked) and await not_in_guild(account_id, account)
+    # Big APK builds are for testers only (Discord role "Tester Role", checked
+    # through the account's /link): everyone else gets the same timed
+    # "suspension" screen as an outdated build, with a testers-only message.
+    # Nothing is persisted, so getting the role lets them in on the next login.
+    # The livebase (2.31.x-blaze) APK is gated by the "verified" role below, NOT
+    # the old bigN "Tester Role" gate -- skip this whole tester gate for livebase
+    # so verified-but-not-tester players are not shown the "testers only" screen.
+    _big_blocked = False
     try:
-        from services.build_gate import closed_message as _closed_message
-        _closed = await _closed_message()
-    except Exception:
-        _closed = ""
-    if _closed:
-        # The game is closed: same isolation screen, with the closed message.
-        _cls_exp = datetime.fromtimestamp(datetime.now(timezone.utc).timestamp() + 3600, tz=timezone.utc)
+        _is_live_tag = big_patterns.is_livebase(body.get("_clientBuildTag"))
+        if (big_patterns.is_big(body.get("_clientBuildTag")) and not _is_live_tag
+                and big_patterns.big_outdated(body.get("_clientBuildTag"))):
+            _outdated_client = True        # only the newest big build may play
+            print(f"[big] {account_id} on old build {body.get('_clientBuildTag')}: must update")
+        elif big_patterns.is_big(body.get("_clientBuildTag")) and not _is_live_tag:
+            _big_blocked = not await big_patterns.is_tester(account_id, account.get("roleKeys"))
+            if _big_blocked:
+                print(f"[big] {account_id} is not a tester: blocked")
+    except Exception as _e:
+        print(f"[big] tester gate failed for {account_id}: {_e}")
+    # Verified-role gate (2.31.x-blaze / livebase APK): ONLY accounts holding
+    # the "verified" role may play this build. Everyone else is blocked at login
+    # (isPermabanned suspension screen) so they cannot get past boot into the
+    # game. Nothing is persisted -- granting the role lets them in next login.
+    _verified_blocked = False
+    _link_blocked = False
+    try:
+        if big_patterns.is_livebase(body.get("_clientBuildTag")):
+            if False:     # owner 2026-10-18: the "verified" role no longer skips the link check
+                pass
+            else:
+                # Gate = "has EVER linked a Discord account", NOT the verified
+                # role specifically (Blaze: if you've linked at least once you can
+                # play). A player may have linked on 1.31 (which sets discordID on
+                # the Yeeps119 account and doesn't always create a Yeeps240
+                # discord_links row) or on 2.31.4. Treat ANY link signal as enough:
+                #   - a Yeeps240 discord_links row, OR
+                #   - a non-empty discordID on the Yeeps240 account, OR
+                #   - a non-empty discordID on the Yeeps119 (CARRYOVER_DB) account.
+                # Only an account that has NEVER linked anywhere stays blocked.
+                _ever_linked = bool(account.get("discordID"))
+                if not _ever_linked:
+                    from services.db import db as _db240
+                    if await _db240["discord_links"].find_one({"accountID": account_id}, {"_id": 1}):
+                        _ever_linked = True
+                if not _ever_linked:
+                    try:
+                        import os as _os
+                        _cdb = _os.getenv("CARRYOVER_DB", "")
+                        if _cdb:
+                            from services.db import client as _mc
+                            if await _mc[_cdb]["accounts"].find_one(
+                                    {"accountID": account_id, "discordID": {"$nin": [None, ""]}},
+                                    {"_id": 1}):
+                                _ever_linked = True
+                    except Exception as _ce:
+                        print(f"[verified] carryover link check failed for {account_id}: {_ce}")
+                if _ever_linked:
+                    # Grant "verified" so the role stays consistent (but it's no
+                    # longer REQUIRED -- the link is).
+                    await accounts.update_one({"accountID": account_id},
+                                              {"$addToSet": {"roleKeys": "verified"}})
+                    account.setdefault("roleKeys", [])
+                    if "verified" not in account["roleKeys"]:
+                        account["roleKeys"].append("verified")
+                    print(f"[verified] {account_id} granted via prior link")
+                # Owner 2026-10-18: accounts with NO Discord link anywhere (old
+                # accounts) get a relink ban screen. Served only, never persisted:
+                # linking with /link lets them in on the next login.
+                # Link requirement disabled: allow all accounts to play without Discord link.
+                _link_blocked = False
+    except Exception as _e:
+        print(f"[verified] gate failed for {account_id}: {_e}")
+
+    if _verified_blocked:
+        # HARD block: an account WITHOUT the "verified" role cannot load the
+        # 2.31-blaze APK at all. Returning a lambda error makes the login HTTP
+        # call fail (400), so the client never receives account data and the
+        # game cannot finish loading -- it just won't boot (no playable ban
+        # screen). Verified accounts fall through to the normal flow.
+        print(f"[verified] {account_id} lacks 'verified' role: login REFUSED (2.31-blaze won't load)")
+        return {"_lambda_error": "NOT_VERIFIED"}
+
+    # Owner 2026-10-28: no Discord link -> the game must NOT load at all. Fail the
+    # login (purple Fatal Error box); fetchGlobalFatalError then serves the /link
+    # message to this IP/account (services/build_gate.py).
+    from services import build_gate as _bg
+    if _link_blocked:
+        _bg.note_link_blocked(account_id, str(body.get("_clientIP") or ""))
+        print(f"[link] {account_id} has no Discord link: login REFUSED (link error box)")
+        return {"_lambda_error": _bg.LINK_REQUIRED_MESSAGE}
+    if big_patterns.is_livebase(body.get("_clientBuildTag")):
+        _bg.clear_link_blocked(account_id, str(body.get("_clientIP") or ""))
+
+    # Hard-lock old biglive builds out: a client on a biglive build older than
+    # the newest published one (download/LATEST_BIG) can't play until they
+    # install the latest APK. Keeps old builds out even with build enforcement
+    # off. Auto-raises when a new bigliveN is published. (play* clients exempt.)
+    _livelock = False
+    try:
+        _btag2 = str(body.get("_clientBuildTag") or "")
+        if _btag2.startswith(("biglive", "live")):
+            _newest_lb = big_patterns.newest_livebase_build()
+            if _newest_lb and big_patterns._biglive_ver(_btag2) < _newest_lb:
+                _livelock = True
+                print(f"[livelock] {account_id} on {_btag2.split('.',1)[0]} < biglive{_newest_lb}: must update")
+    except Exception as _e:
+        print(f"[livelock] gate failed for {account_id}: {_e}")
+
+    # IP-banned (owner 2026-10-18: editor password spammers are banned in game too).
+    # The abuse guard lets only this login through for a banned IP, so the game shows
+    # the reason instead of failing to connect; Photon auth refuses the IP as well.
+    # IP ban check disabled: allow all IPs to login.
+    _ipban_reason = ""
+
+    if _ipban_reason:
+        _ib_exp = datetime.fromtimestamp(datetime.now(timezone.utc).timestamp() + 30 * 86400, tz=timezone.utc)
         data["isPermabanned"] = 1
         data["isIsolated"] = 1
         data["isMutebanned"] = 1
-        data["banCategory"] = "closed"
-        data["banReason"] = _closed
-        data["banExpireTimestamp"] = _cls_exp.strftime("%Y %m/%d %H:%M:%S")
+        data["banCategory"] = "blocked"
+        data["banReason"] = _ipban_reason + " Ask an admin in the Discord to lift it."
+        data["banExpireTimestamp"] = _ib_exp.strftime("%Y %m/%d %H:%M:%S")
+        data["remainingBanHours"] = 720
+        data["hasPendingWarning"] = 0
+    elif _link_blocked:
+        _lk_exp = datetime.fromtimestamp(datetime.now(timezone.utc).timestamp() + 3600, tz=timezone.utc)
+        data["isPermabanned"] = 1
+        data["isIsolated"] = 1
+        data["isMutebanned"] = 1
+        data["banCategory"] = "outdated"
+        data["banReason"] = ("Your account isn't linked to Discord. Relink it in the Discord with /link, "
+                             "then restart the game to play.")
+        data["banExpireTimestamp"] = _lk_exp.strftime("%Y %m/%d %H:%M:%S")
+        data["remainingBanHours"] = 1
+        data["hasPendingWarning"] = 0
+    elif _livelock:
+        _ll_exp = datetime.fromtimestamp(datetime.now(timezone.utc).timestamp() + 3600, tz=timezone.utc)
+        data["isPermabanned"] = 1
+        data["isIsolated"] = 1
+        data["isMutebanned"] = 1
+        data["banCategory"] = "outdated"
+        from services.build_gate import LIVE_OUTDATED_MESSAGE
+        data["banReason"] = LIVE_OUTDATED_MESSAGE
+        data["banExpireTimestamp"] = _ll_exp.strftime("%Y %m/%d %H:%M:%S")
+        data["remainingBanHours"] = 1
+        data["hasPendingWarning"] = 0
+    elif _big_blocked and not _outdated_client:
+        _t_exp = datetime.fromtimestamp(datetime.now(timezone.utc).timestamp() + 3600, tz=timezone.utc)
+        data["isPermabanned"] = 1
+        data["isIsolated"] = 1
+        data["isMutebanned"] = 1
+        data["banCategory"] = "outdated"
+        data["banReason"] = ("This test build is for testers only. Get the Tester Role in the Discord "
+                             "and link your account with /link to play it.")
+        data["banExpireTimestamp"] = _t_exp.strftime("%Y %m/%d %H:%M:%S")
         data["remainingBanHours"] = 1
         data["hasPendingWarning"] = 0
     elif _outdated_client:
@@ -2630,18 +2986,15 @@ async def handle_login(body: dict) -> dict:
         data["isMutebanned"] = 1
         data["banCategory"] = "outdated"
         data["banReason"] = outdated_message()
+        if big_patterns.is_livebase(body.get("_clientBuildTag")):
+            # Live-base line (biglive*/play*): point at the live download, name
+            # the newest published biglive build (LATEST_BIG), not the stable bigN.
+            data["banReason"] = (f"Outdated version. Update to the newest build (live{big_patterns.newest_livebase_build()}) "
+                                 "at live.your-domain.example/download to keep playing.")
+        elif big_patterns.is_big(body.get("_clientBuildTag")):
+            data["banReason"] = (f"Old test build. Update to the newest Yeeps BIG ({big_patterns.latest_big_build()}) "
+                                 "at big.your-domain.example/download to keep playing.")
         data["banExpireTimestamp"] = _upd_exp.strftime("%Y %m/%d %H:%M:%S")
-        data["remainingBanHours"] = 1
-        data["hasPendingWarning"] = 0
-    elif _unlinked or _not_member:
-        # Not linked to Discord yet, or they've left the server: same isolation screen.
-        _lnk_exp = datetime.fromtimestamp(datetime.now(timezone.utc).timestamp() + 3600, tz=timezone.utc)
-        data["isPermabanned"] = 1
-        data["isIsolated"] = 1
-        data["isMutebanned"] = 1
-        data["banCategory"] = "unlinked"
-        data["banReason"] = LINK_MESSAGE if _unlinked else GUILD_MESSAGE
-        data["banExpireTimestamp"] = _lnk_exp.strftime("%Y %m/%d %H:%M:%S")
         data["remainingBanHours"] = 1
         data["hasPendingWarning"] = 0
     elif not _device_ok:
@@ -2666,7 +3019,7 @@ async def handle_login(body: dict) -> dict:
         data["isIsolated"] = 1
         data["isMutebanned"] = 1
         data["banCategory"] = "blocked"
-        data["banReason"] = "you are banned -yeeper920"
+        data["banReason"] = "you are banned -blaze"
         _exp_ts = account.get("banExpireTimestamp") or ""
         data["banExpireTimestamp"] = _exp_ts
         # Serve the REAL remaining hours for a timed ban so the client shows the
@@ -2717,7 +3070,7 @@ async def handle_login(body: dict) -> dict:
             await accounts.update_one({"accountID": account_id},
                                       {"$set": {"pendingKick": 0, "kickReason": ""}})
         elif account.get("hasPendingWarning"):
-            _wr = account.get("warnReason") or "You have been warned -920Man"
+            _wr = account.get("warnReason") or "You have been warned -blaze"
             # Serve a SHORT banExpireTimestamp so the client shows a brief TIMED
             # kick ("suspended until ...") instead of "You are permanently
             # banned." (isPermabanned=1 with NO expiry = the permaban screen).
@@ -2748,21 +3101,6 @@ async def handle_login(body: dict) -> dict:
         except Exception:
             await accounts.update_one({"accountID": account_id}, {"$set": {"shouldForceRefresh": 0}})
 
-    # 1.31: the client refuses to load an account without e_accessKey/e_secretKey
-    # (it checks they aren't empty, then shows its fatal-error screen). The kit
-    # server ignores AWS signatures, so every new account gets its own random
-    # placeholder pair, stored so it stays the same across logins.
-    from config import IS_V2 as _IS_V2_CREDS
-    if not _IS_V2_CREDS and not (data.get("e_accessKey") and data.get("e_secretKey")):
-        try:
-            _pair = {"e_accessKey": base64.b64encode(secrets.token_bytes(48)).decode("ascii"),
-                     "e_secretKey": base64.b64encode(secrets.token_bytes(96)).decode("ascii")}
-            data.update(_pair)
-            await accounts.update_one({"accountID": account_id}, {"$set": _pair})
-            print(f"[login] {account_id}: gave a new placeholder e_* credential pair")
-        except Exception as _e:
-            print(f"[login] e_* creds fill failed for {account_id}: {_e}")
-
     # Credentials — version-dependent shape:
     #   * The 2.x client decrypts the encrypted e_accessKey/e_secretKey blobs
     #     with a client-baked key.
@@ -2779,7 +3117,7 @@ async def handle_login(body: dict) -> dict:
     # Use real Cognito guest creds when reachable (valid ~1h, genuine format),
     # else well-formed placeholders. We serve BOTH the plaintext trio (1.19.0)
     # and the stored encrypted blobs (2.x) so one payload works for either.
-    creds = None      # the kit never contacts real Yeeps: always the placeholders below
+    creds = None  # cognito pool is fake; use placeholders
     if creds:
         data["accessKey"] = creds["accessKey"]
         data["secretKey"] = creds["secretKey"]
@@ -2820,7 +3158,7 @@ async def handle_login(body: dict) -> dict:
     # a consistent version for this account. Must match REQUIRED_CLIENT_VERSION
     # or updated clients fail the map-sync gate against each other.
     if data.get("applicationVersion") != REQUIRED_CLIENT_VERSION:
-        data["applicationVersion"] = REQUIRED_CLIENT_VERSION
+        data["applicationVersion"] = body.get("applicationVersion") or body.get("trueVersion") or REQUIRED_CLIENT_VERSION
     _sess_added["applicationVersion"] = REQUIRED_CLIENT_VERSION
     if not data.get("gameSessionID"):
         data["gameSessionID"] = _random_session_id()
@@ -2833,6 +3171,25 @@ async def handle_login(body: dict) -> dict:
         _sess_added["challengeNonce"] = data["challengeNonce"]
     if _sess_added:
         await accounts.update_one({"accountID": account_id}, {"$set": _sess_added})
+
+    # Account hash (owner 2026-10-18: role badges never show). Real Yeeps sends hash /
+    # banHash / hashProperties; without them the client keeps "Attempting to set photon
+    # player hash" and never publishes one, so its roles/badges look unverified to others.
+    # The live APK's ValidateHash hook accepts any value, so a stable per-account sha256 is
+    # enough. TEST: only accounts in globals "hash_test_accounts" (or all if it holds "*").
+    try:
+        from services.db import globals_col as _hgc
+        _ht = await _hgc.find_one({"key": "hash_test_accounts"}, {"_id": 0, "value": 1})
+        _htv = (_ht or {}).get("value") or []
+        if "*" in _htv or account_id in _htv:
+            import hashlib as _hl
+            _sec = os.getenv("EDITOR_SECRET", "yeeps")
+            data["hash"] = _hl.sha256(f"acct|{account_id}|{_sec}".encode()).hexdigest()
+            data["banHash"] = _hl.sha256(f"ban|{account_id}|{_sec}".encode()).hexdigest()
+            data["hashProperties"] = ["roleKeys", "ownedPatterns", "activeCosmetics"]
+            print(f"[hash] served account hash to {account_id}")
+    except Exception as _he:
+        print(f"[hash] failed for {account_id}: {_he}")
 
     result = {"data": data}
     # Expose credentials + session identifiers at the RESPONSE ROOT as well.
