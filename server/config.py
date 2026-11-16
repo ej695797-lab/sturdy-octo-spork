@@ -72,7 +72,7 @@ except ValueError:
 
 # Testing switch: every room's play/creative mode can be switched and anyone can
 # edit official maps in-game.
-UNLOCK_ALL_MODES = True
+UNLOCK_ALL_MODES = False
 
 # ─── Client checks ───────────────────────────────────────────────────────────
 # 1.19-era attestation hashes (the 1.31 client sends none, so these stay empty).
