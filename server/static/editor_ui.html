@@ -839,7 +839,8 @@ const tabs = {
         await api("/announce", { method: "POST", headers: { "Content-Type": "application/json",
           "x-announce-password": anpw },
           body: JSON.stringify({ text, seconds: +document.getElementById("anSec").value || 10,
-                                 activeMinutes: +document.getElementById("anMin").value || 10 }) });
+                                 activeMinutes: +document.getElementById("anMin").value || 10,
+                                 announcePassword: anpw }) });
         document.getElementById("antext").value = "";
         toast("Announcement sent"); load();
       } catch (e) { toast(e.message, true); }

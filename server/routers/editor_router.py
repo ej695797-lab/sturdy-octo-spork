@@ -1283,27 +1283,33 @@ async def list_announcements():
     return JSONResponse(content={"ok": True, "announcements": await active_announcements()})
 
 
-def _announce_auth_router(request: Request) -> bool:
+def _announce_auth_router(request: Request, body: dict = None) -> bool:
     """Check if request has valid announce password. ONLY accepts ANNOUNCE_PASSWORD."""
     import os
     announce_pw = os.getenv("ANNOUNCE_PASSWORD", "")
     if not announce_pw:
         return True  # dev mode
+    # Check header
     supplied = request.headers.get("x-announce-password", "")
-    return supplied == announce_pw
+    if supplied == announce_pw:
+        return True
+    # Check body
+    if body and body.get("announcePassword") == announce_pw:
+        return True
+    return False
 
 
 @router.post("/api/announce")
 async def post_announcement(request: Request):
     """Body: {"text": "...", "seconds": 10 (on screen), "activeMinutes": 10
     (players who launch within this window still get it)}."""
-    if not _announce_auth_router(request):
-        raise HTTPException(status_code=401, detail="Invalid announce password")
-    from services.remote import add_announcement
     try:
         body = await request.json()
     except Exception:
         body = {}
+    if not _announce_auth_router(request, body):
+        raise HTTPException(status_code=401, detail="Invalid announce password")
+    from services.remote import add_announcement
     text = str(body.get("text") or "").strip()
     if not text:
         raise HTTPException(status_code=400, detail="text required")
@@ -1315,7 +1321,13 @@ async def post_announcement(request: Request):
 
 @router.delete("/api/announce")
 async def delete_announcements(request: Request):
-    if not _announce_auth_router(request):
+    # Try to get password from body (for DELETE with body) or header
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+    if not _announce_auth_router(request, body):
         raise HTTPException(status_code=401, detail="Invalid announce password")
     from services.remote import clear_announcements
     await clear_announcements()
