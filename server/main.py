@@ -258,6 +258,10 @@ app.include_router(client_router)
 
 # Public download link players use to get the APK: the file uploaded in the
 # editor's Settings tab, or a redirect to an external link (either can be unset).
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
 @app.get("/download")
 async def download_file():
     from services import download
