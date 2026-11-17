@@ -691,6 +691,10 @@ async def catch_all(request: Request, path: str = ""):
 # ─── Entry point ─────────────────────────────────────────────────────
 
 if __name__ == "__main__":
+    import sys
+    print("Starting server...", flush=True)
+    print(f"PORT={__import__('os').getenv('PORT', 'NOT SET')}", flush=True)
     import uvicorn
     from config import SERVER_PORT
+    print(f"SERVER_PORT={SERVER_PORT}", flush=True)
     uvicorn.run("main:app", host="0.0.0.0", port=SERVER_PORT, reload=False)
