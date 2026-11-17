@@ -693,4 +693,4 @@ async def catch_all(request: Request, path: str = ""):
 if __name__ == "__main__":
     import uvicorn
     from config import SERVER_PORT
-    uvicorn.run("main:app", host="0.0.0.0", port=SERVER_PORT, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=SERVER_PORT, reload=False)
