@@ -262,6 +262,10 @@ app.include_router(client_router)
 async def health():
     return {"status": "ok"}
 
+@app.get("/")
+async def root():
+    return {"status": "ok"}
+
 @app.get("/download")
 async def download_file():
     from services import download
