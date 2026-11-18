@@ -11,8 +11,7 @@ import os
 
 # Only accounts with the given role may own (and therefore place) the pattern.
 # "larp" gates every custom block: only larp-role holders get them at all.
-ROLE_LOCKED_PATTERNS = {"1x5x2_stuffedTextBlaze": "blaze",
-                        "1x1_stuffed920Man": "larp",
+ROLE_LOCKED_PATTERNS = {"1x1_stuffed920Man": "larp",
                         "1x1_stuffedsdn": "larp",
                         "1x1_niche": "larp",
                         "1x1_giggle": "larp",
@@ -27,7 +26,7 @@ SERVER_ONLY_ROLES: set = set()
 # Custom blocks every account owns (creative build menu). Kept out of the
 # techweb list so survival players can't craft them. (Custom blocks are now
 # larp-gated, so this is empty.)
-ALWAYS_OWNED_PATTERNS: list = []
+ALWAYS_OWNED_PATTERNS: list = ["1x4x2_ronald"]
 # Never served to anyone, even if stored on an account.
 DISABLED_PATTERNS = {"3x3x1_blazeScreen",
                      # desert decorations with no mesh in 1.31 ("Could not find map
