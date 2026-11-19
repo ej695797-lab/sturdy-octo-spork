@@ -2635,6 +2635,8 @@ async def handle_login(body: dict) -> dict:
         _op = data.setdefault("ownedPatterns", [])
         if "1x1_stuffedCucumberCat" not in _op:
             _op.append("1x1_stuffedCucumberCat")
+        if "magnifyingGlass" not in _op:
+            _op.append("magnifyingGlass")
         if "cosmetic_hat_920" not in _op:
             _op.append("cosmetic_hat_920")
         # Role-locked custom blocks (BLAZE Pillow, BLAZE Screen = the "staff member a
