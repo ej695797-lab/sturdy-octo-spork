@@ -1561,7 +1561,8 @@
       "1x1_pilla",
       "1x1_desert",
       "1x1_deser",
-      "1x1_YeepPlayer"
+      "1x1_YeepPlayer",
+      "1x4x2_ronald"
     ]
   },
   {
@@ -3562,7 +3563,8 @@
         "1x1_pilla",
         "1x1_desert",
         "1x1_deser",
-        "1x1_YeepPlayer"
+        "1x1_YeepPlayer",
+        "1x4x2_ronald"
       ],
       "activeCosmetics": [],
       "ownedBundles": [],
